@@ -1,0 +1,6 @@
+{
+  "name": "tinywarden-agent",
+  "usage": "Usage: tinywarden-agent --version | --help",
+  "notReady": "Host enrollment and monitoring are not implemented yet.",
+  "invalidArguments": "Unsupported arguments. Use --help for available options."
+}
