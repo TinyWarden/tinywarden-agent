@@ -1,6 +1,12 @@
 {
   "name": "tinywarden-agent",
-  "usage": "Usage: tinywarden-agent --version | --help",
-  "notReady": "Host enrollment and monitoring are not implemented yet.",
-  "invalidArguments": "Unsupported arguments. Use --help for available options."
+  "usage": "Usage: tinywarden-agent --version | --help | enroll --config CONFIG_PATH --token-file TOKEN_PATH | replace --config CONFIG_PATH --token-file TOKEN_PATH | run --config CONFIG_PATH",
+  "notReady": "Choose enroll, replace or run. Use --help for the required options.",
+  "invalidArguments": "Unsupported arguments. Use --help for available options.",
+  "enrolled": "Enrollment confirmed. Start the agent to send heartbeats.",
+  "replaced": "Credential replacement confirmed. Restart the agent to send heartbeats.",
+  "running": "Agent running.",
+  "degraded": "The server is unavailable. Retrying the saved request at a slower rate.",
+  "recovered": "Connection restored.",
+  "commandFailed": "Agent stopped. Check its configuration, private state and server availability."
 }
