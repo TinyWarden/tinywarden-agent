@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "name": "inaccessible-path-is-unverified",
+  "key": "reboot-required",
+  "mode": "upgrade",
+  "started_at": "2026-09-29T12:00:00Z",
+  "finished_at": "2026-09-29T12:00:01Z",
+  "boot_before": "11111111-1111-1111-1111-111111111111",
+  "boot_after": "11111111-1111-1111-1111-111111111111",
+  "outcome": "exited",
+  "steps": [
+    {
+      "step_id": "marker",
+      "profile": "reboot-marker.v1",
+      "outcome": "exited",
+      "exit_code": 1,
+      "signal": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "cleanup_complete": true
+    }
+  ],
+  "expected": {
+    "schema_version": 1,
+    "key": "reboot-required",
+    "normalizer": "reboot-marker.debian13.v1",
+    "problem": "none",
+    "execution": [
+      {
+        "step_id": "marker",
+        "profile": "reboot-marker.v1",
+        "outcome": "exited",
+        "exit_code": 1,
+        "signal": null,
+        "stdout_truncated": false,
+        "stderr_truncated": false,
+        "cleanup_complete": true
+      }
+    ],
+    "packages": null,
+    "reboot": {
+      "marker_observed": false,
+      "assurance": "unverified"
+    },
+    "fstrim": null
+  },
+  "assessment": {
+    "state": "unknown",
+    "reason": "reboot_assurance_unverified",
+    "incomplete": true,
+    "informational": true
+  }
+}

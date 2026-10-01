@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "name": "new-dependencies",
+  "key": "package-updates",
+  "mode": "with-new-pkgs",
+  "started_at": "2026-09-29T12:00:00Z",
+  "finished_at": "2026-09-29T12:00:01Z",
+  "boot_before": "11111111-1111-1111-1111-111111111111",
+  "boot_after": "11111111-1111-1111-1111-111111111111",
+  "outcome": "exited",
+  "steps": [
+    {
+      "step_id": "apt",
+      "profile": "apt-upgrade.v1",
+      "outcome": "exited",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "2 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "cleanup_complete": true
+    }
+  ],
+  "expected": {
+    "schema_version": 1,
+    "key": "package-updates",
+    "normalizer": "apt-plan.debian13.v1",
+    "problem": "none",
+    "execution": [
+      {
+        "step_id": "apt",
+        "profile": "apt-upgrade.v1",
+        "outcome": "exited",
+        "exit_code": 0,
+        "signal": null,
+        "stdout_truncated": false,
+        "stderr_truncated": false,
+        "cleanup_complete": true
+      }
+    ],
+    "packages": {
+      "upgraded": 2,
+      "installed": 1,
+      "removed": 0,
+      "held_back": 0,
+      "mode": "with-new-pkgs",
+      "index_freshness": "unverified",
+      "state_consistency": "unverified"
+    },
+    "reboot": null,
+    "fstrim": null
+  },
+  "assessment": {
+    "state": "warning",
+    "reason": "package_changes",
+    "incomplete": true,
+    "informational": false
+  }
+}

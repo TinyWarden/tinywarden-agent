@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "name": "inaccessible-cache",
+  "key": "package-updates",
+  "mode": "upgrade",
+  "started_at": "2026-09-29T12:00:00Z",
+  "finished_at": "2026-09-29T12:00:01Z",
+  "boot_before": "11111111-1111-1111-1111-111111111111",
+  "boot_after": "11111111-1111-1111-1111-111111111111",
+  "outcome": "exited",
+  "steps": [
+    {
+      "step_id": "apt",
+      "profile": "apt-upgrade.v1",
+      "outcome": "exited",
+      "exit_code": 100,
+      "signal": null,
+      "stdout": "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.\n",
+      "stderr": "E: Cannot read synthetic cache\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "cleanup_complete": true
+    }
+  ],
+  "expected": {
+    "schema_version": 1,
+    "key": "package-updates",
+    "normalizer": "apt-plan.debian13.v1",
+    "problem": "execution_failed",
+    "execution": [
+      {
+        "step_id": "apt",
+        "profile": "apt-upgrade.v1",
+        "outcome": "exited",
+        "exit_code": 100,
+        "signal": null,
+        "stdout_truncated": false,
+        "stderr_truncated": false,
+        "cleanup_complete": true
+      }
+    ],
+    "packages": null,
+    "reboot": null,
+    "fstrim": null
+  },
+  "assessment": {
+    "state": "unknown",
+    "reason": "execution_failed",
+    "incomplete": true,
+    "informational": false
+  }
+}

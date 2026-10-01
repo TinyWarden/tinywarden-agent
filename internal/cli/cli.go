@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/TinyWarden/tinywarden/agent/internal/agent"
+	"github.com/TinyWarden/tinywarden/agent/internal/runner"
 )
 
 //go:embed en.json
@@ -32,6 +33,15 @@ type catalog struct {
 const Version = "0.0.1"
 
 func Run(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 1 && args[0] == runner.SupervisorArgument {
+		return runner.Supervise()
+	}
+	if len(args) == 1 && args[0] == "__collect-disk-v1" {
+		if err := agent.CollectDisk(stdout); err != nil {
+			return 1
+		}
+		return 0
+	}
 	var text catalog
 	if err := json.Unmarshal(english, &text); err != nil {
 		panic(err)

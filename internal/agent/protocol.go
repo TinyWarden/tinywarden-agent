@@ -73,9 +73,17 @@ func (err *ResponseError) Error() string {
 	return fmt.Sprintf("server status %d (%s)", err.Status, err.Code)
 }
 
-func (client *Client) post(ctx context.Context, path, credential string, input any, allowCreated bool) (map[string]json.RawMessage, error) {
+func (client *Client) post(ctx context.Context, path, credential string, input any, allowCreated bool,
+	requestLimits ...int) (map[string]json.RawMessage, error) {
+	requestLimit, responseLimit := maxBody, maxBody
+	if len(requestLimits) >= 1 {
+		requestLimit = requestLimits[0]
+	}
+	if len(requestLimits) == 2 {
+		responseLimit = requestLimits[1]
+	}
 	data, err := json.Marshal(input)
-	if err != nil || len(data) > maxBody {
+	if err != nil || len(data) > requestLimit {
 		return nil, errors.New("invalid request body")
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, client.Origin+path, bytes.NewReader(data))
@@ -116,12 +124,15 @@ func (client *Client) post(ctx context.Context, path, credential string, input a
 		(params["charset"] != "" && !strings.EqualFold(params["charset"], "utf-8")) {
 		return nil, errors.New("invalid response media")
 	}
-	body, err := io.ReadAll(io.LimitReader(response.Body, maxBody+1))
-	if len(body) > maxBody {
+	body, err := io.ReadAll(io.LimitReader(response.Body, int64(responseLimit)+1))
+	if len(body) > responseLimit {
 		return nil, errors.New("response too large")
 	}
 	if err != nil {
 		return nil, &responseReadError{cause: err}
+	}
+	if len(requestLimits) == 2 && baselineJSON(body) != nil {
+		return nil, errBaselineState
 	}
 	var wire map[string]json.RawMessage
 	if err := json.Unmarshal(body, &wire); err != nil || wire == nil {
