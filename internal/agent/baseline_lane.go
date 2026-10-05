@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/runner"
+	"github.com/TinyWarden/tinywarden-agent/internal/runner"
 )
 
 type baselineFetched struct {

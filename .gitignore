@@ -1,0 +1,10 @@
+.DS_Store
+bin/
+dist/
+coverage/
+__pycache__/
+*.py[cod]
+*.log
+.env*
+!.env.example
+.agents/

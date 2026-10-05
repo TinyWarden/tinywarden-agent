@@ -1,0 +1,465 @@
+{
+  "name": {
+    "text": "Reboot status",
+    "parameters": {}
+  },
+  "description": {
+    "text": "Checks whether packages have left a reboot-required marker. A marker raises a warning; no marker passes this limited check, without proving that every possible reason for rebooting is absent.",
+    "parameters": {}
+  },
+  "mount_id_label": {
+    "text": "Mount ID",
+    "parameters": {}
+  },
+  "path_label": {
+    "text": "Mount path",
+    "parameters": {}
+  },
+  "root_label": {
+    "text": "Mount root",
+    "parameters": {}
+  },
+  "filesystem_label": {
+    "text": "Filesystem type",
+    "parameters": {}
+  },
+  "kind_label": {
+    "text": "Mount type",
+    "parameters": {}
+  },
+  "writable_label": {
+    "text": "Writable",
+    "parameters": {}
+  },
+  "shared_label": {
+    "text": "Shared capacity",
+    "parameters": {}
+  },
+  "total_label": {
+    "text": "Total bytes",
+    "parameters": {}
+  },
+  "free_label": {
+    "text": "Free bytes",
+    "parameters": {}
+  },
+  "available_label": {
+    "text": "Available bytes",
+    "parameters": {}
+  },
+  "reason_label": {
+    "text": "Observation reason",
+    "parameters": {}
+  },
+  "used_label": {
+    "text": "Used (%)",
+    "parameters": {}
+  },
+  "coverage_label": {
+    "text": "Coverage",
+    "parameters": {}
+  },
+  "excluded_kernel_label": {
+    "text": "Excluded kernel filesystems",
+    "parameters": {}
+  },
+  "excluded_remote_label": {
+    "text": "Excluded remote filesystems",
+    "parameters": {}
+  },
+  "filesystems_label": {
+    "text": "Local filesystems",
+    "parameters": {}
+  },
+  "upgraded_label": {
+    "text": "Packages to upgrade",
+    "parameters": {}
+  },
+  "installed_label": {
+    "text": "New packages",
+    "parameters": {}
+  },
+  "removed_label": {
+    "text": "Packages to remove",
+    "parameters": {}
+  },
+  "held_back_label": {
+    "text": "Held back",
+    "parameters": {}
+  },
+  "mode_label": {
+    "text": "Simulation mode",
+    "parameters": {}
+  },
+  "index_freshness_label": {
+    "text": "Package-index freshness",
+    "parameters": {}
+  },
+  "state_consistency_label": {
+    "text": "Package-state consistency",
+    "parameters": {}
+  },
+  "marker_label": {
+    "text": "Reboot marker found",
+    "parameters": {}
+  },
+  "assurance_label": {
+    "text": "Assurance",
+    "parameters": {}
+  },
+  "last_outcome_label": {
+    "text": "Last observed execution result",
+    "parameters": {}
+  },
+  "last_observed_label": {
+    "text": "Last execution observed at",
+    "parameters": {}
+  },
+  "expected_label": {
+    "text": "Expected trim time",
+    "parameters": {}
+  },
+  "reclamation_label": {
+    "text": "Space reclamation independently verified",
+    "parameters": {}
+  },
+  "warning_label": {
+    "text": "Warning threshold",
+    "parameters": {}
+  },
+  "critical_label": {
+    "text": "Critical threshold",
+    "parameters": {}
+  },
+  "interval_label": {
+    "text": "Check interval",
+    "parameters": {}
+  },
+  "timeout_label": {
+    "text": "Execution time limit",
+    "parameters": {}
+  },
+  "package_mode_label": {
+    "text": "Package simulation mode",
+    "parameters": {}
+  },
+  "timer_load_state_label": {
+    "text": "Timer load state",
+    "parameters": {}
+  },
+  "timer_active_state_label": {
+    "text": "Timer active state",
+    "parameters": {}
+  },
+  "timer_unit_file_state_label": {
+    "text": "Timer unit file state",
+    "parameters": {}
+  },
+  "timer_last_trigger_label": {
+    "text": "Timer last trigger",
+    "parameters": {}
+  },
+  "timer_next_elapse_label": {
+    "text": "Timer next elapse",
+    "parameters": {}
+  },
+  "timer_condition_label": {
+    "text": "Timer condition",
+    "parameters": {}
+  },
+  "timer_condition_at_label": {
+    "text": "Timer condition at",
+    "parameters": {}
+  },
+  "service_load_state_label": {
+    "text": "Service load state",
+    "parameters": {}
+  },
+  "service_active_state_label": {
+    "text": "Service active state",
+    "parameters": {}
+  },
+  "service_result_label": {
+    "text": "Service result",
+    "parameters": {}
+  },
+  "service_exit_kind_label": {
+    "text": "Service exit kind",
+    "parameters": {}
+  },
+  "service_exit_status_label": {
+    "text": "Service exit status",
+    "parameters": {}
+  },
+  "service_started_at_label": {
+    "text": "Service started at",
+    "parameters": {}
+  },
+  "service_finished_at_label": {
+    "text": "Service finished at",
+    "parameters": {}
+  },
+  "service_condition_label": {
+    "text": "Service condition",
+    "parameters": {}
+  },
+  "service_condition_at_label": {
+    "text": "Service condition at",
+    "parameters": {}
+  },
+  "interval_help": {
+    "text": "Time between local observations.",
+    "parameters": {}
+  },
+  "timeout_help": {
+    "text": "Maximum collection time, within the runtime limit.",
+    "parameters": {}
+  },
+  "execution_mismatch": {
+    "text": "Execution evidence did not match the recipe.",
+    "parameters": {}
+  },
+  "execution_missing": {
+    "text": "Execution evidence is incomplete.",
+    "parameters": {}
+  },
+  "execution_failed": {
+    "text": "The observation command failed or exited unexpectedly.",
+    "parameters": {}
+  },
+  "execution_timed_out": {
+    "text": "The observation exceeded its time budget.",
+    "parameters": {}
+  },
+  "execution_cancelled": {
+    "text": "The observation was cancelled.",
+    "parameters": {}
+  },
+  "execution_output_limit": {
+    "text": "Command output exceeded its limit.",
+    "parameters": {}
+  },
+  "execution_cleanup_pending": {
+    "text": "Command cleanup has not completed.",
+    "parameters": {}
+  },
+  "execution_policy_rejected": {
+    "text": "The agent rejected execution under its local policy.",
+    "parameters": {}
+  },
+  "execution_spawn_failed": {
+    "text": "The approved observation tool could not be started.",
+    "parameters": {}
+  },
+  "execution_helper_failed": {
+    "text": "The observation supervisor failed.",
+    "parameters": {}
+  },
+  "runner_busy": {
+    "text": "The agent is finishing another observation.",
+    "parameters": {}
+  },
+  "output_unsupported": {
+    "text": "Command output could not be interpreted reliably.",
+    "parameters": {}
+  },
+  "clock_uncertain": {
+    "text": "The observation clock could not be verified.",
+    "parameters": {}
+  },
+  "boot_uncertain": {
+    "text": "The boot identity changed or could not be verified during observation.",
+    "parameters": {}
+  },
+  "snapshot_changed": {
+    "text": "Service state changed during observation.",
+    "parameters": {}
+  },
+  "evidence_inconsistent": {
+    "text": "Observed service properties are inconsistent.",
+    "parameters": {}
+  },
+  "package_changes": {
+    "text": "The cached package plan contains upgrades, new dependencies or held-back packages.",
+    "parameters": {}
+  },
+  "package_removals": {
+    "text": "The cached package plan includes removals that need attention.",
+    "parameters": {}
+  },
+  "package_cache_unverified": {
+    "text": "The cached plan contains no changes; repository freshness and local-state consistency remain unverified.",
+    "parameters": {}
+  },
+  "reboot_marker_present": {
+    "text": "A package has left a reboot-required marker.",
+    "parameters": {}
+  },
+  "reboot_assurance_unverified": {
+    "text": "No reboot marker was observed; other reboot needs remain unverified.",
+    "parameters": {}
+  },
+  "fstrim_unit_unavailable": {
+    "text": "The fstrim timer or service is unavailable.",
+    "parameters": {}
+  },
+  "fstrim_timer_disabled": {
+    "text": "The fstrim timer is disabled or masked.",
+    "parameters": {}
+  },
+  "fstrim_timer_failed": {
+    "text": "The fstrim timer is in a failed state.",
+    "parameters": {}
+  },
+  "fstrim_timer_inactive": {
+    "text": "The fstrim timer is inactive.",
+    "parameters": {}
+  },
+  "fstrim_condition_skipped": {
+    "text": "A systemd condition skipped the timer or service.",
+    "parameters": {}
+  },
+  "fstrim_history_unavailable": {
+    "text": "No completed fstrim service history is available.",
+    "parameters": {}
+  },
+  "fstrim_running": {
+    "text": "The timer or service is still running or changing state.",
+    "parameters": {}
+  },
+  "fstrim_service_failed": {
+    "text": "The fstrim service reports a failed run.",
+    "parameters": {}
+  },
+  "fstrim_schedule_unverified": {
+    "text": "The next fstrim schedule could not be verified.",
+    "parameters": {}
+  },
+  "fstrim_condition_unverified": {
+    "text": "Evaluated systemd condition history is unavailable.",
+    "parameters": {}
+  },
+  "fstrim_trigger_unconfirmed": {
+    "text": "The latest timer trigger has no confirmed completed service run.",
+    "parameters": {}
+  },
+  "fstrim_observed_success": {
+    "text": "The timer is scheduled and a completed fstrim service reported success; reclaimed space is unverified.",
+    "parameters": {}
+  },
+  "unsupported_observation": {
+    "text": "The observation format or evaluator is unsupported.",
+    "parameters": {}
+  },
+  "package_plan_clear": {
+    "text": "No changes in the local package plan. Cached metadata may be outdated; security updates are not independently verified.",
+    "parameters": {}
+  },
+  "reboot_marker_absent": {
+    "text": "No package reboot marker observed. Running software may still need a reboot.",
+    "parameters": {}
+  },
+  "fstrim_context_unavailable": {
+    "text": "Saved trim execution or schedule evidence could not be verified.",
+    "parameters": {}
+  },
+  "fstrim_scheduled": {
+    "text": "Scheduled — awaiting a recorded run.",
+    "parameters": {}
+  },
+  "fstrim_awaiting_result": {
+    "text": "Awaiting the scheduled trim result; an earlier success does not confirm this run.",
+    "parameters": {}
+  },
+  "fstrim_result_overdue": {
+    "text": "The scheduled trim result is overdue by at least 24 hours; successful completion has not been confirmed.",
+    "parameters": {}
+  },
+  "skill_disabled": {
+    "text": "Monitoring is disabled globally. Settings and past readings are kept.",
+    "parameters": {}
+  },
+  "enablement_changed": {
+    "text": "Waiting for a new reading after the skill was enabled.",
+    "parameters": {}
+  },
+  "no_assignment": {
+    "text": "No current assignment has been delivered.",
+    "parameters": {}
+  },
+  "baseline_recovery_required": {
+    "text": "Baseline delivery requires credential replacement after a recovery conflict.",
+    "parameters": {}
+  },
+  "contact_unavailable": {
+    "text": "Current agent contact is unavailable. The last observation is historical.",
+    "parameters": {}
+  },
+  "server_clock_uncertain": {
+    "text": "The control-plane clock is inconsistent with retained evidence.",
+    "parameters": {}
+  },
+  "assignment_obsolete": {
+    "text": "Settings changed. A new assignment and observation are needed.",
+    "parameters": {}
+  },
+  "unsupported_os": {
+    "text": "This observation requires Debian 13.",
+    "parameters": {}
+  },
+  "unsupported_architecture": {
+    "text": "This observation requires Linux amd64.",
+    "parameters": {}
+  },
+  "missing_capability": {
+    "text": "The agent does not support the connected observation worker.",
+    "parameters": {}
+  },
+  "no_observation": {
+    "text": "Waiting for the first observation of this assignment.",
+    "parameters": {}
+  },
+  "agent_clock_uncertain": {
+    "text": "Agent timestamps are too far ahead of first receipt.",
+    "parameters": {}
+  },
+  "observation_stale": {
+    "text": "The latest observation has expired.",
+    "parameters": {}
+  },
+  "history_expired": {
+    "text": "The latest observation is older than the 90-day history window.",
+    "parameters": {}
+  },
+  "invalid_thresholds": {
+    "text": "The critical threshold must be greater than the warning threshold.",
+    "parameters": {}
+  },
+  "disk_usage": {
+    "text": "The fullest writable filesystem is {path}, at {percent}% used.",
+    "parameters": {
+      "path": "string",
+      "percent": "number"
+    }
+  },
+  "disk_empty": {
+    "text": "No usable writable local filesystem capacity was observed.",
+    "parameters": {}
+  },
+  "disk_incomplete": {
+    "text": "The local filesystem observation is incomplete.",
+    "parameters": {}
+  },
+  "package_output_unavailable": {
+    "text": "A complete local package simulation could not be verified.",
+    "parameters": {}
+  },
+  "usage.1": {
+    "text": "The agent reads the package reboot marker; no separate server setup is required.",
+    "parameters": {}
+  },
+  "usage.2": {
+    "text": "Open a server from Servers to override its observation timing.",
+    "parameters": {}
+  }
+}

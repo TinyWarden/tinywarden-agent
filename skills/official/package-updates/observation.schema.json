@@ -1,0 +1,63 @@
+{
+  "type": "object",
+  "properties": {
+    "problem": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 64,
+      "enum": [
+        "none",
+        "package_output_unavailable"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 32,
+      "enum": [
+        "upgrade",
+        "with-new-pkgs"
+      ]
+    },
+    "upgraded": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "installed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "removed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "held_back": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "index_freshness": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 32,
+      "enum": [
+        "unverified"
+      ]
+    },
+    "state_consistency": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 32,
+      "enum": [
+        "unverified"
+      ]
+    }
+  },
+  "required": [
+    "problem"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "id": "tinywarden/reboot-required",
+  "alias": "reboot-required",
+  "version": "1.0.0",
+  "runtime": "python-3.13-v1",
+  "sdk": 1,
+  "state_version": 1,
+  "license": "Apache-2.0",
+  "publisher": "TinyWarden",
+  "name_key": "name",
+  "description_key": "description",
+  "category": "Packages",
+  "compatibility": {
+    "os": [
+      "debian:13"
+    ],
+    "architectures": [
+      "amd64"
+    ]
+  },
+  "defaults": {
+    "interval_seconds": 3600,
+    "timeout_seconds": 10
+  },
+  "schedule": {
+    "minimum_seconds": 60,
+    "maximum_seconds": 86400
+  },
+  "capabilities": [
+    {
+      "operation": "files.stat",
+      "paths": [
+        "/run/reboot-required"
+      ],
+      "roots": []
+    }
+  ],
+  "limits": {
+    "wall_seconds": 60
+  },
+  "fields": {
+    "interval_seconds": {
+      "label_key": "interval_label",
+      "help_key": "interval_help",
+      "unit": "seconds",
+      "order": 0
+    },
+    "timeout_seconds": {
+      "label_key": "timeout_label",
+      "help_key": "timeout_help",
+      "unit": "seconds",
+      "order": 1
+    }
+  }
+}

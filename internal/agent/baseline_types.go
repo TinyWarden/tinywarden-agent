@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/baseline"
-	"github.com/TinyWarden/tinywarden/agent/internal/runner"
+	"github.com/TinyWarden/tinywarden-agent/internal/runner"
+	baseline "github.com/TinyWarden/tinywarden-agent/internal/skills/builtin"
 )
 
 const baselineBytes = 48 << 10
 const baselineQueueBytes = 1 << 20
 const safeCounter = 9007199254740991
 
-var baselineKeys = []baseline.Key{baseline.Packages, baseline.Reboot, baseline.Fstrim}
+var baselineKeys = baseline.Keys()
 
 type baselineScope struct {
 	Version    int    `json:"version"`
@@ -76,7 +76,7 @@ func validBaselineEntry(scope baselineScope, e baselineEntry) bool {
 	if n == "" || a.Normalizer != n || a.Evaluator != v {
 		return false
 	}
-	if a.Applicability != "ready" && a.Applicability != "unsupported_os" && a.Applicability != "unsupported_architecture" && a.Applicability != "missing_capability" {
+	if a.Applicability != "ready" && a.Applicability != "unsupported_os" && a.Applicability != "unsupported_architecture" && a.Applicability != "missing_capability" && a.Applicability != "disabled" {
 		return false
 	}
 	mode := "upgrade"

@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"errors"
+	"os"
 )
 
 func Run(ctx context.Context, config Config, client *Client, emit func(string)) error {
@@ -40,6 +41,24 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string)) 
 		known = nil
 	}
 	heartbeat := func(ctx context.Context) error { return sendHeartbeat(ctx, store, &state, client) }
+	assets := config.RuntimeAssets
+	if assets == "" {
+		assets = "/usr/local/lib/tinywarden-agent/runtime"
+	}
+	if _, present := os.Lstat(assets); present == nil {
+		packages, err := newPackageLane(ctx, store, client, state, config, emit)
+		if err != nil {
+			emit("package_state_unavailable")
+			return runLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(ctx context.Context) error { _, err := client.fetchPackages(ctx, state, false); return err }, emit)
+		}
+		defer packages.stop()
+		if packages.runtime.VerifyAssets() != nil {
+			emit("package_runtime_unavailable")
+		}
+		// Installing the platform SDK selects the package lane once. Compiled
+		// collectors and their cached leases never execute concurrently with it.
+		return runLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, packages.tick)
+	}
 	assignment := func(ctx context.Context) error {
 		response, err := client.FetchAssignments(ctx, state, known)
 		if err == nil {

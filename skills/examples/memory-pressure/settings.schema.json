@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "warning_percent": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "critical_percent": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 100
+    },
+    "interval_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 86400
+    }
+  },
+  "required": [
+    "warning_percent",
+    "critical_percent",
+    "interval_seconds"
+  ],
+  "additionalProperties": false
+}

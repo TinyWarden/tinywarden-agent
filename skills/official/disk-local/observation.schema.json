@@ -1,0 +1,108 @@
+{
+  "type": "object",
+  "properties": {
+    "coverage": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 16,
+      "enum": [
+        "complete",
+        "incomplete"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 64
+    },
+    "excluded_kernel": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "excluded_remote": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "mounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "mount_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "mount_path": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4096
+          },
+          "mount_root": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4096
+          },
+          "filesystem_type": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 32
+          },
+          "writable": {
+            "type": "boolean"
+          },
+          "shared_capacity": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 64
+          },
+          "total_bytes": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 20
+          },
+          "free_bytes": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 20
+          },
+          "available_bytes": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "mount_id",
+          "mount_path",
+          "mount_root",
+          "filesystem_type",
+          "kind",
+          "writable",
+          "shared_capacity",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 128
+    }
+  },
+  "required": [
+    "coverage",
+    "reason",
+    "excluded_kernel",
+    "excluded_remote",
+    "mounts"
+  ],
+  "additionalProperties": false
+}

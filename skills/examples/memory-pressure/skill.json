@@ -1,0 +1,63 @@
+{
+  "format": 1,
+  "id": "example/memory-pressure",
+  "version": "1.0.0",
+  "runtime": "python-3.13-v1",
+  "sdk": 1,
+  "state_version": 1,
+  "license": "Apache-2.0",
+  "publisher": "SDK Example",
+  "name_key": "name",
+  "description_key": "description",
+  "category": "System",
+  "compatibility": {
+    "os": [
+      "debian:13"
+    ],
+    "architectures": [
+      "amd64"
+    ]
+  },
+  "defaults": {
+    "warning_percent": 85,
+    "critical_percent": 95,
+    "interval_seconds": 300
+  },
+  "schedule": {
+    "minimum_seconds": 60,
+    "maximum_seconds": 86400
+  },
+  "capabilities": [
+    {
+      "operation": "files.read",
+      "paths": [
+        "/proc/meminfo"
+      ],
+      "max_bytes": 16384,
+      "roots": []
+    }
+  ],
+  "limits": {
+    "wall_seconds": 10
+  },
+  "fields": {
+    "warning_percent": {
+      "label_key": "warning",
+      "help_key": "warning_help",
+      "unit": "%",
+      "order": 0
+    },
+    "critical_percent": {
+      "label_key": "critical",
+      "help_key": "critical_help",
+      "unit": "%",
+      "order": 1
+    },
+    "interval_seconds": {
+      "label_key": "interval",
+      "help_key": "interval_help",
+      "unit": "seconds",
+      "order": 2
+    }
+  }
+}

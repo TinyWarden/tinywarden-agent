@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const Version = "0.0.1"
+const Version = "0.0.4"
 const maxBody = 16 * 1024
 
 type Client struct {

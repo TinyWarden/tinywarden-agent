@@ -125,7 +125,7 @@ func TestAssignmentResponseRequiresExactCacheAndDigest(t *testing.T) {
 	if err != nil || first.Assignment == nil || requested[0]["known_assignment"] != nil {
 		t.Fatal("full assignment without cache failed", err)
 	}
-	if !reflect.DeepEqual(requested[0]["capabilities"], []any{"disk_usage.v1"}) {
+	if !reflect.DeepEqual(requested[0]["capabilities"], []any{"disk_usage.v1", "skill-control.v1"}) {
 		t.Fatal("collector capability missing")
 	}
 	reply.NotModified, reply.Assignment = true, nil

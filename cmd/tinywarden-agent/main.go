@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/cli"
+	"github.com/TinyWarden/tinywarden-agent/internal/cli"
 )
 
 func main() {

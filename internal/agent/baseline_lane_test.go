@@ -10,7 +10,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/baseline"
+	baseline "github.com/TinyWarden/tinywarden-agent/internal/skills/builtin"
 )
 
 func fixtureLane(t *testing.T, server *httptest.Server) *baselineLane {

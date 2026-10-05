@@ -4,12 +4,13 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/json"
+	"github.com/TinyWarden/tinywarden-agent/internal/skills/builtin/disk"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/runner"
+	"github.com/TinyWarden/tinywarden-agent/internal/runner"
 )
 
 // Test binaries need the same fixed supervisor entry as the real CLI. This is
@@ -19,7 +20,7 @@ func TestMain(m *testing.M) {
 		os.Exit(runner.Supervise())
 	}
 	if len(os.Args) == 2 && os.Args[1] == "__collect-disk-v1" {
-		if CollectDisk(os.Stdout) != nil {
+		if disk.CollectDisk(os.Stdout) != nil {
 			os.Exit(1)
 		}
 		os.Exit(0)

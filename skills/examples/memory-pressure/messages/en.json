@@ -1,0 +1,64 @@
+{
+  "name": {
+    "text": "Memory availability",
+    "parameters": {}
+  },
+  "description": {
+    "text": "Measure local memory pressure using the kernel\u2019s available-memory estimate.",
+    "parameters": {}
+  },
+  "warning": {
+    "text": "Warning threshold",
+    "parameters": {}
+  },
+  "critical": {
+    "text": "Critical threshold",
+    "parameters": {}
+  },
+  "interval": {
+    "text": "Check interval",
+    "parameters": {}
+  },
+  "warning_help": {
+    "text": "Warn at or above this percentage of used memory.",
+    "parameters": {}
+  },
+  "critical_help": {
+    "text": "Mark critical at or above this percentage of used memory.",
+    "parameters": {}
+  },
+  "interval_help": {
+    "text": "Time between local observations.",
+    "parameters": {}
+  },
+  "invalid_thresholds": {
+    "text": "The critical threshold must be greater than the warning threshold.",
+    "parameters": {}
+  },
+  "memory_usage": {
+    "text": "Memory is {percent}% used.",
+    "parameters": {
+      "percent": "number"
+    }
+  },
+  "used_label": {
+    "text": "Used memory",
+    "parameters": {}
+  },
+  "total_label": {
+    "text": "Total memory in bytes",
+    "parameters": {}
+  },
+  "available_label": {
+    "text": "Available memory in bytes",
+    "parameters": {}
+  },
+  "usage.1": {
+    "text": "Read a bounded kernel memory snapshot through the agent.",
+    "parameters": {}
+  },
+  "usage.2": {
+    "text": "Compare used memory against the effective thresholds.",
+    "parameters": {}
+  }
+}

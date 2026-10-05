@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "marker_observed": {
+      "type": "boolean"
+    },
+    "assurance": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 32,
+      "enum": [
+        "limited"
+      ]
+    }
+  },
+  "required": [
+    "marker_observed",
+    "assurance"
+  ],
+  "additionalProperties": false
+}

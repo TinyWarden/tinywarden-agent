@@ -89,7 +89,7 @@ func validAssignment(cache AssignmentCache) bool {
 			return false
 		}
 	} else if a.Applicability != "unsupported_os" && a.Applicability != "unsupported_architecture" &&
-		a.Applicability != "missing_capability" || len(a.Checks) != 0 {
+		a.Applicability != "missing_capability" && a.Applicability != "disabled" || len(a.Checks) != 0 {
 		return false
 	}
 	bytes, err := hex.DecodeString(cache.Digest)
@@ -205,7 +205,7 @@ func (client *Client) FetchAssignments(ctx context.Context, state State,
 	}
 	wire, err := client.post(ctx, "/api/v1/agent/assignments", state.Credential,
 		map[string]any{"schema_version": 1, "agent_version": Version,
-			"capabilities": []string{"disk_usage.v1"}, "known_assignment": knownWire}, false)
+			"capabilities": []string{"disk_usage.v1", "skill-control.v1"}, "known_assignment": knownWire}, false)
 	if err != nil {
 		return nil, err
 	}

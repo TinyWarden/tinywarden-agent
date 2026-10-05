@@ -10,8 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/agent"
-	"github.com/TinyWarden/tinywarden/agent/internal/runner"
+	"github.com/TinyWarden/tinywarden-agent/internal/agent"
+	"github.com/TinyWarden/tinywarden-agent/internal/runner"
+	"github.com/TinyWarden/tinywarden-agent/internal/skills/builtin/disk"
 )
 
 //go:embed en.json
@@ -30,14 +31,14 @@ type catalog struct {
 	CommandFailed    string `json:"commandFailed"`
 }
 
-const Version = "0.0.1"
+const Version = agent.Version
 
 func Run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 1 && args[0] == runner.SupervisorArgument {
 		return runner.Supervise()
 	}
 	if len(args) == 1 && args[0] == "__collect-disk-v1" {
-		if err := agent.CollectDisk(stdout); err != nil {
+		if err := disk.CollectDisk(stdout); err != nil {
 			return 1
 		}
 		return 0

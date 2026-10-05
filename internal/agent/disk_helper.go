@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"syscall"
 	"time"
+
+	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
 )
 
 type cappedWriter struct {
@@ -43,9 +45,14 @@ func failedCollection(reason string) CollectorResult {
 
 // Production calls this only with the current executable and fixed helper argument.
 func runCollectorCommand(ctx context.Context, cmd *exec.Cmd, budget time.Duration) CollectorResult {
+	release, acquired := skillruntime.TryAcquire()
+	if !acquired {
+		return failedCollection("collector_timeout")
+	}
 	select {
 	case collectorSlot <- struct{}{}:
 	default:
+		release()
 		return failedCollection("collector_timeout")
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -54,10 +61,11 @@ func runCollectorCommand(ctx context.Context, cmd *exec.Cmd, budget time.Duratio
 	cmd.Stderr = io.Discard
 	if err := cmd.Start(); err != nil {
 		<-collectorSlot
+		release()
 		return failedCollection("collector_failed")
 	}
 	done := make(chan error, 1)
-	go func() { done <- cmd.Wait(); <-collectorSlot }()
+	go func() { done <- cmd.Wait(); <-collectorSlot; release() }()
 	timer := time.NewTimer(budget)
 	defer timer.Stop()
 	select {

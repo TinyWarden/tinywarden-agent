@@ -42,6 +42,7 @@ type diskLane struct {
 	upload         chan uploadedRun
 	uploading      bool
 	nextCollection time.Time
+	assignmentID   string
 	nextUpload     time.Time
 	uploadFailures int
 	lastWall       time.Time
@@ -109,6 +110,10 @@ func (lane *diskLane) tick(ctx context.Context) error {
 		lane.emit("assignment_lease_invalid")
 	}
 	lane.lastWall = now
+	if *lane.known != nil && lane.assignmentID != (*lane.known).ID {
+		lane.assignmentID = (*lane.known).ID
+		lane.nextCollection = time.Time{}
+	}
 	if !lane.collecting && !now.Before(lane.nextCollection) && assignmentLease(*lane.known, now) {
 		sequence, err := allocateRunSequence(lane.store, &lane.sequence)
 		if err != nil {

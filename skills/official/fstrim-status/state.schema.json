@@ -1,0 +1,72 @@
+{
+  "type": "object",
+  "properties": {
+    "as_of": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 253402300799
+    },
+    "expected_at": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 253402300799
+    },
+    "last_trigger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 253402300799
+    },
+    "covered_trigger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 253402300799
+    },
+    "last_execution": {
+      "type": "object",
+      "properties": {
+        "observed_at": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 253402300799
+        },
+        "recorded_at": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 253402300799999
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 16,
+          "enum": [
+            "success",
+            "failure"
+          ]
+        },
+        "started_at": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 253402300799
+        },
+        "finished_at": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 253402300799
+        },
+        "trigger_at": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 253402300799
+        }
+      },
+      "required": [
+        "observed_at",
+        "recorded_at",
+        "outcome"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

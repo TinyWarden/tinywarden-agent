@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "cases": [
+    {"name": "Available memory is healthy", "observation": {"total_bytes": "1000000", "available_bytes": "400000", "used_percent": 60}, "expect": {"state": {}, "statuses": ["healthy"]}},
+    {"name": "Warning threshold includes its boundary", "observation": {"total_bytes": "1000000", "available_bytes": "150000", "used_percent": 85}, "expect": {"state": {}, "statuses": ["warning"]}},
+    {"name": "Critical threshold includes its boundary", "observation": {"total_bytes": "1000000", "available_bytes": "50000", "used_percent": 95}, "expect": {"state": {}, "statuses": ["critical"]}},
+    {"name": "Server override changes the warning threshold", "settings": {"warning_percent": 70, "critical_percent": 95, "interval_seconds": 300}, "observation": {"total_bytes": "1000000", "available_bytes": "250000", "used_percent": 75}, "expect": {"state": {}, "statuses": ["warning"]}},
+    {"name": "Critical must exceed warning", "settings": {"warning_percent": 95, "critical_percent": 95, "interval_seconds": 300}, "expect": {"errors": [{"field": "critical_percent", "message": {"key": "invalid_thresholds", "params": {}}}]}}
+  ]
+}

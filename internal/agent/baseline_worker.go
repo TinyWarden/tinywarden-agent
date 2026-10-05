@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/baseline"
-	"github.com/TinyWarden/tinywarden/agent/internal/runner"
+	"github.com/TinyWarden/tinywarden-agent/internal/runner"
+	baseline "github.com/TinyWarden/tinywarden-agent/internal/skills/builtin"
+	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
 )
 
 func baselineCapable() bool {
@@ -18,9 +19,9 @@ func baselineCapable() bool {
 }
 func baselineCapabilities() []string {
 	if baselineCapable() {
-		return []string{runner.Capability}
+		return []string{runner.Capability, "skill-control.v1"}
 	}
-	return []string{}
+	return []string{"skill-control.v1"}
 }
 func baselineBoot() string {
 	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
@@ -45,6 +46,11 @@ func interruptedBaseline(a baselineActive, now time.Time) baselineRunRequest {
 
 func executeBaseline(ctx context.Context, a baselineActive) baselineRunRequest {
 	r := interruptedBaseline(a, time.Now())
+	release, slotErr := skillruntime.Acquire(ctx)
+	if slotErr != nil {
+		return r
+	}
+	defer release()
 	if !baselineCapable() {
 		r.Observation.Problem = "execution_policy_rejected"
 		return r

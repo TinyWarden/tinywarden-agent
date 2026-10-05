@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/TinyWarden/tinywarden/agent/internal/baseline"
+	baseline "github.com/TinyWarden/tinywarden-agent/internal/skills/builtin"
 )
 
 type baselineRunRequest struct {

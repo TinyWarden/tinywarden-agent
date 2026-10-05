@@ -1,0 +1,6 @@
+{
+  "control_plane_origin": "https://warden.example.com",
+  "state_dir": "/var/lib/tinywarden-agent",
+  "runtime_assets": "/usr/local/lib/tinywarden-agent/runtime",
+  "skill_operations": ["files.read", "files.stat", "files.list", "filesystems.snapshot", "systemd.properties", "command.capture"]
+}

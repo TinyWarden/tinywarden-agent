@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "total_bytes": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "available_bytes": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "used_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    }
+  },
+  "required": [
+    "total_bytes",
+    "available_bytes",
+    "used_percent"
+  ],
+  "additionalProperties": false
+}

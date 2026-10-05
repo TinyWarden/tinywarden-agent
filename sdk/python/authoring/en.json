@@ -1,0 +1,19 @@
+{
+  "description": "Create, validate, test and package standalone TinyWarden Python skills.",
+  "init": "Create a working memory-availability starter, with captured-observation tests.",
+  "validate": "Validate directory or ZIP metadata and schemas without executing skill code.",
+  "pack": "Write a deterministic, validated upload ZIP; never overwrite an existing file.",
+  "test": "Run captured-observation tests through the isolated SDK; no host access.",
+  "collect": "Collect a real observation from this machine through the read-only broker.",
+  "new_directory": "New package directory; must not exist.",
+  "id": "Stable namespaced ID, for example acme/memory-pressure; tinywarden is reserved.",
+  "publisher": "The package publisher's display name.",
+  "source": "Package directory or ZIP. Use this tool for your own local authoring material.",
+  "new_output": "New ZIP path outside the source directory; must not exist.",
+  "runtime": "Verified SDK runtime directory; defaults to the SDK beside this tool.",
+  "cases": "Format-1 JSON cases; defaults to tests.json inside the package.",
+  "approval": "Explicitly approve all manifest capabilities for collection on this machine.",
+  "settings": "Effective scalar settings JSON; defaults to the manifest defaults.",
+  "filesystem_helper": "Existing trusted agent binary for filesystems.snapshot; no rebuild is needed.",
+  "observation_output": "Optionally write observation JSON to a new file outside the package."
+}
