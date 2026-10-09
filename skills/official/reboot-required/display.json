@@ -1,0 +1,77 @@
+{
+  "format": 2,
+  "sources": {
+    "reboot_request": {
+      "kind": "text",
+      "enum": {
+        "requested": "reboot_requested_value",
+        "absent": "reboot_absent_value"
+      }
+    },
+    "packages": {
+      "kind": "table",
+      "columns": {
+        "package": {
+          "kind": "text"
+        }
+      }
+    },
+    "package_notice": {
+      "kind": "text",
+      "enum": {
+        "partial": "package_notice_partial",
+        "unavailable": "package_notice_unavailable"
+      }
+    }
+  },
+  "sections": [
+    {
+      "id": "reboot",
+      "role": "current",
+      "title_key": "reboot_title",
+      "widgets": [
+        {
+          "id": "reboot_facts",
+          "type": "facts",
+          "title_key": "reboot_title",
+          "facts": [
+            "reboot_request"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "packages",
+      "role": "details",
+      "title_key": "packages_label",
+      "widgets": [
+        {
+          "id": "packages_table",
+          "type": "table",
+          "title_key": "packages_label",
+          "source": "packages",
+          "columns": [
+            {
+              "key": "package"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "package_notice",
+      "role": "details",
+      "title_key": "package_notice_title",
+      "widgets": [
+        {
+          "id": "package_notice_facts",
+          "type": "facts",
+          "title_key": "package_notice_title",
+          "facts": [
+            "package_notice"
+          ]
+        }
+      ]
+    }
+  ]
+}

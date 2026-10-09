@@ -11,6 +11,14 @@ import (
 func runLanes(ctx context.Context, heartbeatInterval int,
 	heartbeatAttempt, assignmentAttempt func(context.Context) error, emit func(string),
 	laneTicks ...func(context.Context) error) error {
+	return runHeartbeatLanes(ctx, heartbeatInterval, func(ctx context.Context) (HeartbeatOutcome, error) {
+		return HeartbeatOutcome{}, heartbeatAttempt(ctx)
+	}, assignmentAttempt, emit, nil, laneTicks...)
+}
+
+func runHeartbeatLanes(ctx context.Context, heartbeatInterval int,
+	heartbeatAttempt func(context.Context) (HeartbeatOutcome, error), assignmentAttempt func(context.Context) error,
+	emit func(string), diagnostic func(HeartbeatDiagnostic), laneTicks ...func(context.Context) error) error {
 	heartbeatDue := time.Now()
 	assignmentDue := time.Now()
 	heartbeatFailures, assignmentFailures := 0, 0
@@ -28,26 +36,40 @@ func runLanes(ctx context.Context, heartbeatInterval int,
 	}
 	for {
 		if !time.Now().Before(heartbeatDue) {
-			err := heartbeatAttempt(ctx)
+			started := time.Now()
+			outcome, err := heartbeatAttempt(ctx)
 			if err == nil {
+				if heartbeatFailures > 0 && diagnostic != nil {
+					diagnostic(heartbeatDiagnostic(nil, heartbeatFailures+1, time.Since(started), 0))
+				}
 				if heartbeatFailures > 4 {
 					emit("recovered")
 				}
 				heartbeatFailures = 0
 				jitter := time.Duration(rand.Int64N(int64(heartbeatInterval)*100_000_000 + 1))
 				heartbeatDue = time.Now().Add(time.Duration(heartbeatInterval)*time.Second + jitter)
+				if outcome.Duplicate {
+					heartbeatDue = time.Now().Add(time.Second)
+				}
 			} else {
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
 				if terminal(err) {
+					if diagnostic != nil {
+						diagnostic(heartbeatDiagnostic(err, heartbeatFailures+1, time.Since(started), 0))
+					}
 					return err
 				}
 				heartbeatFailures++
 				if heartbeatFailures == 5 {
 					emit("degraded")
 				}
-				heartbeatDue = time.Now().Add(retryDelay(err, heartbeatFailures))
+				delay := heartbeatRetryWait(err, heartbeatFailures, heartbeatInterval)
+				if diagnostic != nil {
+					diagnostic(heartbeatDiagnostic(err, heartbeatFailures, time.Since(started), delay))
+				}
+				heartbeatDue = time.Now().Add(delay)
 			}
 		}
 		if assignmentEnabled && !time.Now().Before(assignmentDue) {

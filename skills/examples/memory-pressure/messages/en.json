@@ -60,5 +60,43 @@
   "usage.2": {
     "text": "Compare used memory against the effective thresholds.",
     "parameters": {}
+  },
+  "memory_label": {
+    "text": "Memory capacity",
+    "parameters": {}
+  },
+  "region_label": {
+    "text": "Region",
+    "parameters": {}
+  },
+  "memory_region": {
+    "text": "Memory",
+    "parameters": {}
+  },
+  "capacity_title": {
+    "text": "Memory capacity",
+    "parameters": {}
+  },
+  "history_title": {
+    "text": "Memory usage history",
+    "parameters": {}
+  },
+  "size_title": {
+    "text": "Capacity and available memory",
+    "parameters": {}
+  },
+  "notify.memory.warning": {
+    "text": "Memory use is {used}%, at or above the {threshold}% warning threshold.",
+    "parameters": {
+      "used": "number",
+      "threshold": "number"
+    }
+  },
+  "notify.memory.critical": {
+    "text": "Memory use is {used}%, at or above the {threshold}% critical threshold.",
+    "parameters": {
+      "used": "number",
+      "threshold": "number"
+    }
   }
 }

@@ -4,7 +4,7 @@
     "parameters": {}
   },
   "description": {
-    "text": "Observes fstrim.timer and its service result. Successful completion evidence survives a server reboot, and a weekly schedule is assessed against its expected run rather than the age of every reading. It does not prove that device space was physically reclaimed.",
+    "text": "Checks whether automatic filesystem trim is scheduled and whether its last run completed successfully.",
     "parameters": {}
   },
   "mount_id_label": {
@@ -260,23 +260,23 @@
     "parameters": {}
   },
   "output_unsupported": {
-    "text": "Command output could not be interpreted reliably.",
+    "text": "Could not read the server’s trim status reliably.",
     "parameters": {}
   },
   "clock_uncertain": {
-    "text": "The observation clock could not be verified.",
+    "text": "Could not confirm the time of this trim check.",
     "parameters": {}
   },
   "boot_uncertain": {
-    "text": "The boot identity changed or could not be verified during observation.",
+    "text": "The server restarted during this check, or its restart status could not be confirmed.",
     "parameters": {}
   },
   "snapshot_changed": {
-    "text": "Service state changed during observation.",
+    "text": "Trim status changed during the check. A consistent result is not available yet.",
     "parameters": {}
   },
   "evidence_inconsistent": {
-    "text": "Observed service properties are inconsistent.",
+    "text": "The server reported conflicting trim status information.",
     "parameters": {}
   },
   "package_changes": {
@@ -300,23 +300,23 @@
     "parameters": {}
   },
   "fstrim_unit_unavailable": {
-    "text": "The fstrim timer or service is unavailable.",
+    "text": "Could not find or load the automatic trim schedule or service.",
     "parameters": {}
   },
   "fstrim_timer_disabled": {
-    "text": "The fstrim timer is disabled or masked.",
+    "text": "Automatic trim is disabled.",
     "parameters": {}
   },
   "fstrim_timer_failed": {
-    "text": "The fstrim timer is in a failed state.",
+    "text": "The automatic trim schedule has failed.",
     "parameters": {}
   },
   "fstrim_timer_inactive": {
-    "text": "The fstrim timer is inactive.",
+    "text": "Automatic trim is not active.",
     "parameters": {}
   },
   "fstrim_condition_skipped": {
-    "text": "A systemd condition skipped the timer or service.",
+    "text": "The server did not meet the conditions needed for automatic trim.",
     "parameters": {}
   },
   "fstrim_history_unavailable": {
@@ -324,19 +324,19 @@
     "parameters": {}
   },
   "fstrim_running": {
-    "text": "The timer or service is still running or changing state.",
+    "text": "The trim schedule or service is changing state. Its status is not confirmed yet.",
     "parameters": {}
   },
   "fstrim_service_failed": {
-    "text": "The fstrim service reports a failed run.",
+    "text": "The last trim attempt failed.",
     "parameters": {}
   },
   "fstrim_schedule_unverified": {
-    "text": "The next fstrim schedule could not be verified.",
+    "text": "Could not confirm the automatic trim schedule.",
     "parameters": {}
   },
   "fstrim_condition_unverified": {
-    "text": "Evaluated systemd condition history is unavailable.",
+    "text": "Could not confirm whether the server meets the conditions for automatic trim.",
     "parameters": {}
   },
   "fstrim_trigger_unconfirmed": {
@@ -344,7 +344,7 @@
     "parameters": {}
   },
   "fstrim_observed_success": {
-    "text": "The timer is scheduled and a completed fstrim service reported success; reclaimed space is unverified.",
+    "text": "The last trim completed successfully. Automatic trim is scheduled.",
     "parameters": {}
   },
   "unsupported_observation": {
@@ -360,19 +360,19 @@
     "parameters": {}
   },
   "fstrim_context_unavailable": {
-    "text": "Saved trim execution or schedule evidence could not be verified.",
+    "text": "Could not confirm the saved trim result or schedule.",
     "parameters": {}
   },
   "fstrim_scheduled": {
-    "text": "Scheduled — awaiting a recorded run.",
+    "text": "Automatic trim is scheduled. No completed run has been recorded yet.",
     "parameters": {}
   },
   "fstrim_awaiting_result": {
-    "text": "Awaiting the scheduled trim result; an earlier success does not confirm this run.",
+    "text": "Waiting for the scheduled trim to finish or report its result.",
     "parameters": {}
   },
   "fstrim_result_overdue": {
-    "text": "The scheduled trim result is overdue by at least 24 hours; successful completion has not been confirmed.",
+    "text": "The scheduled trim has not reported completion and is overdue.",
     "parameters": {}
   },
   "skill_disabled": {
@@ -455,15 +455,363 @@
     "parameters": {}
   },
   "usage.1": {
-    "text": "Enable the server’s existing fstrim.timer through your normal server administration.",
+    "text": "Automatic trim uses the server’s existing fstrim.timer. Enable or change that schedule through your usual server administration.",
     "parameters": {}
   },
   "usage.2": {
-    "text": "TinyWarden observes the timer; it does not run trim or alter the schedule.",
+    "text": "Run now rechecks trim status. TinyWarden does not run trim or change the server’s schedule.",
     "parameters": {}
   },
   "usage.3": {
-    "text": "Open a server from Servers to override observation timing.",
+    "text": "A successful trim result does not prove how much storage the device reclaimed. History lists status checks, not individual trim executions.",
+    "parameters": {}
+  },
+  "capacity_title": {
+    "text": "Filesystem capacity",
+    "parameters": {}
+  },
+  "coverage_title": {
+    "text": "Coverage and filesystem details",
+    "parameters": {}
+  },
+  "usage_history_title": {
+    "text": "Disk usage history",
+    "parameters": {}
+  },
+  "series_label": {
+    "text": "Logical filesystem key",
+    "parameters": {}
+  },
+  "counts_title": {
+    "text": "Pending package actions",
+    "parameters": {}
+  },
+  "assurance_title": {
+    "text": "What this reading confirms",
+    "parameters": {}
+  },
+  "updates_history_title": {
+    "text": "Packages to upgrade over time",
+    "parameters": {}
+  },
+  "reboot_title": {
+    "text": "Local reboot marker",
+    "parameters": {}
+  },
+  "timer_title": {
+    "text": "Timer schedule",
+    "parameters": {}
+  },
+  "service_title": {
+    "text": "Service state",
+    "parameters": {}
+  },
+  "execution_title": {
+    "text": "Last observed execution",
+    "parameters": {}
+  },
+  "unverified_value": {
+    "text": "Not independently verified",
+    "parameters": {}
+  },
+  "limited_value": {
+    "text": "Local observation only",
+    "parameters": {}
+  },
+  "complete_value": {
+    "text": "Complete",
+    "parameters": {}
+  },
+  "partial_value": {
+    "text": "Partial",
+    "parameters": {}
+  },
+  "unavailable_value": {
+    "text": "Unavailable",
+    "parameters": {}
+  },
+  "upgrade_value": {
+    "text": "Upgrade within current dependencies",
+    "parameters": {}
+  },
+  "new_packages_value": {
+    "text": "Upgrade with new dependencies",
+    "parameters": {}
+  },
+  "active_value": {
+    "text": "Active",
+    "parameters": {}
+  },
+  "inactive_value": {
+    "text": "Inactive",
+    "parameters": {}
+  },
+  "loaded_value": {
+    "text": "Loaded",
+    "parameters": {}
+  },
+  "enabled_value": {
+    "text": "Enabled",
+    "parameters": {}
+  },
+  "disabled_value": {
+    "text": "Disabled",
+    "parameters": {}
+  },
+  "static_value": {
+    "text": "Static",
+    "parameters": {}
+  },
+  "success_value": {
+    "text": "Success",
+    "parameters": {}
+  },
+  "failed_value": {
+    "text": "Failed",
+    "parameters": {}
+  },
+  "exited_value": {
+    "text": "Exited",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_timer_disabled.phrase": {
+    "text": "disabled or blocked",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_timer_disabled": {
+    "text": "Automatic filesystem trim is {detail}.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_timer_failed.phrase": {
+    "text": "in a failed state",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_timer_failed": {
+    "text": "The filesystem trim timer is {detail}.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_timer_inactive.phrase": {
+    "text": "inactive",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_timer_inactive": {
+    "text": "The filesystem trim timer is {detail}.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_service_failed.phrase": {
+    "text": "failed",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_service_failed": {
+    "text": "The last observed filesystem trim run {detail}.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_result_overdue.phrase": {
+    "text": "at least 24 hours overdue",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_result_overdue": {
+    "text": "The scheduled filesystem trim result is {detail}; successful completion has not been confirmed.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_observed_success.phrase": {
+    "text": "reported success",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_observed_success": {
+    "text": "The timer is active and the last recorded filesystem trim run {detail}.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_scheduled.phrase": {
+    "text": "active",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_scheduled": {
+    "text": "The filesystem trim timer is {detail}; a scheduled run result is still awaited.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "notify.trim.fstrim_awaiting_result.phrase": {
+    "text": "active",
+    "parameters": {}
+  },
+  "notify.trim.fstrim_awaiting_result": {
+    "text": "The filesystem trim timer is {detail}; a scheduled run result is still awaited.",
+    "parameters": {
+      "detail": "string"
+    }
+  },
+  "details_title": {
+    "text": "Supporting evidence",
+    "parameters": {}
+  },
+  "usage.4": {
+    "text": "Last trim is the most recent recorded result; Completed at is the server-reported finish time. That result is retained across restarts for up to 90 days.",
+    "parameters": {}
+  },
+  "usage.5": {
+    "text": "Next scheduled run is the upcoming time reported by the server. If it cannot be confirmed, no date is shown. Override check timing in this server’s Settings.",
+    "parameters": {}
+  },
+  "trim_status_title": {
+    "text": "Trim status",
+    "parameters": {}
+  },
+  "trim_last_result_label": {
+    "text": "Last trim",
+    "parameters": {}
+  },
+  "trim_completed_at_label": {
+    "text": "Completed at",
+    "parameters": {}
+  },
+  "trim_automatic_label": {
+    "text": "Automatic trim",
+    "parameters": {}
+  },
+  "trim_next_at_label": {
+    "text": "Next scheduled run",
+    "parameters": {}
+  },
+  "trim_problem_label": {
+    "text": "Explanation",
+    "parameters": {}
+  },
+  "trim_details_title": {
+    "text": "What needs attention",
+    "parameters": {}
+  },
+  "trim_due_label": {
+    "text": "Unconfirmed scheduled run",
+    "parameters": {}
+  },
+  "trim_scheduled_for_label": {
+    "text": "Scheduled for",
+    "parameters": {}
+  },
+  "trim_due_result_label": {
+    "text": "Result",
+    "parameters": {}
+  },
+  "trim_success_value": {
+    "text": "Completed successfully",
+    "parameters": {}
+  },
+  "trim_failure_value": {
+    "text": "Failed",
+    "parameters": {}
+  },
+  "trim_unrecorded_value": {
+    "text": "No completed run recorded",
+    "parameters": {}
+  },
+  "trim_enabled_value": {
+    "text": "Enabled",
+    "parameters": {}
+  },
+  "trim_disabled_value": {
+    "text": "Disabled",
+    "parameters": {}
+  },
+  "trim_inactive_value": {
+    "text": "Not active",
+    "parameters": {}
+  },
+  "trim_unconfirmed_value": {
+    "text": "Unable to confirm",
+    "parameters": {}
+  },
+  "trim_running_value": {
+    "text": "Running when last checked",
+    "parameters": {}
+  },
+  "trim_due_unconfirmed_value": {
+    "text": "Completion not confirmed",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_result_overdue": {
+    "text": "A scheduled trim has not reported completion within 24 hours of its expected run. An earlier successful trim does not confirm this run.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_timer_disabled": {
+    "text": "The server’s automatic trim schedule is turned off or blocked. Enable it through your usual server administration if you want automatic trim.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_timer_inactive": {
+    "text": "The automatic trim schedule is enabled or present but is not running. Check the server’s trim timer.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_timer_failed": {
+    "text": "The server reported that its automatic trim schedule failed. Check the server’s trim timer before expecting another automatic run.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_service_failed": {
+    "text": "The server reported an unsuccessful trim attempt. A later successful completion has not been confirmed. Check the server’s trim service for the cause.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_condition_skipped": {
+    "text": "The server skipped trim because a required condition was not met. This check cannot determine the underlying cause.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_unit_unavailable": {
+    "text": "The server’s trim timer or service could not be found or loaded. Automatic trim cannot be confirmed.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_schedule_unverified": {
+    "text": "The server did not provide a verifiable enabled schedule and upcoming run. No next-run date can be confirmed.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_condition_unverified": {
+    "text": "The server did not provide enough evidence to confirm the conditions required for automatic trim.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_context_unavailable": {
+    "text": "Saved monitoring evidence does not match this check. Recheck trim status before relying on the result.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_running": {
+    "text": "The timer or service was changing state during the check. Recheck its status for a confirmed result.",
+    "parameters": {}
+  },
+  "trim_detail_output_unsupported": {
+    "text": "The server’s response could not be interpreted reliably. Recheck trim status.",
+    "parameters": {}
+  },
+  "trim_detail_clock_uncertain": {
+    "text": "The check could not verify the server’s observation time. A trim result cannot be confirmed from this reading.",
+    "parameters": {}
+  },
+  "trim_detail_boot_uncertain": {
+    "text": "The server’s restart identity changed or could not be verified during this check. Recheck after the server is stable.",
+    "parameters": {}
+  },
+  "trim_detail_snapshot_changed": {
+    "text": "The trim service changed state while being checked. Recheck to get a consistent status.",
+    "parameters": {}
+  },
+  "trim_detail_evidence_inconsistent": {
+    "text": "The server’s trim times or results conflict. Recheck; a completed trim cannot be confirmed from this reading.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_history_unavailable": {
+    "text": "No completed trim result is available from the server.",
+    "parameters": {}
+  },
+  "trim_detail_fstrim_trigger_unconfirmed": {
+    "text": "The schedule started a trim attempt, but its completion has not been confirmed.",
     "parameters": {}
   }
 }

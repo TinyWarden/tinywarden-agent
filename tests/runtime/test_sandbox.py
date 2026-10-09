@@ -37,6 +37,15 @@ class Isolation(unittest.TestCase):
     def test_normal_execution(self):
         self.assertEqual(self.run_skill()["result"], [])
 
+    def test_distro_library_aliases_share_only_private_mounts(self):
+        self.replace_validation("""    import os
+    assert os.readlink('/lib') == 'usr/lib'
+    assert os.stat('/lib').st_ino == os.stat('/usr/lib').st_ino
+    assert not os.path.exists('/usr/bin/apt-get')
+    assert not os.path.exists('/etc/apt')
+    return []""")
+        self.assertEqual(self.run_skill()["result"], [])
+
     def test_host_credentials_and_network_are_absent(self):
         self.replace_validation("""    import os, socket
     assert os.environ.get('DATABASE_URL') is None

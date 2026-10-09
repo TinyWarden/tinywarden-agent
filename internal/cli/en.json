@@ -8,5 +8,6 @@
   "running": "Agent running.",
   "degraded": "The server is unavailable. Retrying the saved request at a slower rate.",
   "recovered": "Connection restored.",
-  "commandFailed": "Agent stopped. Check its configuration, private state and server availability."
+  "commandFailed": "Agent stopped. Check its configuration, private state and server availability.",
+  "heartbeatDiagnostic": "Heartbeat diagnostic:"
 }

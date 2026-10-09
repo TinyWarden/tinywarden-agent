@@ -68,7 +68,7 @@
     "parameters": {}
   },
   "filesystems_label": {
-    "text": "Local filesystems",
+    "text": "Filesystems",
     "parameters": {}
   },
   "upgraded_label": {
@@ -368,7 +368,7 @@
     "parameters": {}
   },
   "fstrim_scheduled": {
-    "text": "Scheduled \u2014 awaiting a recorded run.",
+    "text": "Scheduled — awaiting a recorded run.",
     "parameters": {}
   },
   "fstrim_awaiting_result": {
@@ -476,6 +476,201 @@
   },
   "worst_mount_label": {
     "text": "Most used filesystem",
+    "parameters": {}
+  },
+  "capacity_title": {
+    "text": "Filesystems",
+    "parameters": {}
+  },
+  "coverage_title": {
+    "text": "Coverage and filesystem details",
+    "parameters": {}
+  },
+  "usage_history_title": {
+    "text": "Disk usage history",
+    "parameters": {}
+  },
+  "series_label": {
+    "text": "Logical filesystem key",
+    "parameters": {}
+  },
+  "counts_title": {
+    "text": "Pending package actions",
+    "parameters": {}
+  },
+  "assurance_title": {
+    "text": "What this reading confirms",
+    "parameters": {}
+  },
+  "updates_history_title": {
+    "text": "Packages to upgrade over time",
+    "parameters": {}
+  },
+  "reboot_title": {
+    "text": "Local reboot marker",
+    "parameters": {}
+  },
+  "timer_title": {
+    "text": "Timer schedule",
+    "parameters": {}
+  },
+  "service_title": {
+    "text": "Service state",
+    "parameters": {}
+  },
+  "execution_title": {
+    "text": "Last observed execution",
+    "parameters": {}
+  },
+  "unverified_value": {
+    "text": "Not independently verified",
+    "parameters": {}
+  },
+  "limited_value": {
+    "text": "Local observation only",
+    "parameters": {}
+  },
+  "complete_value": {
+    "text": "Complete",
+    "parameters": {}
+  },
+  "partial_value": {
+    "text": "Partial",
+    "parameters": {}
+  },
+  "unavailable_value": {
+    "text": "Unavailable",
+    "parameters": {}
+  },
+  "upgrade_value": {
+    "text": "Upgrade within current dependencies",
+    "parameters": {}
+  },
+  "new_packages_value": {
+    "text": "Upgrade with new dependencies",
+    "parameters": {}
+  },
+  "active_value": {
+    "text": "Active",
+    "parameters": {}
+  },
+  "inactive_value": {
+    "text": "Inactive",
+    "parameters": {}
+  },
+  "loaded_value": {
+    "text": "Loaded",
+    "parameters": {}
+  },
+  "enabled_value": {
+    "text": "Enabled",
+    "parameters": {}
+  },
+  "disabled_value": {
+    "text": "Disabled",
+    "parameters": {}
+  },
+  "static_value": {
+    "text": "Static",
+    "parameters": {}
+  },
+  "success_value": {
+    "text": "Success",
+    "parameters": {}
+  },
+  "failed_value": {
+    "text": "Failed",
+    "parameters": {}
+  },
+  "exited_value": {
+    "text": "Exited",
+    "parameters": {}
+  },
+  "notify.disk.warning": {
+    "text": "Filesystem {mount} is {used}% full, at or above its {threshold}% warning threshold.",
+    "parameters": {
+      "mount": "string",
+      "used": "number",
+      "threshold": "number"
+    }
+  },
+  "notify.disk.critical": {
+    "text": "Filesystem {mount} is {used}% full, at or above its {threshold}% critical threshold.",
+    "parameters": {
+      "mount": "string",
+      "used": "number",
+      "threshold": "number"
+    }
+  },
+  "notify.disk.resolved": {
+    "text": "All monitored writable filesystems are below their warning thresholds. The fullest is {mount}, at {used}% used.",
+    "parameters": {
+      "mount": "string",
+      "used": "number"
+    }
+  },
+  "collection_details_title": {
+    "text": "Collection problems",
+    "parameters": {}
+  },
+  "collection_notice_label": {
+    "text": "Incomplete check",
+    "parameters": {}
+  },
+  "collection_issues_title": {
+    "text": "Filesystems that could not be checked",
+    "parameters": {}
+  },
+  "collection_problem_label": {
+    "text": "Problem",
+    "parameters": {}
+  },
+  "collection_mount_disappeared": {
+    "text": "Filesystem disappeared during the check.",
+    "parameters": {}
+  },
+  "collection_mount_inaccessible": {
+    "text": "Could not access this filesystem or read its space usage.",
+    "parameters": {}
+  },
+  "collection_mount_unverifiable": {
+    "text": "Could not verify this filesystem or read reliable space usage.",
+    "parameters": {}
+  },
+  "collection_unsupported_type": {
+    "text": "This filesystem type is not supported by this skill.",
+    "parameters": {}
+  },
+  "collection_capacity_unavailable": {
+    "text": "Could not read reliable space usage.",
+    "parameters": {}
+  },
+  "collection_inventory_unavailable": {
+    "text": "Could not read the server’s filesystem list.",
+    "parameters": {}
+  },
+  "collection_inventory_malformed": {
+    "text": "The server’s filesystem list could not be read reliably.",
+    "parameters": {}
+  },
+  "collection_inventory_overflow": {
+    "text": "The filesystem list exceeded the check’s limit. Some filesystems could not be checked.",
+    "parameters": {}
+  },
+  "collection_records_overflow": {
+    "text": "The filesystem list exceeded the check’s limit. Some filesystems could not be checked.",
+    "parameters": {}
+  },
+  "collection_topology_changed": {
+    "text": "The filesystem list changed during this check. The reading may be incomplete.",
+    "parameters": {}
+  },
+  "collection_incomplete": {
+    "text": "Not all filesystems could be checked. Available readings are shown above.",
+    "parameters": {}
+  },
+  "collection_no_filesystems": {
+    "text": "No writable local filesystem readings are available.",
     "parameters": {}
   }
 }

@@ -1,0 +1,122 @@
+{
+  "format": 2,
+  "sources": {
+    "trim_last_result": {
+      "kind": "text",
+      "enum": {
+        "success": "trim_success_value",
+        "failure": "trim_failure_value",
+        "unrecorded": "trim_unrecorded_value"
+      }
+    },
+    "trim_completed_at": {
+      "kind": "time"
+    },
+    "trim_automatic": {
+      "kind": "text",
+      "enum": {
+        "enabled": "trim_enabled_value",
+        "disabled": "trim_disabled_value",
+        "inactive": "trim_inactive_value",
+        "unconfirmed": "trim_unconfirmed_value",
+        "running": "trim_running_value"
+      }
+    },
+    "trim_next_at": {
+      "kind": "time"
+    },
+    "trim_problem": {
+      "kind": "text",
+      "enum": {
+        "fstrim_result_overdue": "trim_detail_fstrim_result_overdue",
+        "fstrim_timer_disabled": "trim_detail_fstrim_timer_disabled",
+        "fstrim_timer_inactive": "trim_detail_fstrim_timer_inactive",
+        "fstrim_timer_failed": "trim_detail_fstrim_timer_failed",
+        "fstrim_service_failed": "trim_detail_fstrim_service_failed",
+        "fstrim_condition_skipped": "trim_detail_fstrim_condition_skipped",
+        "fstrim_unit_unavailable": "trim_detail_fstrim_unit_unavailable",
+        "fstrim_schedule_unverified": "trim_detail_fstrim_schedule_unverified",
+        "fstrim_condition_unverified": "trim_detail_fstrim_condition_unverified",
+        "fstrim_context_unavailable": "trim_detail_fstrim_context_unavailable",
+        "fstrim_running": "trim_detail_fstrim_running",
+        "output_unsupported": "trim_detail_output_unsupported",
+        "clock_uncertain": "trim_detail_clock_uncertain",
+        "boot_uncertain": "trim_detail_boot_uncertain",
+        "snapshot_changed": "trim_detail_snapshot_changed",
+        "evidence_inconsistent": "trim_detail_evidence_inconsistent",
+        "fstrim_history_unavailable": "trim_detail_fstrim_history_unavailable",
+        "fstrim_trigger_unconfirmed": "trim_detail_fstrim_trigger_unconfirmed"
+      }
+    },
+    "trim_due": {
+      "kind": "table",
+      "columns": {
+        "scheduled_for": {
+          "kind": "time"
+        },
+        "result": {
+          "kind": "text",
+          "enum": {
+            "unconfirmed": "trim_due_unconfirmed_value"
+          }
+        }
+      }
+    }
+  },
+  "sections": [
+    {
+      "id": "trim_status",
+      "role": "current",
+      "title_key": "trim_status_title",
+      "widgets": [
+        {
+          "id": "trim_status_facts",
+          "type": "facts",
+          "title_key": "trim_status_title",
+          "facts": [
+            "trim_last_result",
+            "trim_completed_at",
+            "trim_automatic",
+            "trim_next_at"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trim_problem",
+      "role": "details",
+      "title_key": "trim_details_title",
+      "widgets": [
+        {
+          "id": "trim_problem_facts",
+          "type": "facts",
+          "title_key": "trim_details_title",
+          "facts": [
+            "trim_problem"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trim_due",
+      "role": "details",
+      "title_key": "trim_due_label",
+      "widgets": [
+        {
+          "id": "trim_due_table",
+          "type": "table",
+          "title_key": "trim_due_label",
+          "source": "trim_due",
+          "columns": [
+            {
+              "key": "scheduled_for"
+            },
+            {
+              "key": "result"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,7 @@ import (
 )
 
 func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error) {
-	fresh := packageLedger{Scope: scope, Sequences: map[string]uint64{}, Pending: []packagePending{}}
+	fresh := packageLedger{Consumed: map[string]string{}, Scope: scope, Sequences: map[string]uint64{}, Pending: []packagePending{}}
 	var ledger packageLedger
 	found, err := readBaselineState(store, "package-lane.json", packageQueueLimit, &ledger)
 	if err != nil {
@@ -14,6 +14,12 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 	}
 	if !found {
 		return fresh, nil
+	}
+	if ledger.Consumed == nil {
+		ledger.Consumed = map[string]string{}
+	}
+	if !validConsumed(ledger.Consumed) {
+		return fresh, errPackageState
 	}
 	if !ledger.Scope.valid() || ledger.Sequences == nil || ledger.Pending == nil || len(ledger.Sequences) > 100 || len(ledger.Pending) > 8 {
 		return fresh, errPackageState
@@ -38,7 +44,7 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 	}
 	if ledger.Active != nil {
 		active := ledger.Active
-		if !validID(active.Entry.InstallationID) || !validStoredPackageRun(active.Run) || active.Run.AssignmentID != active.Entry.ID || active.Run.Sequence != ledger.Sequences[active.Entry.InstallationID] {
+		if !validID(active.Entry.InstallationID) || !validStoredPackageRun(active.Run) || active.Run.AssignmentID != active.Entry.ID || active.Run.Sequence != ledger.Sequences[active.Entry.InstallationID] || active.Run.ManualID != "" && (active.Entry.Manual == nil || active.Entry.Manual.ID != active.Run.ManualID || ledger.Consumed[active.Entry.InstallationID] != active.Run.ManualID) {
 			return fresh, errPackageState
 		}
 		active.Run.FinishedAt = active.Run.StartedAt
@@ -60,6 +66,9 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 	return ledger, nil
 }
 func validStoredPackageRun(run packageRun) bool {
+	if run.ManualID != "" && !validID(run.ManualID) {
+		return false
+	}
 	if !validID(run.ID) || !validID(run.AssignmentID) || !validInstant(run.StartedAt) || !validInstant(run.FinishedAt) || run.SchemaVersion != 1 || run.Sequence < 1 || run.Sequence > safeCounter {
 		return false
 	}

@@ -94,7 +94,7 @@ func (lane *packageLane) tick(context.Context) error {
 		for offset := 0; offset < len(entries); offset++ {
 			index := (lane.rotate + offset) % len(entries)
 			entry := entries[index]
-			if entry.Applicability != "ready" || now.Before(lane.due[entry.InstallationID]) {
+			if entry.Applicability != "ready" || now.Before(lane.due[entry.InstallationID]) && !lane.manualReady(entry, wall) {
 				continue
 			}
 			active, err := lane.allocate(entry, wall)
@@ -104,9 +104,11 @@ func (lane *packageLane) tick(context.Context) error {
 			expires, _ := time.Parse(time.RFC3339Nano, lane.ledger.Cache.ValidUntil)
 			ctx, cancel := context.WithDeadline(lane.ctx, expires)
 			lane.cancelRun, lane.running = cancel, true
-			lane.due[entry.InstallationID] = now.Add(time.Duration(entry.Interval) * time.Second)
+			if !now.Before(lane.due[entry.InstallationID]) {
+				lane.due[entry.InstallationID] = now.Add(time.Duration(entry.Interval) * time.Second)
+			}
 			lane.rotate = (index + 1) % len(entries)
-			go func() { lane.run <- lane.execute(ctx, active) }()
+			go func() { lane.run <- lane.executeActive(ctx, active) }()
 			break
 		}
 	}

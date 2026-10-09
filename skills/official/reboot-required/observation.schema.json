@@ -11,6 +11,28 @@
       "enum": [
         "limited"
       ]
+    },
+    "packages": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "package_list_status": {
+      "type": "string",
+      "maxLength": 32,
+      "enum": [
+        "not_applicable",
+        "reported",
+        "partial",
+        "unavailable"
+      ]
+    },
+    "package_list_truncated": {
+      "type": "boolean"
     }
   },
   "required": [

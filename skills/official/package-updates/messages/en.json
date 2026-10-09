@@ -4,7 +4,7 @@
     "parameters": {}
   },
   "description": {
-    "text": "Simulates pending APT upgrades using the server’s locally cached package lists. It does not install packages or refresh lists, and does not verify repository freshness or security-update counts.",
+    "text": "Simulates pending APT upgrades using the server\u2019s locally cached package lists. It does not install packages or refresh lists, and does not verify repository freshness or security-update counts.",
     "parameters": {}
   },
   "mount_id_label": {
@@ -368,7 +368,7 @@
     "parameters": {}
   },
   "fstrim_scheduled": {
-    "text": "Scheduled — awaiting a recorded run.",
+    "text": "Scheduled \u2014 awaiting a recorded run.",
     "parameters": {}
   },
   "fstrim_awaiting_result": {
@@ -468,6 +468,229 @@
   },
   "usage.3": {
     "text": "Open a server from Servers to override its settings.",
+    "parameters": {}
+  },
+  "capacity_title": {
+    "text": "Filesystem capacity",
+    "parameters": {}
+  },
+  "coverage_title": {
+    "text": "Coverage and filesystem details",
+    "parameters": {}
+  },
+  "usage_history_title": {
+    "text": "Disk usage history",
+    "parameters": {}
+  },
+  "series_label": {
+    "text": "Logical filesystem key",
+    "parameters": {}
+  },
+  "counts_title": {
+    "text": "Pending package actions",
+    "parameters": {}
+  },
+  "assurance_title": {
+    "text": "What this reading confirms",
+    "parameters": {}
+  },
+  "updates_history_title": {
+    "text": "Packages to upgrade over time",
+    "parameters": {}
+  },
+  "reboot_title": {
+    "text": "Local reboot marker",
+    "parameters": {}
+  },
+  "timer_title": {
+    "text": "Timer schedule",
+    "parameters": {}
+  },
+  "service_title": {
+    "text": "Service state",
+    "parameters": {}
+  },
+  "execution_title": {
+    "text": "Last observed execution",
+    "parameters": {}
+  },
+  "unverified_value": {
+    "text": "Not independently verified",
+    "parameters": {}
+  },
+  "limited_value": {
+    "text": "Local observation only",
+    "parameters": {}
+  },
+  "complete_value": {
+    "text": "Complete",
+    "parameters": {}
+  },
+  "partial_value": {
+    "text": "Partial",
+    "parameters": {}
+  },
+  "unavailable_value": {
+    "text": "Unavailable",
+    "parameters": {}
+  },
+  "upgrade_value": {
+    "text": "Upgrade within current dependencies",
+    "parameters": {}
+  },
+  "new_packages_value": {
+    "text": "Upgrade with new dependencies",
+    "parameters": {}
+  },
+  "active_value": {
+    "text": "Active",
+    "parameters": {}
+  },
+  "inactive_value": {
+    "text": "Inactive",
+    "parameters": {}
+  },
+  "loaded_value": {
+    "text": "Loaded",
+    "parameters": {}
+  },
+  "enabled_value": {
+    "text": "Enabled",
+    "parameters": {}
+  },
+  "disabled_value": {
+    "text": "Disabled",
+    "parameters": {}
+  },
+  "static_value": {
+    "text": "Static",
+    "parameters": {}
+  },
+  "success_value": {
+    "text": "Success",
+    "parameters": {}
+  },
+  "failed_value": {
+    "text": "Failed",
+    "parameters": {}
+  },
+  "exited_value": {
+    "text": "Exited",
+    "parameters": {}
+  },
+  "notify.packages.upgraded.one": {
+    "text": "{count} upgrade",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.upgraded.other": {
+    "text": "{count} upgrades",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.installed.one": {
+    "text": "{count} new package",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.installed.other": {
+    "text": "{count} new packages",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.removed.one": {
+    "text": "{count} removal",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.removed.other": {
+    "text": "{count} removals",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.held_back.one": {
+    "text": "{count} package held back",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.held_back.other": {
+    "text": "{count} packages held back",
+    "parameters": {
+      "count": "number"
+    }
+  },
+  "notify.packages.issue": {
+    "text": "Local package plan: {upgraded}, {installed}, {removed}, {held_back}.",
+    "parameters": {
+      "upgraded": "string",
+      "installed": "string",
+      "removed": "string",
+      "held_back": "string"
+    }
+  },
+  "notify.packages.clear": {
+    "text": "no pending package changes",
+    "parameters": {}
+  },
+  "notify.packages.resolved": {
+    "text": "The latest local package plan reports {clear}.",
+    "parameters": {
+      "clear": "string"
+    }
+  },
+  "package_list_title": {
+    "text": "Pending packages",
+    "parameters": {}
+  },
+  "package_label": {
+    "text": "Package",
+    "parameters": {}
+  },
+  "installed_version_label": {
+    "text": "Installed version",
+    "parameters": {}
+  },
+  "available_version_label": {
+    "text": "Available version",
+    "parameters": {}
+  },
+  "action_label": {
+    "text": "Action",
+    "parameters": {}
+  },
+  "upgraded_action_value": {
+    "text": "Upgrade",
+    "parameters": {}
+  },
+  "installed_action_value": {
+    "text": "New dependency",
+    "parameters": {}
+  },
+  "removed_action_value": {
+    "text": "Removal",
+    "parameters": {}
+  },
+  "held_back_action_value": {
+    "text": "Held back",
+    "parameters": {}
+  },
+  "package_list_note_label": {
+    "text": "Package list",
+    "parameters": {}
+  },
+  "package_list_partial_value": {
+    "text": "APT did not provide a complete package list in a recognized format. Counts above remain the reported totals; unavailable versions are shown as \u2014.",
+    "parameters": {}
+  },
+  "version_not_provided_value": {
+    "text": "\u2014",
     "parameters": {}
   }
 }

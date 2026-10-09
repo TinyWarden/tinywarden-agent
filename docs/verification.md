@@ -2,7 +2,7 @@
 
 One entry point: scripts/verify.sh --batch during work, --phase-end at phase
 closeout. Both fail visibly. No app checkout, Node or PostgreSQL installation is
-required. Go 1.27.1, Python 3 and Git are the source tooling.
+required. Go 1.27.2, Python 3 and Git are the source tooling.
 
 For changes confined to the SDK author tools, their tests and documentation, use
 the scoped profile `scripts/verify.sh --batch --skills-author`, or `--phase-end`
@@ -60,3 +60,13 @@ Dispatch after separately authorized publication of the exact intended commit.
 Existing TLS/runner/queue/normalization tests use local synthetic fixtures.
 Real disposable-host acceptance or an installed-agent upgrade remains a
 separate operation; source-only documentation changes do not require either.
+
+## Display packages
+
+Static descriptor conformance: `python3 -B -m unittest discover -s sdk/python/tests`.
+Canonical disk formula, threshold, read-only/missing and stable-series acceptance
+uses the actual native SDK: under the documented delegated unit run
+`python3.13 -B -m unittest discover -s tests/runtime -p test_disk_display_sandbox.py`.
+This needs no agent service or database. Author starter/package tests use the
+existing `--skills-author` profile. App widgets, SQL history and browser acceptance
+belong to the app repository.

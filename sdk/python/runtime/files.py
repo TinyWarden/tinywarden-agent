@@ -1,6 +1,7 @@
 """Descriptor-relative no-follow access, including intermediate path components."""
 import os
 import stat
+import errno
 from grants import safe_path
 
 
@@ -27,6 +28,23 @@ def open_path(path, directory=False):
 
 
 def observe(operation, arguments):
+    optional = operation == "files.read" and arguments.get("optional") is True
+    try:
+        value = read(operation, arguments)
+    except (OSError, UnicodeDecodeError) as error:
+        reason = "invalid_encoding" if isinstance(error, UnicodeDecodeError) else {
+            errno.ENOENT: "not_found", errno.EACCES: "unreadable", errno.EPERM: "unreadable",
+            errno.EIO: "unreadable", errno.ESTALE: "unreadable",
+        }.get(error.errno)
+        if optional and reason:
+            return {"available": False, "reason": reason}
+        if isinstance(error, FileNotFoundError):
+            raise RuntimeError("observation_unavailable") from None
+        raise
+    return {"available": True, **value} if optional else value
+
+
+def read(operation, arguments):
     path = arguments["path"]
     directory = operation == "files.list"
     try:
@@ -34,7 +52,7 @@ def observe(operation, arguments):
     except FileNotFoundError:
         if operation == "files.stat":
             return {"exists": False}
-        raise RuntimeError("observation_unavailable") from None
+        raise
     try:
         info = os.fstat(fd)
         if operation == "files.stat":

@@ -19,7 +19,11 @@ func (lane *packageLane) allocate(entry packageAssignment, now time.Time) (packa
 		return packageActive{}, err
 	}
 	next := lane.ledger.Sequences[entry.InstallationID] + 1
-	active := packageActive{entry, packageRun{1, id, next, entry.ID, baselineStamp(now), baselineStamp(now), "execution_failed", json.RawMessage("null")}}
+	active := packageActive{entry, packageRun{SchemaVersion: 1, ID: id, Sequence: next, AssignmentID: entry.ID, StartedAt: baselineStamp(now), FinishedAt: baselineStamp(now), Outcome: "execution_failed", Observation: json.RawMessage("null")}}
+	if lane.manualReady(entry, now) {
+		active.Run.ManualID = entry.Manual.ID
+		lane.ledger.Consumed[entry.InstallationID] = entry.Manual.ID
+	}
 	lane.ledger.Sequences[entry.InstallationID] = next
 	lane.ledger.Active = &active
 	if err := savePackageLedger(lane.store, lane.ledger); err != nil {

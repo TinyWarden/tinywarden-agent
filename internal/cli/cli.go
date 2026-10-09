@@ -19,16 +19,17 @@ import (
 var english []byte
 
 type catalog struct {
-	Name             string `json:"name"`
-	Usage            string `json:"usage"`
-	NotReady         string `json:"notReady"`
-	InvalidArguments string `json:"invalidArguments"`
-	Enrolled         string `json:"enrolled"`
-	Replaced         string `json:"replaced"`
-	Running          string `json:"running"`
-	Degraded         string `json:"degraded"`
-	Recovered        string `json:"recovered"`
-	CommandFailed    string `json:"commandFailed"`
+	Name                string `json:"name"`
+	Usage               string `json:"usage"`
+	NotReady            string `json:"notReady"`
+	InvalidArguments    string `json:"invalidArguments"`
+	Enrolled            string `json:"enrolled"`
+	Replaced            string `json:"replaced"`
+	Running             string `json:"running"`
+	Degraded            string `json:"degraded"`
+	Recovered           string `json:"recovered"`
+	CommandFailed       string `json:"commandFailed"`
+	HeartbeatDiagnostic string `json:"heartbeatDiagnostic"`
 }
 
 const Version = agent.Version
@@ -108,6 +109,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 			if event == "recovered" {
 				fmt.Fprintln(stdout, text.Recovered)
 			}
+		}, func(diagnostic agent.HeartbeatDiagnostic) {
+			fmt.Fprintf(stderr, "%s %s\n", text.HeartbeatDiagnostic, diagnostic.JSON())
 		})
 		if errors.Is(err, context.Canceled) {
 			return 0

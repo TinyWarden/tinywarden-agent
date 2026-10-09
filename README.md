@@ -10,7 +10,7 @@ health and sends notifications.
 
 Verified platform: Debian 13 on amd64, running as a dedicated non-root account.
 Agent version: 0.0.4.
-Go 1.27.1 is required; the module uses only the Go standard library.
+Go 1.27.2 is required; the module uses only the Go standard library.
 
 ## Build
 

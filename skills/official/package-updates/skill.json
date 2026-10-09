@@ -2,7 +2,7 @@
   "format": 1,
   "id": "tinywarden/package-updates",
   "alias": "package-updates",
-  "version": "1.0.0",
+  "version": "1.1.5",
   "runtime": "python-3.13-v1",
   "sdk": 1,
   "state_version": 1,
@@ -51,11 +51,16 @@
         "/var/lib/apt/lists",
         "/var/lib/apt/extended_states",
         "/var/lib/dpkg/status",
-        "/usr/share/dpkg"
+        "/usr/share/dpkg",
+        "/etc/apt/mirrors"
       ],
       "timeout_seconds": 30,
       "helpers": [
-        "/usr/bin/dpkg"
+        "/usr/bin/dpkg",
+        "/usr/lib/apt/methods/mirror+file",
+        "/usr/lib/apt/methods/file",
+        "/usr/lib/apt/methods/http",
+        "/usr/lib/apt/methods/https"
       ],
       "empty_directories": [
         "/etc/apt/apt.conf.d"

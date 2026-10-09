@@ -90,6 +90,12 @@ Tables contain exactly `key`, `label_key`, `kind: "table"`, `columns`, `rows`,
 Incomplete evidence cannot appear complete. The timeline is ≤256 KiB. Data is
 revalidated and escaped; arbitrary HTML, clickable URLs and UI code are unsupported.
 
+The optional [Skill Display API v1](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-display.md)
+and [metric history](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-metric-history.md)
+add an optional validated `display.json` sidecar that binds
+shared widgets to these facts; no uploaded UI code or new collection function.
+Packages without it retain the scalar/plain-table rendering described above. Display metadata never determines health or expands host access.
+
 ## Host API
 
 Only `collect` gets `host.request(operation, arguments)`. Package request,
@@ -100,7 +106,7 @@ environment or network are exposed.
 
 | Operation | Arguments | Result |
 | --- | --- | --- |
-| `files.read` | `path`, `max_bytes` (≤65536). | UTF-8 `text`, `truncated`. |
+| `files.read` | `path`, `max_bytes` (≤65536), optional boolean `optional`. | Default: UTF-8 `text`, `truncated`. With `optional:true`: `available:true` plus those fields, or `available:false` and a fixed `reason`. |
 | `files.stat` | `path`. | `exists`; when true, `size` bytes. |
 | `files.list` | `path`, `max_entries` (≤128). | Sorted `entries` names, `truncated`. |
 | `filesystems.snapshot` | `{}`. | Existing normalized mount observation; canonical disk contract below. |
@@ -121,13 +127,32 @@ if snapshot["truncated"]:
 
 File grants name exact `paths` and narrow `roots`; links, special files and
 protected credential/state/runtime paths are denied. `/proc` uses a fixed small
-whitelist. Systemd grants name specific units/properties. Command grants fix
+whitelist. Under `/run`, only the exact files `/run/reboot-required` and
+`/run/reboot-required.pkgs` are supported; neither can be a directory grant.
+Systemd grants name specific units/properties. Command grants fix
 executable/argument alternatives/inputs/timeout; they are not a shell escape.
 System executables/libraries are trusted and inputs mounted read-only.
+The main executable must be under `/usr/bin` or `/usr/sbin`. Optional helpers
+name individual binaries under those directories or `/usr/lib`; each path and
+its distro library dependencies must be root-owned and not writable by other
+accounts. Helpers still require matching manifest, administrator and local
+grants. Distro `/lib` and related `/usr` aliases are recreated in the private
+root without exposing additional host directories.
 Official manifests and the [runtime contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-runtime.md)
 document grant forms. The [disk observation contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/disk-observations.md)
 owns filesystem result fields. A new host capability requires a reviewed platform
 contract; a normal skill using existing operations does not.
+
+`files.read` can request `optional:true` for supplementary evidence. Fixed
+unavailable reasons are `not_found` (missing), `unreadable` (access denied by the
+OS or an ordinary I/O failure), and `invalid_encoding` (invalid UTF-8). No exception
+text or partial invalid text is returned. Omitted or false preserves the normal
+read/error contract. The flag is a request argument, not a manifest grant field;
+it is rejected for stat/list and does not alter any permission intersection.
+Ungrantable paths, links, special files, capability denials, worker/resource/
+deadline/output failures remain fatal. Use the unavailable result to preserve a
+primary observation while reporting missing supplementary information. Deploy
+the updated trusted SDK artifact before packages relying on this addition.
 
 ## Resource and failure contract
 
@@ -147,3 +172,13 @@ return typed observations, catalog reasons and facts.
 The canonical [package format](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-packages.md)
 owns schema, identity and archive limits; the [authoring guide](authoring.md#updates-and-support-limits)
 documents the implemented upgrade restrictions.
+
+## Shared display and collection history
+
+Display format 2 supports explicit `current`, `graph`, and `details` section
+roles. Collection and assessment facts stay SDK v1. The app supplies one compact
+History log at the end, with ten entries per page and a window shared by graphs.
+Compatible metric definitions include older package versions; uploading new UI
+metadata does not discard measurements. See the canonical
+[structure contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-widget-structure.md)
+and [author guide](authoring.md) for admission rules and examples.

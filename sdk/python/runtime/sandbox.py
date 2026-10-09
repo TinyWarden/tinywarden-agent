@@ -34,7 +34,7 @@ def dependencies(executable):
 
 
 def base(policy, pure):
-    return ["/usr/bin/bwrap", "--unshare-user", "--unshare-pid", "--unshare-ipc",
+    args = ["/usr/bin/bwrap", "--unshare-user", "--unshare-pid", "--unshare-ipc",
             "--unshare-uts", "--unshare-net", "--unshare-cgroup", "--disable-userns",
             "--assert-userns-disabled", "--uid", str(os.getuid()), "--gid", str(os.getgid()),
             "--cap-drop", "ALL", "--new-session", "--die-with-parent", "--clearenv",
@@ -42,6 +42,12 @@ def base(policy, pure):
             "--setenv", "PATH", "/usr/bin:/bin", "--proc", "/proc", "--dev", "/dev",
             "--size", str((8 if pure else 4) * 1024 * 1024), "--tmpfs", "/tmp",
             "--seccomp", str(policy)]
+    # Preserve distro aliases in the private root; this exposes no extra host paths.
+    for name in ("bin", "sbin", "lib", "lib64"):
+        source, target = Path("/" + name), "usr/" + name
+        if source.is_symlink() and source.lstat().st_uid == 0 and os.readlink(source) in {target, "/" + target}:
+            args += ["--dir", "/" + target, "--symlink", target, "/" + name]
+    return args
 
 
 def mounts(paths):

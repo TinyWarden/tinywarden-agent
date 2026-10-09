@@ -33,6 +33,7 @@ its Apache-2.0 license when deriving code from it.
 | `observation.schema.json` | Bounded normalized collection output. |
 | `state.schema.json` | Bounded persistent state returned by reduction. |
 | `messages/en.json` | Plain English labels/reasons/help with typed named parameters. |
+| `display.json` (optional) | Typed app-owned widgets and bounded history metrics; no UI code. |
 | `tests.json` | Captured observations and expected errors/state/assessments. |
 | `README.md`, `LICENSE` | Meaning, limitations, access requirements and redistribution terms. |
 
@@ -150,6 +151,12 @@ use the generic engine. An ordinary SDK v1 package needs no core/database migrat
 
 ## Updates and support limits
 
+For shared tables, meters, gauges and charts, see the
+[Skill Display API](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-display.md).
+Keep useful SDK v1 facts as stored evidence and the descriptorless fallback.
+The optional `display.json` explicitly chooses shared widgets, with labels in
+the existing English catalog and no HTML/CSS/JavaScript in the package.
+
 - Change bare `major.minor.patch` whenever distributed package bytes change. An
   existing ID/version cannot be reused with different content.
 - A new upload is not automatically selected. Exact-version access requires fresh
@@ -170,3 +177,78 @@ use the generic engine. An ordinary SDK v1 package needs no core/database migrat
 
 Canonical contracts: [package format](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-packages.md)
 and [runtime boundary](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-runtime.md).
+
+## Display a table, usage bar and history
+
+The starter includes `display.json`: a memory table with readable byte capacities,
+a usage meter in its percent column, and a line chart bound to `used_percent`.
+The meter uses the exact observation's warning/critical settings. `region` is the
+stable series key; its human label comes from the catalog. Keep row identities
+stable across runs and avoid joining by a changing display label.
+
+`validate` also checks the closed descriptor, references, units and bounds without
+executing code. `test` checks emitted assessment facts; it cannot manufacture real
+chart history. After upload and enablement, the app captures new accepted readings
+automatically, retaining up to 90 days. Two or more real readings demonstrate the
+chart; no per-skill core edits, rebuild or restart is needed. Compatible earlier
+versions remain in the same graph. Unrepresented data remains in Details.
+
+See the [shared Playbook guide](https://github.com/TinyWarden/tinywarden/blob/main/docs/ui/playbook.md)
+and `/playbook` on your installation for actual component examples. You upload
+only JSON declarations and ordinary SDK facts: no HTML, CSS, JavaScript or SVG.
+
+## Shared presentation options
+
+New descriptors use display `format: 2`. Every section requires `role`:
+`current` for results, `graph` for temporal widgets, or `details` for supporting
+facts. Include at least one current section. Format 2 rejects `collapsed`,
+`disclosure` and widget `default_window`. The app owns section order, expansion
+and the common 24 h / 7 d / 30 d / 90 d range. Format 1 remains accepted, normalized
+by widget type; its legacy expansion/range hints do not override the shared frame.
+
+History is app-owned and last: ten collections per page, Time / Result / Note,
+without replaying old widgets or repeating chart values. Graph point/bucket values
+remain accessible through pointer and keyboard inspection. A failed collection
+still appears in History; useful current limitations belong in the current summary.
+Update the generic Python inspector to support format 2 before activating such
+packages on an older installation. This platform upgrade does not change Go core,
+SDK number, collectors, capability grants or wire protocol; later new skills use
+this interface without platform edits. See the
+[shared structure/API contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-widget-structure.md).
+
+Scalar text sources with an enum may use
+`muted_values: ["unverified"]` to subdue those specific enum values visually.
+This does not change their health or turn present data into missing data.
+
+The app supplies the skill card, chart range buttons, reading table, recent runs
+and per-server Settings dialog. Numeric facts use the shared mono style. Sparse
+history uses real sample times; dense ranges use bounded summaries that preserve
+minimum and maximum values. Genuine evidence gaps remain explicit.
+See the [shared presentation contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-presentation.md).
+
+## Notification Details
+
+Declare optional `notifications.json` format 1. The app owns when an email is sent,
+its subject, severity, sender, recipient, identity and server link. Skills may
+provide one paragraph from accepted reason parameters, scalar facts, effective
+settings and translated catalog phrases. Structured **bold**, *italic* and
+underline are the only styles. No raw HTML, general Markdown or links.
+
+See the complete [Details API and schema](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-notification-details.md)
+for exact bindings, plural forms, limits and fallback. Validation rejects malformed
+declarations; missing values omit Details without suppressing an eligible email.
+The public `skills/examples/memory-pressure/notifications.json` demonstrates
+community declarations using all three styles, without modifying the app or agent.
+Collector, reducer, evaluation and protocol shapes are unchanged. Compatible
+older installed agents ignore this extra file and still collect the skill.
+
+### Choosing useful Details
+
+The app renders only the widgets explicitly declared in `display.json`; it does
+not dump unreferenced facts or table columns into Details. Use Details for useful
+investigation data, such as pending package names, not copies of current results,
+settings or collection History. Valid empty tables and empty unencoded text
+without an empty-value enum label disappear in Details; truncated tables, numeric
+zero and boolean false remain. Missing/broken declared bindings show unavailable
+data. When all Details widgets are empty, the disclosure is omitted. Packages
+without a display descriptor retain the generic facts fallback. No HTML is allowed.

@@ -2,7 +2,7 @@
   "format": 1,
   "id": "tinywarden/reboot-required",
   "alias": "reboot-required",
-  "version": "1.0.0",
+  "version": "1.1.4",
   "runtime": "python-3.13-v1",
   "sdk": 1,
   "state_version": 1,
@@ -34,6 +34,14 @@
         "/run/reboot-required"
       ],
       "roots": []
+    },
+    {
+      "operation": "files.read",
+      "paths": [
+        "/run/reboot-required.pkgs"
+      ],
+      "roots": [],
+      "max_bytes": 16384
     }
   ],
   "limits": {

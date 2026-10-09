@@ -54,6 +54,55 @@
       "enum": [
         "unverified"
       ]
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128
+          },
+          "installed_version": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128
+          },
+          "available_version": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128
+          },
+          "action": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128,
+            "enum": [
+              "upgraded",
+              "installed",
+              "removed",
+              "held_back"
+            ]
+          }
+        },
+        "required": [
+          "package",
+          "installed_version",
+          "available_version",
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "package_list_complete": {
+      "type": "boolean"
+    },
+    "package_list_truncated": {
+      "type": "boolean"
     }
   },
   "required": [

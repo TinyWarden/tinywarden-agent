@@ -1,0 +1,141 @@
+{
+  "format": 1,
+  "rules": [
+    {
+      "reason": "fstrim_timer_disabled",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.trim.fstrim_timer_disabled",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_timer_disabled.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_timer_failed",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.trim.fstrim_timer_failed",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_timer_failed.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_timer_inactive",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.trim.fstrim_timer_inactive",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_timer_inactive.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_service_failed",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.trim.fstrim_service_failed",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_service_failed.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_result_overdue",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.trim.fstrim_result_overdue",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_result_overdue.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_observed_success",
+      "states": [
+        "healthy"
+      ],
+      "message_key": "notify.trim.fstrim_observed_success",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_observed_success.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_scheduled",
+      "states": [
+        "healthy"
+      ],
+      "message_key": "notify.trim.fstrim_scheduled",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_scheduled.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "fstrim_awaiting_result",
+      "states": [
+        "healthy"
+      ],
+      "message_key": "notify.trim.fstrim_awaiting_result",
+      "parameters": {
+        "detail": {
+          "source": {
+            "catalog_key": "notify.trim.fstrim_awaiting_result.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -26,7 +26,7 @@ func packageFixture(t *testing.T, server *httptest.Server) *packageLane {
 		assignment, _ := randomID()
 		entries = append(entries, packageAssignment{InstallationID: id, ID: assignment, Subject: "example/memory", Digest: strings.Repeat("a", 64), Applicability: "ready", Interval: 300, Settings: json.RawMessage(`{"interval_seconds":300}`)})
 	}
-	lane.ledger.Cache = &packageResponse{1, strconv.FormatUint(state.Generation, 10), baselineStamp(now), baselineStamp(now.Add(5 * time.Minute)), true, entries}
+	lane.ledger.Cache = &packageResponse{SchemaVersion: 1, Generation: strconv.FormatUint(state.Generation, 10), IssuedAt: baselineStamp(now), ValidUntil: baselineStamp(now.Add(5 * time.Minute)), RuntimeReady: true, Assignments: entries}
 	lane.ledger.ValidatedAt = baselineStamp(now)
 	lane.nextFetch, lane.nextUpload = now.Add(time.Hour), now.Add(time.Hour)
 	return lane

@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "rules": [
+    {
+      "reason": "memory_usage",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.memory.warning",
+      "parameters": {
+        "used": {
+          "source": {
+            "fact": "used",
+            "type": "number"
+          },
+          "precision": 1,
+          "marks": [
+            "bold"
+          ]
+        },
+        "threshold": {
+          "source": {
+            "setting": "warning_percent"
+          },
+          "marks": [
+            "italic",
+            "underline"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "memory_usage",
+      "states": [
+        "critical"
+      ],
+      "message_key": "notify.memory.critical",
+      "parameters": {
+        "used": {
+          "source": {
+            "fact": "used",
+            "type": "number"
+          },
+          "precision": 1,
+          "marks": [
+            "bold"
+          ]
+        },
+        "threshold": {
+          "source": {
+            "setting": "critical_percent"
+          },
+          "marks": [
+            "italic",
+            "underline"
+          ]
+        }
+      }
+    }
+  ]
+}

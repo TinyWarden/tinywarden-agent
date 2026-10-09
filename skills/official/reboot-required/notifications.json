@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "rules": [
+    {
+      "reason": "reboot_marker_present",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.reboot.warning",
+      "parameters": {
+        "marker": {
+          "source": {
+            "catalog_key": "notify.reboot.warning.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "reboot_marker_absent",
+      "states": [
+        "healthy"
+      ],
+      "message_key": "notify.reboot.healthy",
+      "parameters": {
+        "marker": {
+          "source": {
+            "catalog_key": "notify.reboot.healthy.phrase"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    }
+  ]
+}

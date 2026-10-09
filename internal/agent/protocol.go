@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const Version = "0.0.4"
+const Version = "0.0.6"
 const maxBody = 16 * 1024
 
 type Client struct {
@@ -93,6 +93,9 @@ func (client *Client) post(ctx context.Context, path, credential string, input a
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", "Bearer "+credential)
 	request.Header.Set("Accept", "application/json")
+	if path == "/api/v2/agent/skill-assignments" {
+		request.Header.Set("X-TinyWarden-Capabilities", "skill_runs.manual.v1")
+	}
 	response, err := client.HTTP.Do(request)
 	if err != nil {
 		return nil, err

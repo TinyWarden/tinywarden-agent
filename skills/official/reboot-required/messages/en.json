@@ -4,7 +4,7 @@
     "parameters": {}
   },
   "description": {
-    "text": "Checks whether packages have left a reboot-required marker. A marker raises a warning; no marker passes this limited check, without proving that every possible reason for rebooting is absent.",
+    "text": "Checks whether installed software has requested a reboot and lists the requesting packages when the server records them.",
     "parameters": {}
   },
   "mount_id_label": {
@@ -292,7 +292,7 @@
     "parameters": {}
   },
   "reboot_marker_present": {
-    "text": "A package has left a reboot-required marker.",
+    "text": "Installed software has requested a reboot.",
     "parameters": {}
   },
   "reboot_assurance_unverified": {
@@ -356,7 +356,7 @@
     "parameters": {}
   },
   "reboot_marker_absent": {
-    "text": "No package reboot marker observed. Running software may still need a reboot.",
+    "text": "No reboot request detected.",
     "parameters": {}
   },
   "fstrim_context_unavailable": {
@@ -455,11 +455,183 @@
     "parameters": {}
   },
   "usage.1": {
-    "text": "The agent reads the package reboot marker; no separate server setup is required.",
+    "text": "Checks the server’s reboot request and its recorded package names. A missing request does not guarantee that restarting is unnecessary.",
     "parameters": {}
   },
   "usage.2": {
-    "text": "Open a server from Servers to override its observation timing.",
+    "text": "Run now rechecks the request; it does not reboot the server. Settings controls how often this check runs.",
+    "parameters": {}
+  },
+  "capacity_title": {
+    "text": "Filesystem capacity",
+    "parameters": {}
+  },
+  "coverage_title": {
+    "text": "Coverage and filesystem details",
+    "parameters": {}
+  },
+  "usage_history_title": {
+    "text": "Disk usage history",
+    "parameters": {}
+  },
+  "series_label": {
+    "text": "Logical filesystem key",
+    "parameters": {}
+  },
+  "counts_title": {
+    "text": "Pending package actions",
+    "parameters": {}
+  },
+  "assurance_title": {
+    "text": "What this reading confirms",
+    "parameters": {}
+  },
+  "updates_history_title": {
+    "text": "Packages to upgrade over time",
+    "parameters": {}
+  },
+  "reboot_title": {
+    "text": "Reboot request",
+    "parameters": {}
+  },
+  "timer_title": {
+    "text": "Timer schedule",
+    "parameters": {}
+  },
+  "service_title": {
+    "text": "Service state",
+    "parameters": {}
+  },
+  "execution_title": {
+    "text": "Last observed execution",
+    "parameters": {}
+  },
+  "unverified_value": {
+    "text": "Not independently verified",
+    "parameters": {}
+  },
+  "limited_value": {
+    "text": "Local observation only",
+    "parameters": {}
+  },
+  "complete_value": {
+    "text": "Complete",
+    "parameters": {}
+  },
+  "partial_value": {
+    "text": "Partial",
+    "parameters": {}
+  },
+  "unavailable_value": {
+    "text": "Unavailable",
+    "parameters": {}
+  },
+  "upgrade_value": {
+    "text": "Upgrade within current dependencies",
+    "parameters": {}
+  },
+  "new_packages_value": {
+    "text": "Upgrade with new dependencies",
+    "parameters": {}
+  },
+  "active_value": {
+    "text": "Active",
+    "parameters": {}
+  },
+  "inactive_value": {
+    "text": "Inactive",
+    "parameters": {}
+  },
+  "loaded_value": {
+    "text": "Loaded",
+    "parameters": {}
+  },
+  "enabled_value": {
+    "text": "Enabled",
+    "parameters": {}
+  },
+  "disabled_value": {
+    "text": "Disabled",
+    "parameters": {}
+  },
+  "static_value": {
+    "text": "Static",
+    "parameters": {}
+  },
+  "success_value": {
+    "text": "Success",
+    "parameters": {}
+  },
+  "failed_value": {
+    "text": "Failed",
+    "parameters": {}
+  },
+  "exited_value": {
+    "text": "Exited",
+    "parameters": {}
+  },
+  "notify.reboot.warning.phrase": {
+    "text": "reboot-required marker",
+    "parameters": {}
+  },
+  "notify.reboot.warning": {
+    "text": "The server has a {marker}.",
+    "parameters": {
+      "marker": "string"
+    }
+  },
+  "notify.reboot.healthy.phrase": {
+    "text": "reboot-required marker is no longer present",
+    "parameters": {}
+  },
+  "notify.reboot.healthy": {
+    "text": "The {marker}.",
+    "parameters": {
+      "marker": "string"
+    }
+  },
+  "reboot_request_label": {
+    "text": "Status",
+    "parameters": {}
+  },
+  "reboot_requested_value": {
+    "text": "Requested",
+    "parameters": {}
+  },
+  "reboot_absent_value": {
+    "text": "No request detected",
+    "parameters": {}
+  },
+  "packages_label": {
+    "text": "Packages requesting a reboot",
+    "parameters": {}
+  },
+  "package_label": {
+    "text": "Package",
+    "parameters": {}
+  },
+  "package_notice_label": {
+    "text": "Explanation",
+    "parameters": {}
+  },
+  "package_notice_title": {
+    "text": "Package information",
+    "parameters": {}
+  },
+  "package_notice_partial": {
+    "text": "Only part of the recorded package list could be read.",
+    "parameters": {}
+  },
+  "package_notice_unavailable": {
+    "text": "The server requested a reboot but did not provide a readable package list.",
+    "parameters": {}
+  },
+  "usage.3": {
+    "text": "Package names are shown only alongside a current reboot request. The list may be missing or incomplete; that does not clear the reboot warning.",
+    "parameters": {}
+  },
+  "usage.4": {
+    "text": "History lists status checks. This skill does not determine when the request was created or whether a restart occurred.",
     "parameters": {}
   }
 }

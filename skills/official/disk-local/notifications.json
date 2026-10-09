@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "rules": [
+    {
+      "reason": "disk_usage",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.disk.warning",
+      "parameters": {
+        "mount": {
+          "source": {
+            "reason_param": "path"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "used": {
+          "source": {
+            "reason_param": "percent"
+          },
+          "precision": 1,
+          "marks": [
+            "bold"
+          ]
+        },
+        "threshold": {
+          "source": {
+            "setting": "warning_percent"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "disk_usage",
+      "states": [
+        "critical"
+      ],
+      "message_key": "notify.disk.critical",
+      "parameters": {
+        "mount": {
+          "source": {
+            "reason_param": "path"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "used": {
+          "source": {
+            "reason_param": "percent"
+          },
+          "precision": 1,
+          "marks": [
+            "bold"
+          ]
+        },
+        "threshold": {
+          "source": {
+            "setting": "critical_percent"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "disk_usage",
+      "states": [
+        "healthy"
+      ],
+      "message_key": "notify.disk.resolved",
+      "parameters": {
+        "mount": {
+          "source": {
+            "reason_param": "path"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "used": {
+          "source": {
+            "reason_param": "percent"
+          },
+          "precision": 1,
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    }
+  ]
+}

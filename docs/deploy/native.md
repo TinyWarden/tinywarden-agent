@@ -72,3 +72,26 @@ token through the app, run replace as the agent account, preserve uncertain
 state and start run to recover it. Do not delete state to clear a pause.
 Filesystem trim observation is schedule-aware on the server; it does not
 run fstrim or require a fresh weekly execution after every reboot.
+
+### Manual collection support
+
+Agent0.0.5 advertises `skill_runs.manual.v1` and supports the app's **Run now** action
+through its existing collector and sandbox. Deploy app/schema018 first, then upgrade
+this binary preserving identity/configuration/state. Packages and SDK need no changes.
+New agents read older state; after manual state is written, a binary-only downgrade
+is unsupported. Recover forward without resetting counters or restoring old state.
+See the [manual-run API](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-manual-runs.md).
+
+### Contact recovery and diagnostics
+
+Agent0.0.6 keeps the existing protocol and state format. After five retryable
+heartbeat failures it retries every30–33 seconds with the default cadence, while
+honoring a longer valid server Retry-After. Successful exact replay is saved before
+one fresh heartbeat is scheduled a second later. Other lanes continue independently.
+
+The service journal includes bounded heartbeat failure/recovery diagnostics:
+category, stage, attempt, duration, retry delay and HTTP status when available.
+DNS, timeout, connection rejection, response interruption and local state failures
+can be distinguished without printing secrets or raw errors. A terminal authority
+or protocol failure still requires operator correction. Upgrade the app/schema020
+first, then replace only the agent binary and restart its existing service.

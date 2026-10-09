@@ -2,7 +2,7 @@
   "format": 1,
   "id": "tinywarden/fstrim-status",
   "alias": "fstrim-status",
-  "version": "1.0.0",
+  "version": "1.1.5",
   "runtime": "python-3.13-v1",
   "sdk": 1,
   "state_version": 1,

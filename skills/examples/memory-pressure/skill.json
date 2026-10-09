@@ -1,7 +1,7 @@
 {
   "format": 1,
   "id": "example/memory-pressure",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "runtime": "python-3.13-v1",
   "sdk": 1,
   "state_version": 1,

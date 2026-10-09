@@ -1,0 +1,119 @@
+{
+  "format": 2,
+  "sources": {
+    "used": {
+      "kind": "percent"
+    },
+    "total": {
+      "kind": "text",
+      "encoding": "uint64",
+      "unit": "bytes"
+    },
+    "available": {
+      "kind": "text",
+      "encoding": "uint64",
+      "unit": "bytes"
+    },
+    "memory": {
+      "kind": "table",
+      "columns": {
+        "region": {
+          "kind": "text",
+          "enum": {
+            "memory": "memory_region"
+          }
+        },
+        "used": {
+          "kind": "percent"
+        },
+        "total": {
+          "kind": "text",
+          "encoding": "uint64",
+          "unit": "bytes"
+        },
+        "available": {
+          "kind": "text",
+          "encoding": "uint64",
+          "unit": "bytes"
+        }
+      }
+    }
+  },
+  "metrics": {
+    "used_percent": {
+      "title_key": "used_label",
+      "value": {
+        "fact": "memory",
+        "column": "used"
+      },
+      "series_key": "region",
+      "series_label": "region",
+      "max_series": 1
+    }
+  },
+  "sections": [
+    {
+      "id": "memory",
+      "title_key": "capacity_title",
+      "widgets": [
+        {
+          "id": "memory_table",
+          "type": "table",
+          "title_key": "memory_label",
+          "source": "memory",
+          "columns": [
+            {
+              "key": "region"
+            },
+            {
+              "key": "used",
+              "meter": {
+                "min": {
+                  "value": 0
+                },
+                "max": {
+                  "value": 100
+                },
+                "thresholds": [
+                  {
+                    "at": {
+                      "setting": "warning_percent"
+                    },
+                    "severity": "warning"
+                  },
+                  {
+                    "at": {
+                      "setting": "critical_percent"
+                    },
+                    "severity": "critical"
+                  }
+                ],
+                "status": "assessment"
+              }
+            },
+            {
+              "key": "total"
+            },
+            {
+              "key": "available"
+            }
+          ]
+        }
+      ],
+      "role": "current"
+    },
+    {
+      "id": "history",
+      "role": "graph",
+      "title_key": "history_title",
+      "widgets": [
+        {
+          "id": "memory_trend",
+          "type": "line_chart",
+          "title_key": "history_title",
+          "metric": "used_percent"
+        }
+      ]
+    }
+  ]
+}

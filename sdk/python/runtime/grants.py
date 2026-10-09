@@ -10,6 +10,16 @@ PROPERTIES = set("Id LoadState ActiveState UnitFileState LastTriggerUSec NextEla
                  "ExecMainStartTimestamp ExecMainExitTimestamp SubState Description".split())
 
 
+def helper_path(path):
+    if not isinstance(path, str) or len(path) > 512:
+        return False
+    if any(part in {"", ".", ".."} for part in path.split("/")[1:]):
+        return False
+    pattern = r"/usr/(?:bin|sbin)/[A-Za-z0-9_.+-]{1,64}|/usr/lib/(?:[A-Za-z0-9_.+-]{1,64}/)*[A-Za-z0-9_.+-]{1,64}"
+    return bool(re.fullmatch(pattern, path)) and path.rsplit("/", 1)[1] not in {
+        "sh", "bash", "dash", "zsh", "sudo", "su", "env"}
+
+
 def safe_path(path, root=False):
     if not isinstance(path, str) or not path.startswith("/") or len(path) > 512:
         return False
@@ -22,7 +32,7 @@ def safe_path(path, root=False):
     if path.startswith("/proc/"):
         return not root and path in PSEUDO
     if path.startswith("/run/"):
-        return not root and path == "/run/reboot-required"
+        return not root and path in {"/run/reboot-required", "/run/reboot-required.pkgs"}
     return True
 
 
@@ -64,7 +74,7 @@ def inspect_grant(grant):
             if not isinstance(values, list) or len(values) > 16 or len(set(values)) != len(values):
                 raise ValueError("package_capabilities")
             if key == "helpers":
-                if any(not isinstance(x, str) or not re.fullmatch(r"/usr/(bin|sbin)/[A-Za-z0-9_.+-]{1,64}", x) or x.rsplit("/", 1)[1] in {"sh", "bash", "dash", "zsh", "sudo", "su", "env"} for x in values):
+                if any(not helper_path(x) for x in values):
                     raise ValueError("package_capabilities")
             elif any(not safe_path(x, True) or any(denied.startswith(x.rstrip('/') + '/') for denied in DENIED) for x in values):
                 raise ValueError("package_capabilities")
@@ -108,7 +118,8 @@ def permits(grant, operation, args):
     if grant["operation"] != operation:
         return False
     if operation.startswith("files."):
-        if set(args) - {"path", "max_bytes", "max_entries"} or not safe_path(args.get("path")):
+        allowed = {"path", "max_bytes", "max_entries"} | ({"optional"} if operation == "files.read" else set())
+        if set(args) - allowed or "optional" in args and type(args["optional"]) is not bool or not safe_path(args.get("path")):
             return False
         path = args["path"]
         if path not in grant["paths"] and not any(path.startswith(root + "/") for root in grant["roots"]):

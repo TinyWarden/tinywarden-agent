@@ -48,3 +48,9 @@ uncertain requests replay exact bytes. Transient outages retry within bounds;
 terminal authority/configuration errors stop or pause their owning lane. Fixed
 recipes never refresh APT indexes, install packages, trim or reboot. Raw output
 is transient and excluded from reported results.
+
+Heartbeat degraded retry is bounded separately from skill work: after four short
+retry waits, use min(interval,30sec) plus0–10% jitter and honor Retry-After. A durable
+duplicate acknowledgment schedules one fresh heartbeat after1sec. Failed attempts
+and recovery produce safe typed diagnostics through the CLI journal. App contact
+uses accepted current-agent communications; reading freshness remains independent.

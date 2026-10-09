@@ -1,6 +1,6 @@
 """Schedule-aware trim monitoring. No trimming or service action is performed."""
 from collector import observe
-from context import advance, assess, GRACE
+from context import advance, assess, retained, GRACE, RUNNING
 
 
 def validate_settings(settings):
@@ -13,6 +13,44 @@ def collect(settings, host):
 
 def reduce(context):
     return advance(context)
+
+
+def presentation(observation, state, status, reason, at):
+    last = retained(state, at)
+    automatic = "unconfirmed"
+    next_run = None
+    if observation["problem"] == "none":
+        timer, service = observation["timer"], observation["service"]
+        if timer["unit_file_state"] in {"disabled", "masked", "masked-runtime"}:
+            automatic = "disabled"
+        elif timer["load_state"] == service["load_state"] == "loaded":
+            if timer["active_state"] in {"inactive", "failed"}:
+                automatic = "inactive"
+            elif (timer["active_state"] == "active"
+                  and timer["unit_file_state"] in {"enabled", "enabled-runtime"}
+                  and timer["condition"].get("passed") is True
+                  and service["condition"].get("passed") is not False):
+                automatic = "running" if service["active_state"] in RUNNING else "enabled"
+                if timer.get("next_elapse", 0) * 1000 > at:
+                    next_run = timer["next_elapse"] * 1000
+    facts = [
+        {"key": "trim_last_result", "label_key": "trim_last_result_label", "kind": "text",
+         "value": last["outcome"] if last else "unrecorded"},
+        {"key": "trim_automatic", "label_key": "trim_automatic_label", "kind": "text", "value": automatic},
+        {"key": "trim_problem", "label_key": "trim_problem_label", "kind": "text",
+         "value": "" if status == "healthy" else reason},
+        {"key": "trim_due", "label_key": "trim_due_label", "kind": "table", "truncated": False,
+         "columns": [{"key": "scheduled_for", "label_key": "trim_scheduled_for_label", "kind": "time"},
+                     {"key": "result", "label_key": "trim_due_result_label", "kind": "text"}],
+         "rows": [{"scheduled_for": state["expected_at"] * 1000, "result": "unconfirmed"}]
+                 if reason == "fstrim_result_overdue" and "expected_at" in state else []},
+    ]
+    if last and "finished_at" in last:
+        facts.append({"key": "trim_completed_at", "label_key": "trim_completed_at_label",
+                      "kind": "time", "value": last["finished_at"] * 1000})
+    if next_run is not None:
+        facts.append({"key": "trim_next_at", "label_key": "trim_next_at_label", "kind": "time", "value": next_run})
+    return facts
 
 
 def evaluate(context):
@@ -47,5 +85,6 @@ def evaluate(context):
     results = []
     for at in sorted(set(instants)):
         status, reason = assess(observation, state, at / 1000)
-        results.append({"from": at, "status": status, "reason": {"key": reason, "params": {}}, "facts": facts})
+        results.append({"from": at, "status": status, "reason": {"key": reason, "params": {}},
+                        "facts": facts + presentation(observation, state, status, reason, at)})
     return results

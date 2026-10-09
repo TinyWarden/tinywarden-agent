@@ -36,4 +36,11 @@ def evaluate(context):
              "reason": {"key": "memory_usage", "params": {"percent": percent}},
              "facts": [{"key": "used", "label_key": "used_label", "kind": "percent", "value": percent},
                        {"key": "total", "label_key": "total_label", "kind": "text", "value": observation["total_bytes"]},
-                       {"key": "available", "label_key": "available_label", "kind": "text", "value": observation["available_bytes"]}]}]
+                       {"key": "available", "label_key": "available_label", "kind": "text", "value": observation["available_bytes"]},
+                       {"key": "memory", "label_key": "memory_label", "kind": "table", "columns": [
+                           {"key": "region", "label_key": "region_label", "kind": "text"},
+                           {"key": "used", "label_key": "used_label", "kind": "percent"},
+                           {"key": "total", "label_key": "total_label", "kind": "text"},
+                           {"key": "available", "label_key": "available_label", "kind": "text"}],
+                        "rows": [{"region": "memory", "used": percent, "total": observation["total_bytes"],
+                                  "available": observation["available_bytes"]}], "truncated": False}]}]

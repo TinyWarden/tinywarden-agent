@@ -139,27 +139,35 @@ func finishEnrollment(ctx context.Context, store *Store, state *State, client *C
 }
 
 func sendHeartbeat(ctx context.Context, store *Store, state *State, client *Client) error {
+	_, err := sendHeartbeatAttempt(ctx, store, state, client)
+	return err
+}
+
+func sendHeartbeatAttempt(ctx context.Context, store *Store, state *State, client *Client) (HeartbeatOutcome, error) {
 	if state.PendingHeartbeat == nil {
 		if state.LastSequence >= 9007199254740991 {
-			return errors.New("sequence exhausted")
+			return HeartbeatOutcome{}, heartbeatError("pending_state", errors.New("sequence exhausted"))
 		}
 		state.PendingHeartbeat = &PendingHeartbeat{Sequence: state.LastSequence + 1,
 			SentAt:       time.Now().UTC().Truncate(time.Millisecond).Format("2006-01-02T15:04:05.000Z"),
 			AgentVersion: Version}
 		if err := store.Save(*state); err != nil {
-			return err
+			return HeartbeatOutcome{}, heartbeatError("pending_state", err)
 		}
 	}
 	result, err := client.Heartbeat(ctx, state.Credential, *state.PendingHeartbeat)
 	if err != nil {
-		return err
+		return HeartbeatOutcome{}, heartbeatError("exchange", err)
 	}
 	if result.Interval != state.HeartbeatIntervalSeconds || result.StaleAfter != state.StaleAfterSeconds {
-		return errors.New("cadence changed unexpectedly")
+		return HeartbeatOutcome{}, heartbeatError("cadence", errors.New("cadence changed unexpectedly"))
 	}
 	state.LastSequence = result.Sequence
 	state.PendingHeartbeat = nil
-	return store.Save(*state)
+	if err := store.Save(*state); err != nil {
+		return HeartbeatOutcome{}, heartbeatError("ack_state", err)
+	}
+	return HeartbeatOutcome{Duplicate: result.Duplicate}, nil
 }
 
 func terminal(err error) bool {

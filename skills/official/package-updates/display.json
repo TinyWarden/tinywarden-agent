@@ -1,0 +1,158 @@
+{
+  "format": 2,
+  "sources": {
+    "upgraded": {
+      "kind": "number",
+      "unit": "count"
+    },
+    "installed": {
+      "kind": "number",
+      "unit": "count"
+    },
+    "removed": {
+      "kind": "number",
+      "unit": "count"
+    },
+    "held_back": {
+      "kind": "number",
+      "unit": "count"
+    },
+    "mode": {
+      "kind": "text",
+      "enum": {
+        "upgrade": "upgrade_value",
+        "with-new-pkgs": "new_packages_value",
+        "with-new-packages": "new_packages_value"
+      }
+    },
+    "index_freshness": {
+      "kind": "text",
+      "enum": {
+        "unverified": "unverified_value"
+      },
+      "muted_values": [
+        "unverified"
+      ]
+    },
+    "state_consistency": {
+      "kind": "text",
+      "enum": {
+        "unverified": "unverified_value"
+      },
+      "muted_values": [
+        "unverified"
+      ]
+    },
+    "packages": {
+      "kind": "table",
+      "columns": {
+        "package": {
+          "kind": "text"
+        },
+        "installed_version": {
+          "kind": "text",
+          "enum": {
+            "": "version_not_provided_value"
+          }
+        },
+        "available_version": {
+          "kind": "text",
+          "enum": {
+            "": "version_not_provided_value"
+          }
+        },
+        "action": {
+          "kind": "text",
+          "enum": {
+            "upgraded": "upgraded_action_value",
+            "installed": "installed_action_value",
+            "removed": "removed_action_value",
+            "held_back": "held_back_action_value"
+          }
+        }
+      }
+    },
+    "package_list_note": {
+      "kind": "text",
+      "enum": {
+        "partial": "package_list_partial_value"
+      }
+    }
+  },
+  "metrics": {
+    "upgraded": {
+      "title_key": "upgraded_label",
+      "value": {
+        "fact": "upgraded"
+      }
+    }
+  },
+  "sections": [
+    {
+      "id": "pending",
+      "title_key": "counts_title",
+      "widgets": [
+        {
+          "id": "pending_counts",
+          "type": "facts",
+          "title_key": "counts_title",
+          "facts": [
+            "upgraded",
+            "installed",
+            "removed",
+            "held_back"
+          ]
+        }
+      ],
+      "role": "current"
+    },
+    {
+      "id": "updates_history",
+      "title_key": "updates_history_title",
+      "widgets": [
+        {
+          "id": "update_trend",
+          "type": "line_chart",
+          "title_key": "updates_history_title",
+          "metric": "upgraded"
+        }
+      ],
+      "role": "graph"
+    },
+    {
+      "id": "package_list",
+      "title_key": "package_list_title",
+      "role": "details",
+      "widgets": [
+        {
+          "id": "package_table",
+          "type": "table",
+          "title_key": "package_list_title",
+          "source": "packages",
+          "columns": [
+            {
+              "key": "package"
+            },
+            {
+              "key": "installed_version"
+            },
+            {
+              "key": "available_version"
+            },
+            {
+              "key": "action"
+            }
+          ]
+        },
+        {
+          "id": "list_note",
+          "type": "facts",
+          "title_key": "package_list_note_label",
+          "facts": [
+            "package_list_note"
+          ]
+        }
+      ]
+    }
+  ]
+}

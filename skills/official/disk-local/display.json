@@ -1,0 +1,187 @@
+{
+  "format": 2,
+  "sources": {
+    "filesystems": {
+      "kind": "table",
+      "columns": {
+        "path": {
+          "kind": "text"
+        },
+        "total": {
+          "kind": "text",
+          "encoding": "uint64",
+          "unit": "bytes",
+          "missing": ""
+        },
+        "free": {
+          "kind": "text",
+          "encoding": "uint64",
+          "unit": "bytes",
+          "missing": ""
+        },
+        "available": {
+          "kind": "text",
+          "encoding": "uint64",
+          "unit": "bytes",
+          "missing": ""
+        },
+        "classification": {
+          "kind": "text",
+          "semantic": "status"
+        },
+        "used": {
+          "kind": "text",
+          "encoding": "decimal",
+          "unit": "percent",
+          "missing": "",
+          "precision": 1
+        },
+        "series": {
+          "kind": "text"
+        }
+      }
+    },
+    "collection_notice": {
+      "kind": "text",
+      "enum": {
+        "inventory_unavailable": "collection_inventory_unavailable",
+        "inventory_malformed": "collection_inventory_malformed",
+        "inventory_overflow": "collection_inventory_overflow",
+        "records_overflow": "collection_records_overflow",
+        "topology_changed": "collection_topology_changed",
+        "incomplete": "collection_incomplete",
+        "no_filesystems": "collection_no_filesystems"
+      }
+    },
+    "collection_issues": {
+      "kind": "table",
+      "columns": {
+        "path": {
+          "kind": "text"
+        },
+        "problem": {
+          "kind": "text",
+          "enum": {
+            "mount_disappeared": "collection_mount_disappeared",
+            "mount_inaccessible": "collection_mount_inaccessible",
+            "mount_unverifiable": "collection_mount_unverifiable",
+            "unsupported_type": "collection_unsupported_type",
+            "capacity_unavailable": "collection_capacity_unavailable"
+          }
+        }
+      }
+    }
+  },
+  "metrics": {
+    "used_percent": {
+      "title_key": "used_label",
+      "value": {
+        "fact": "filesystems",
+        "column": "used"
+      },
+      "series_key": "series",
+      "series_label": "path",
+      "max_series": 32
+    }
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "title_key": "capacity_title",
+      "widgets": [
+        {
+          "id": "filesystem_table",
+          "type": "table",
+          "title_key": "filesystems_label",
+          "source": "filesystems",
+          "columns": [
+            {
+              "key": "path"
+            },
+            {
+              "key": "used",
+              "meter": {
+                "min": {
+                  "value": 0
+                },
+                "max": {
+                  "value": 100
+                },
+                "thresholds": [
+                  {
+                    "at": {
+                      "setting": "warning_percent"
+                    },
+                    "severity": "warning"
+                  },
+                  {
+                    "at": {
+                      "setting": "critical_percent"
+                    },
+                    "severity": "critical"
+                  }
+                ],
+                "status": {
+                  "fact": "filesystems",
+                  "column": "classification"
+                }
+              }
+            },
+            {
+              "key": "total"
+            },
+            {
+              "key": "available"
+            },
+            {
+              "key": "classification"
+            }
+          ]
+        }
+      ],
+      "role": "current"
+    },
+    {
+      "id": "disk_history",
+      "title_key": "usage_history_title",
+      "widgets": [
+        {
+          "id": "disk_trend",
+          "type": "line_chart",
+          "title_key": "usage_history_title",
+          "metric": "used_percent"
+        }
+      ],
+      "role": "graph"
+    },
+    {
+      "id": "collection_diagnostics",
+      "role": "details",
+      "title_key": "collection_details_title",
+      "widgets": [
+        {
+          "id": "collection_notice",
+          "type": "facts",
+          "title_key": "collection_notice_label",
+          "facts": [
+            "collection_notice"
+          ]
+        },
+        {
+          "id": "collection_issues",
+          "type": "table",
+          "title_key": "collection_issues_title",
+          "source": "collection_issues",
+          "columns": [
+            {
+              "key": "path"
+            },
+            {
+              "key": "problem"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

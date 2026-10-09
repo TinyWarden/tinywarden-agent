@@ -1,0 +1,144 @@
+{
+  "format": 1,
+  "rules": [
+    {
+      "reason": "package_removals",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.packages.issue",
+      "parameters": {
+        "upgraded": {
+          "source": {
+            "fact": "upgraded",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.upgraded.one",
+            "other_key": "notify.packages.upgraded.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "installed": {
+          "source": {
+            "fact": "installed",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.installed.one",
+            "other_key": "notify.packages.installed.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "removed": {
+          "source": {
+            "fact": "removed",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.removed.one",
+            "other_key": "notify.packages.removed.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "held_back": {
+          "source": {
+            "fact": "held_back",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.held_back.one",
+            "other_key": "notify.packages.held_back.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "package_changes",
+      "states": [
+        "warning"
+      ],
+      "message_key": "notify.packages.issue",
+      "parameters": {
+        "upgraded": {
+          "source": {
+            "fact": "upgraded",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.upgraded.one",
+            "other_key": "notify.packages.upgraded.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "installed": {
+          "source": {
+            "fact": "installed",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.installed.one",
+            "other_key": "notify.packages.installed.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "removed": {
+          "source": {
+            "fact": "removed",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.removed.one",
+            "other_key": "notify.packages.removed.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        },
+        "held_back": {
+          "source": {
+            "fact": "held_back",
+            "type": "number"
+          },
+          "plural": {
+            "one_key": "notify.packages.held_back.one",
+            "other_key": "notify.packages.held_back.other"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    },
+    {
+      "reason": "package_plan_clear",
+      "states": [
+        "healthy"
+      ],
+      "message_key": "notify.packages.resolved",
+      "parameters": {
+        "clear": {
+          "source": {
+            "catalog_key": "notify.packages.clear"
+          },
+          "marks": [
+            "bold"
+          ]
+        }
+      }
+    }
+  ]
+}

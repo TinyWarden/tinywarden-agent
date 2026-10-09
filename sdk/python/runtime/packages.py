@@ -9,6 +9,8 @@ from json_values import decode, encode
 from schema import inspect, validate
 from grants import inspect_grant
 from package_files import tree
+from display import inspect_display
+from notifications import inspect_notifications
 
 MANIFEST_KEYS = {"format", "id", "version", "runtime", "sdk", "state_version", "license",
                  "publisher", "name_key", "description_key", "category", "compatibility",
@@ -118,5 +120,10 @@ def load(root, expected=None, official=False):
     if not {"validate_settings", "collect", "reduce", "evaluate"} <= functions:
         raise ValueError("package_entrypoints")
     encode(manifest)
-    return {"manifest": manifest, "schemas": schemas, "catalog": catalog,
-            "content_sha256": digest, "size": size}
+    metadata = {"manifest": manifest, "schemas": schemas, "catalog": catalog,
+                "content_sha256": digest, "size": size}
+    if "display.json" in files:
+        metadata["display"] = inspect_display(files["display.json"], catalog, schemas["settings"])
+    if "notifications.json" in files:
+        metadata["notifications"] = inspect_notifications(files["notifications.json"], catalog, schemas["settings"])
+    return metadata

@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func Run(ctx context.Context, config Config, client *Client, emit func(string)) error {
+func Run(ctx context.Context, config Config, client *Client, emit func(string), diagnostics ...func(HeartbeatDiagnostic)) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	store, err := OpenStore(config.StateDir)
@@ -40,7 +40,13 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string)) 
 		emit("assignment_cache_unavailable")
 		known = nil
 	}
-	heartbeat := func(ctx context.Context) error { return sendHeartbeat(ctx, store, &state, client) }
+	heartbeat := func(ctx context.Context) (HeartbeatOutcome, error) {
+		return sendHeartbeatAttempt(ctx, store, &state, client)
+	}
+	var diagnostic func(HeartbeatDiagnostic)
+	if len(diagnostics) > 0 {
+		diagnostic = diagnostics[0]
+	}
 	assets := config.RuntimeAssets
 	if assets == "" {
 		assets = "/usr/local/lib/tinywarden-agent/runtime"
@@ -49,7 +55,7 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string)) 
 		packages, err := newPackageLane(ctx, store, client, state, config, emit)
 		if err != nil {
 			emit("package_state_unavailable")
-			return runLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(ctx context.Context) error { _, err := client.fetchPackages(ctx, state, false); return err }, emit)
+			return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(ctx context.Context) error { _, err := client.fetchPackages(ctx, state, false); return err }, emit, diagnostic)
 		}
 		defer packages.stop()
 		if packages.runtime.VerifyAssets() != nil {
@@ -57,7 +63,7 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string)) 
 		}
 		// Installing the platform SDK selects the package lane once. Compiled
 		// collectors and their cached leases never execute concurrently with it.
-		return runLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, packages.tick)
+		return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, diagnostic, packages.tick)
 	}
 	assignment := func(ctx context.Context) error {
 		response, err := client.FetchAssignments(ctx, state, known)
@@ -87,5 +93,5 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string)) 
 		baselineTick = baseline.tick
 		defer baseline.stop()
 	}
-	return runLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, assignment, emit, diskTick, baselineTick)
+	return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, assignment, emit, diagnostic, diskTick, baselineTick)
 }
