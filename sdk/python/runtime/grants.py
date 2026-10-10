@@ -54,9 +54,9 @@ def inspect_grant(grant):
         if set(grant) != {"operation"}:
             raise ValueError("package_capabilities")
     elif operation == "systemd.properties":
-        if set(grant) != {"operation", "units", "properties"} or not 1 <= len(grant["units"]) <= 16:
+        if set(grant) != {"operation", "units", "properties"} or not isinstance(grant["units"], list) or not 1 <= len(grant["units"]) <= 16:
             raise ValueError("package_capabilities")
-        if any(not re.fullmatch(r"[A-Za-z0-9_.@-]{1,128}\.(service|timer)", x) for x in grant["units"]):
+        if any(not isinstance(x, str) or x.startswith("-") or not re.fullmatch(r"[A-Za-z0-9_.@-]{1,128}\.(service|timer)", x) for x in grant["units"]):
             raise ValueError("package_capabilities")
         if not isinstance(grant["properties"], list) or not 1 <= len(grant["properties"]) <= 32 or not set(grant["properties"]) <= PROPERTIES:
             raise ValueError("package_capabilities")
@@ -129,7 +129,7 @@ def permits(grant, operation, args):
     if operation == "filesystems.snapshot":
         return args == {}
     if operation == "systemd.properties":
-        return set(args) == {"unit", "properties"} and args["unit"] in grant["units"] and isinstance(args["properties"], list) and 1 <= len(args["properties"]) <= 32 and set(args["properties"]) <= set(grant["properties"])
+        return set(args) == {"unit", "properties"} and isinstance(grant["units"], list) and isinstance(args["unit"], str) and not args["unit"].startswith("-") and args["unit"] in grant["units"] and isinstance(args["properties"], list) and 1 <= len(args["properties"]) <= 32 and set(args["properties"]) <= set(grant["properties"])
     if operation == "command.capture":
         if not {"executable", "argv", "inputs"} <= set(args) or set(args) - {"executable", "argv", "inputs", "helpers", "empty_directories"} or args["executable"] != grant["executable"]:
             return False

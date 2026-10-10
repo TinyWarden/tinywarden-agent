@@ -28,7 +28,7 @@ def publish(request):
         if request.get("content_sha256") and request["content_sha256"] != expected:
             raise ValueError("package_digest")
         root_fd = os.open(source, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
-        staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=store))
+        staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=request.get("workspace", store)))
         try:
             total = 0
             for name in files:
@@ -53,17 +53,19 @@ def publish(request):
             versions = [p for p in store.iterdir() if p.is_dir() and len(p.name) == 64]
             used = sum(p.stat().st_size for version in versions for p in version.rglob("*") if p.is_file())
             used += sum(p.stat().st_size for p in (store / ".archives").glob("*.zip"))
-            if not final.exists() and (len(versions) >= 100 or used + metadata["size"] + 10 * 1024 * 1024 > 1024 * 1024 * 1024):
+            transient = sum(p.stat().st_size for workspace in store.glob(".admission-*")
+                            if workspace.is_dir() for p in workspace.rglob("*") if p.is_file())
+            if not final.exists() and (len(versions) >= 100 or used + transient + metadata["size"] + 10 * 1024 * 1024 > 1024 * 1024 * 1024):
                 raise ValueError("package_quota")
             from archives import canonical_archive
-            metadata["archive"] = canonical_archive(store, expected, files)
+            metadata["archive"] = canonical_archive(store, expected, files, request.get("workspace"))
             if final.exists():
                 load(final, expected, request.get("official") is True)
                 return metadata
             for item in staging.rglob("*"):
                 item.chmod(0o500 if item.is_dir() else 0o400)
-            staging.chmod(0o500)
             os.rename(staging, final)
+            final.chmod(0o500)
             directory_fd = os.open(store, os.O_RDONLY | os.O_DIRECTORY)
             try:
                 os.fsync(directory_fd)

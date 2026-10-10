@@ -44,6 +44,42 @@ func settlePackage(t *testing.T, lane *packageLane, done func() bool) {
 		t.Fatal("package work did not settle")
 	}
 }
+func TestPackageOversizedUploadKeepsIdentityAndRestarts(t *testing.T) {
+	server := rejectBaselineServer()
+	defer server.Close()
+	lane := packageFixture(t, server)
+	active, err := lane.allocate(lane.ledger.Cache.Assignments[0], time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	run := active.Run
+	run.Outcome = "observed"
+	run.Observation = json.RawMessage(`"` + strings.Repeat("x", (1<<20)-20) + `"`)
+	if err := lane.complete(run); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := loadPackageLedger(lane.store, lane.ledger.Scope)
+	if err != nil || len(loaded.Pending) != 1 {
+		t.Fatal("bounded result must survive restart", err)
+	}
+	var saved packageRun
+	if json.Unmarshal(loaded.Pending[0].Body, &saved) != nil || saved.ID != run.ID || saved.Sequence != run.Sequence || saved.Outcome != "output_exceeded" || string(saved.Observation) != "null" {
+		t.Fatal("oversize must not discard identity or poison lane")
+	}
+	active, err = lane.allocate(lane.ledger.Cache.Assignments[0], time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	run = active.Run
+	run.Outcome = "observed"
+	run.Observation = json.RawMessage(`{"ok":true}`)
+	if err := lane.complete(run); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(lane.ledger.Pending[1].Body, []byte(`"observation":{"ok":true}`)) {
+		t.Fatal("legitimate observation changed")
+	}
+}
 func TestPackageRestartKeepsIdentityExactBytesAndCredentialScope(t *testing.T) {
 	server := rejectBaselineServer()
 	defer server.Close()

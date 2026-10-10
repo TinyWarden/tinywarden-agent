@@ -52,7 +52,7 @@ def run(request):
         return {"value": value, "raw_bytes": raw}
     if operation == "systemd.properties":
         argv = ["/usr/bin/systemctl", "--system", "--no-pager", "--no-ask-password", "--all",
-                "--timestamp=unix", "show", "--property=" + ",".join(args["properties"]), args["unit"]]
+                "--timestamp=unix", "show", "--property=" + ",".join(args["properties"]), "--", args["unit"]]
         code, out, err = capture(argv, b"", group, timeout, output_limit=65536)
         if code != 0:
             raise RuntimeError("observation_unavailable")

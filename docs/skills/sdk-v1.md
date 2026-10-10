@@ -82,7 +82,7 @@ contain exactly `key`, `label_key`, `kind`, `value`:
 | `boolean` | Boolean. |
 | `percent` | Number 0–100. |
 | `duration` | Nonnegative integer seconds. |
-| `time` | Nonnegative integer UTC milliseconds. |
+| `time` | Integer UTC milliseconds, from 0 through 8640000000000000. |
 
 Tables contain exactly `key`, `label_key`, `kind: "table"`, `columns`, `rows`,
 `truncated`. There are 1–12 unique columns (`key`, `label_key`, scalar `kind`),
@@ -97,6 +97,19 @@ shared widgets to these facts; no uploaded UI code or new collection function.
 Packages without it retain the scalar/plain-table rendering described above. Display metadata never determines health or expands host access.
 
 ## Host API
+
+Admission requires `interval_seconds`, if declared, to be an integer schema with
+explicit bounds contained within 60–86400 seconds. Missing cadence uses the
+platform's 300-second default. A package name must be parameter-free and fit 1024
+UTF-8 JSON bytes and 2048 UTF-16 code units. Rendered catalog messages must fit
+4096 UTF-8 JSON bytes; all settings errors together must fit 64 KiB. These limits
+apply after placeholder substitution, in addition to individual parameter limits.
+
+Systemd grants declare unit names as an array, never an object; names cannot begin
+with `-`. Broker queries separate fixed options from approved unit operands.
+Oversized execution responses and upload envelopes become `output_exceeded` under
+the original run identity. Isolation cleanup failures keep their separate pause
+behavior. ZIP admission reclaims partial files after child failure before reuse.
 
 Only `collect` gets `host.request(operation, arguments)`. Package request,
 exact-version administrator grant and local ceiling must each permit the operation.

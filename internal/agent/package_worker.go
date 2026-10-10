@@ -39,6 +39,17 @@ func (lane *packageLane) complete(run packageRun) error {
 	if err != nil {
 		return err
 	}
+	// Budget the complete upload, including run identity and manual request.
+	// Preserve the allocated identity as a bounded failure instead of persisting
+	// a body that can neither be uploaded nor recovered on restart.
+	if len(body) > 1<<20 {
+		run.Outcome = "output_exceeded"
+		run.Observation = json.RawMessage("null")
+		body, err = json.Marshal(run)
+		if err != nil {
+			return err
+		}
+	}
 	lane.ledger.Pending = append(lane.ledger.Pending, packagePending{lane.ledger.Active.Entry.InstallationID, body, baselineBodyDigest(body)})
 	lane.ledger.Active = nil
 	return savePackageLedger(lane.store, lane.ledger)

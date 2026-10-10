@@ -257,5 +257,6 @@
   "internal/agent/package_manual.go": "Negotiated manual start acknowledgement, durable consumed IDs and bounded execution.",
   "internal/agent/package_manual_test.go": "Manual cadence, fairness, uncertainty, restart correlation and old-server compatibility.",
   "internal/agent/heartbeat_diagnostics.go": "Bounded heartbeat retry and safe typed failure/recovery journal diagnostics.",
-  "internal/agent/heartbeat_recovery_test.go": "Heartbeat retry, duplicate recovery, fairness and secret-safe diagnostic acceptance."
+  "internal/agent/heartbeat_recovery_test.go": "Heartbeat retry, duplicate recovery, fairness and secret-safe diagnostic acceptance.",
+  "tests/runtime/test_security_boundaries.py": "Regression checks for scope review, response budgets, values and killed-admission cleanup."
 }

@@ -89,6 +89,10 @@ def load(root, expected=None, official=False):
         schemas[kind] = decode(files[kind + ".schema.json"], 65536)
         inspect(schemas[kind], settings=kind == "settings")
     validate(schemas["settings"], manifest["defaults"])
+    interval = schemas["settings"].get("properties", {}).get("interval_seconds")
+    if interval is not None and (interval.get("type") != "integer" or
+            interval.get("minimum", 0) < 60 or interval.get("maximum", 86401) > 86400):
+        raise ValueError("package_schedule")
     fields = manifest["fields"]
     if not isinstance(fields, dict) or set(fields) != set(schemas["settings"].get("properties", {})):
         raise ValueError("package_fields")
@@ -114,6 +118,10 @@ def load(root, expected=None, official=False):
             raise ValueError("package_fields")
         refs += [field["label_key"], field["help_key"]]
     if any(key not in catalog or catalog[key]["parameters"] for key in refs):
+        raise ValueError("package_catalog")
+    # Names reach shared history even when a package is disabled.
+    if len(catalog[manifest["name_key"]]["text"].encode("utf-16-le")) > 4096 or len(
+            encode(catalog[manifest["name_key"]]["text"])) > 1024:
         raise ValueError("package_catalog")
     parsed = ast.parse(files["skill.py"], filename="skill.py")
     functions = {node.name for node in parsed.body if isinstance(node, ast.FunctionDef)}

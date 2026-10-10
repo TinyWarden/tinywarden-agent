@@ -1,5 +1,6 @@
 """Validate all package-owned display data and engine-bounded time transitions."""
 import re
+import json
 from json_values import encode
 
 KINDS = {"text", "number", "boolean", "duration", "time", "percent"}
@@ -19,6 +20,10 @@ def message(value, catalog):
             raise ValueError("parameter")
         if kind == "boolean" and type(actual) is not bool:
             raise ValueError("parameter")
+    rendered = re.sub(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}",
+                      lambda match: str(params[match[1]]), catalog[key]["text"])
+    if len(json.dumps(rendered, ensure_ascii=False).encode()) > 4096:
+        raise ValueError("message_size")
 
 
 def scalar(kind, value):
@@ -26,7 +31,9 @@ def scalar(kind, value):
         return isinstance(value, str) and len(value) <= 1024
     if kind == "boolean":
         return type(value) is bool
-    if kind in {"duration", "time"}:
+    if kind == "time":
+        return type(value) is int and 0 <= value <= 8640000000000000
+    if kind == "duration":
         return type(value) is int and value >= 0
     if kind == "percent":
         return type(value) in {int, float} and 0 <= value <= 100
@@ -95,6 +102,7 @@ def timeline(entries, context, catalog):
 
 
 def errors(values, metadata):
+    encode(values, 65536)
     if not isinstance(values, list) or len(values) > 64:
         raise ValueError("errors")
     for error in values:

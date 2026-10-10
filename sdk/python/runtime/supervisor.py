@@ -3,6 +3,10 @@ import os
 import sys
 import time
 import signal
+import fcntl
+import shutil
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 ASSETS = Path(__file__).resolve().parent
@@ -20,11 +24,47 @@ ERRORS = {"runtime_unavailable", "capability_denied", "broker_limit", "output_ex
           "observation_unavailable"}
 
 
+@contextmanager
+def admission_workspace(store):
+    store = Path(store)
+    if not store.is_absolute() or store.is_symlink():
+        raise ValueError("package_store")
+    store.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if store.stat().st_uid != os.getuid() or store.stat().st_mode & 0o077:
+        raise ValueError("package_store")
+    with open(store / ".admission-lock", "a+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # The lock is inherited by the admission child. Orphans are reclaimed
+        # only when no admission process can still be writing in this store.
+        for orphan in [*store.glob(".admission-*"), *store.glob(".incoming-*"), *store.glob(".staging-*")]:
+            if orphan.is_dir() and not orphan.is_symlink():
+                remove_workspace(orphan)
+        for orphan in (store / ".archives").glob(".zip-*"):
+            if orphan.is_file() and not orphan.is_symlink():
+                orphan.unlink()
+        workspace = Path(tempfile.mkdtemp(prefix=".admission-", dir=store))
+        try:
+            yield workspace, lock.fileno()
+        finally:
+            remove_workspace(workspace)
+
+
+def remove_workspace(workspace):
+    for folder, _, _ in os.walk(workspace, followlinks=False):
+        os.chmod(folder, 0o700)
+    shutil.rmtree(workspace)
+
+
 def inspect_package(request, group, timeout=5):
     payload = {key: request[key] for key in ("package", "content_sha256", "official", "store", "archive", "archive_sha256") if key in request}
     script = {"publish": "publisher.py", "publish_archive": "archives.py"}.get(request.get("action"), "inspector.py")
-    code, out, _ = capture(["/usr/bin/python3.13", "-I", "-S", "-B", str(ASSETS / script)],
-                           encode(payload, 65536), group, timeout)
+    command = ["/usr/bin/python3.13", "-I", "-S", "-B", str(ASSETS / script)]
+    if script != "inspector.py":
+        with admission_workspace(request["store"]) as (workspace, lock_fd):
+            payload["workspace"] = str(workspace)
+            code, out, _ = capture(command, encode(payload, 65536), group, timeout, pass_fds=(lock_fd,))
+    else:
+        code, out, _ = capture(command, encode(payload, 65536), group, timeout)
     if code != 0:
         raise RuntimeError("package_rejected")
     metadata = decode(out)
@@ -115,6 +155,15 @@ def main():
     raise ValueError("action")
 
 
+def response_bytes(response):
+    # Cleanup has completed before serialization. A large result is a local
+    # output failure, not evidence that sandbox processes survived cleanup.
+    try:
+        return encode(response, 1024 * 1024 - 1) + b"\n"
+    except (ValueError, TypeError, RecursionError):
+        return encode({"error": "output_exceeded"}) + b"\n"
+
+
 if __name__ == "__main__":
     def interrupted(_signal, _frame):
         raise RuntimeError("deadline_exceeded")
@@ -127,4 +176,4 @@ if __name__ == "__main__":
         response = {"error": reason if reason in ERRORS else "runtime_unavailable"}
     except (ValueError, TypeError, KeyError, OSError, StopIteration, RecursionError):
         response = {"error": "package_rejected"}
-    sys.stdout.buffer.write(encode(response) + b"\n")
+    sys.stdout.buffer.write(response_bytes(response))

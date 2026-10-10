@@ -17,7 +17,7 @@ from packages import path_name
 MAX_ARCHIVE = 10 * 1024 * 1024
 
 
-def canonical_archive(store, digest, files):
+def canonical_archive(store, digest, files, workspace=None):
     """Freeze one deterministic container per content identity; ZIP identity is separate."""
     folder = store / ".archives"
     folder.mkdir(mode=0o700, exist_ok=True)
@@ -25,7 +25,7 @@ def canonical_archive(store, digest, files):
         raise ValueError("package_store")
     final = folder / (digest + ".zip")
     if not final.exists():
-        fd, name = tempfile.mkstemp(prefix=".zip-", dir=folder)
+        fd, name = tempfile.mkstemp(prefix=".zip-", dir=workspace or folder)
         staging = Path(name)
         try:
             with os.fdopen(fd, "w+b") as stream:
@@ -178,7 +178,7 @@ def publish_archive(request):
     store.mkdir(mode=0o700, parents=True, exist_ok=True)
     if store.is_symlink() or store.stat().st_uid != os.getuid() or store.stat().st_mode & 0o077:
         raise ValueError("package_store")
-    staging = Path(tempfile.mkdtemp(prefix=".incoming-", dir=store))
+    staging = Path(tempfile.mkdtemp(prefix=".incoming-", dir=request.get("workspace", store)))
     try:
         extract(request["archive"], staging, request.get("archive_sha256"))
         return publish({**request, "package": str(staging)})
