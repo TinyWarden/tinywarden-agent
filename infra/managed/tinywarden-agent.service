@@ -1,0 +1,23 @@
+[Unit]
+Description=TinyWarden host agent
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor="@BASE@"
+
+[Service]
+Type=exec
+User=tinywarden-agent
+Group=tinywarden-agent
+WorkingDirectory=@BASE@/data
+ExecStart="@BASE@/current/tinywarden-agent" run --config "@BASE@/config.json"
+Restart=on-abnormal
+UMask=0077
+NoNewPrivileges=true
+Delegate=cpu memory pids
+DelegateSubgroup=supervisor
+KillMode=control-group
+SendSIGKILL=yes
+TimeoutStopSec=5s
+
+[Install]
+WantedBy=multi-user.target

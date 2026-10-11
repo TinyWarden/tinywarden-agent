@@ -1,6 +1,6 @@
 {
   "name": "tinywarden-agent",
-  "usage": "Usage: tinywarden-agent --version | --help | enroll --config CONFIG_PATH --token-file TOKEN_PATH | replace --config CONFIG_PATH --token-file TOKEN_PATH | run --config CONFIG_PATH",
+  "usage": "Usage: tinywarden-agent --version | --help | enroll --config CONFIG_PATH --token-file TOKEN_PATH | replace --config CONFIG_PATH --token-file TOKEN_PATH | run --config CONFIG_PATH\nAdministrative commands (sudo): install, update, check, repair, auto-updates on|off, --uninstall [--keep-data|--purge]. Use --install-dir for a custom managed location. Monitoring runs as the service account.",
   "notReady": "Choose enroll, replace or run. Use --help for the required options.",
   "invalidArguments": "Unsupported arguments. Use --help for available options.",
   "enrolled": "Enrollment confirmed. Start the agent to send heartbeats.",

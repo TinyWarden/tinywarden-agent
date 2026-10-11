@@ -43,6 +43,7 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 	heartbeat := func(ctx context.Context) (HeartbeatOutcome, error) {
 		return sendHeartbeatAttempt(ctx, store, &state, client)
 	}
+	maintenance := newPlatformLane(config, store, &state)
 	var diagnostic func(HeartbeatDiagnostic)
 	if len(diagnostics) > 0 {
 		diagnostic = diagnostics[0]
@@ -51,11 +52,11 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 	if assets == "" {
 		assets = "/usr/local/lib/tinywarden-agent/runtime"
 	}
-	if _, present := os.Lstat(assets); present == nil {
+	if _, present := os.Lstat(assets); present == nil || config.Managed {
 		packages, err := newPackageLane(ctx, store, client, state, config, emit)
 		if err != nil {
 			emit("package_state_unavailable")
-			return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(ctx context.Context) error { _, err := client.fetchPackages(ctx, state, false); return err }, emit, diagnostic)
+			return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(ctx context.Context) error { _, err := client.fetchPackages(ctx, state, false); return err }, emit, diagnostic, maintenance.tick)
 		}
 		defer packages.stop()
 		if packages.runtime.VerifyAssets() != nil {
@@ -63,7 +64,7 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 		}
 		// Installing the platform SDK selects the package lane once. Compiled
 		// collectors and their cached leases never execute concurrently with it.
-		return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, diagnostic, packages.tick)
+		return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, diagnostic, packages.tick, maintenance.tick)
 	}
 	assignment := func(ctx context.Context) error {
 		response, err := client.FetchAssignments(ctx, state, known)
@@ -93,5 +94,5 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 		baselineTick = baseline.tick
 		defer baseline.stop()
 	}
-	return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, assignment, emit, diagnostic, diskTick, baselineTick)
+	return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, assignment, emit, diagnostic, diskTick, baselineTick, maintenance.tick)
 }

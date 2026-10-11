@@ -4,7 +4,7 @@
     "parameters": {}
   },
   "description": {
-    "text": "Simulates pending APT upgrades using the server\u2019s locally cached package lists. It does not install packages or refresh lists, and does not verify repository freshness or security-update counts.",
+    "text": "Simulates pending APT upgrades using the server’s locally cached package lists. It does not install packages or refresh lists, and does not verify repository freshness or security-update counts.",
     "parameters": {}
   },
   "mount_id_label": {
@@ -368,7 +368,7 @@
     "parameters": {}
   },
   "fstrim_scheduled": {
-    "text": "Scheduled \u2014 awaiting a recorded run.",
+    "text": "Scheduled — awaiting a recorded run.",
     "parameters": {}
   },
   "fstrim_awaiting_result": {
@@ -686,11 +686,27 @@
     "parameters": {}
   },
   "package_list_partial_value": {
-    "text": "APT did not provide a complete package list in a recognized format. Counts above remain the reported totals; unavailable versions are shown as \u2014.",
+    "text": "APT did not provide a complete package list in a recognized format. Counts above remain the reported totals; unavailable versions are shown as —.",
     "parameters": {}
   },
   "version_not_provided_value": {
-    "text": "\u2014",
+    "text": "—",
+    "parameters": {}
+  },
+  "dashboard_upgraded": {
+    "text": "Packages to upgrade",
+    "parameters": {}
+  },
+  "dashboard_installed": {
+    "text": "New packages",
+    "parameters": {}
+  },
+  "dashboard_removed": {
+    "text": "Packages to remove",
+    "parameters": {}
+  },
+  "dashboard_held_back": {
+    "text": "Held back",
     "parameters": {}
   }
 }

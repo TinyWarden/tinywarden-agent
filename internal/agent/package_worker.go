@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
@@ -94,9 +95,13 @@ func (lane *packageLane) collect(ctx context.Context, active packageActive) pack
 			}
 		}
 	}
+	protected := []string{lane.config.StateDir, lane.config.configPath, lane.config.RuntimeAssets}
+	if lane.config.Managed {
+		protected = append(protected, filepath.Dir(lane.config.configPath))
+	}
 	observation, err := lane.runtime.Collect(ctx, skillruntime.Request{Package: directory, ContentSHA256: active.Entry.Digest,
 		Official: active.Entry.Official, Arguments: active.Entry.Settings, Grants: active.Entry.Grants, Ceiling: ceiling,
-		FilesystemHelper: helper, ProtectedPaths: []string{lane.config.StateDir, lane.config.configPath, lane.config.RuntimeAssets}})
+		FilesystemHelper: helper, ProtectedPaths: protected})
 	run.FinishedAt = baselineStamp(time.Now())
 	if run.FinishedAt < run.StartedAt {
 		run.FinishedAt = run.StartedAt

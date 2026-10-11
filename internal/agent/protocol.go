@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/TinyWarden/tinywarden-agent/internal/platform"
 	"io"
 	"mime"
 	"net"
@@ -15,7 +16,7 @@ import (
 	"time"
 )
 
-const Version = "0.0.7"
+const Version = platform.Version
 const maxBody = 16 * 1024
 
 type Client struct {

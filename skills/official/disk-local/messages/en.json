@@ -672,5 +672,17 @@
   "collection_no_filesystems": {
     "text": "No writable local filesystem readings are available.",
     "parameters": {}
+  },
+  "fullest_used_label": {
+    "text": "Fullest filesystem",
+    "parameters": {}
+  },
+  "fullest_path_label": {
+    "text": "Mount path",
+    "parameters": {}
+  },
+  "fullest_classification_label": {
+    "text": "State",
+    "parameters": {}
   }
 }

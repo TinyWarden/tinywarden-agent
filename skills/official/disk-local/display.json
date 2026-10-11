@@ -70,6 +70,17 @@
           }
         }
       }
+    },
+    "fullest_used": {
+      "kind": "percent",
+      "precision": 1
+    },
+    "fullest_path": {
+      "kind": "text"
+    },
+    "fullest_classification": {
+      "kind": "text",
+      "semantic": "status"
     }
   },
   "metrics": {
@@ -183,5 +194,43 @@
         }
       ]
     }
-  ]
+  ],
+  "dashboard": {
+    "fields": [
+      {
+        "id": "fullest_filesystem",
+        "type": "meter",
+        "label_key": "fullest_used_label",
+        "value": {
+          "fact": "fullest_used"
+        },
+        "context": {
+          "fact": "fullest_path"
+        },
+        "min": {
+          "value": 0
+        },
+        "max": {
+          "value": 100
+        },
+        "thresholds": [
+          {
+            "at": {
+              "setting": "warning_percent"
+            },
+            "severity": "warning"
+          },
+          {
+            "at": {
+              "setting": "critical_percent"
+            },
+            "severity": "critical"
+          }
+        ],
+        "status": {
+          "fact": "fullest_classification"
+        }
+      }
+    ]
+  }
 }

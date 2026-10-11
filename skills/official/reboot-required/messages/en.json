@@ -633,5 +633,9 @@
   "usage.4": {
     "text": "History lists status checks. This skill does not determine when the request was created or whether a restart occurred.",
     "parameters": {}
+  },
+  "dashboard_reboot_request": {
+    "text": "Reboot request",
+    "parameters": {}
   }
 }

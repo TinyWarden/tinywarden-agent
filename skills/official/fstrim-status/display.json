@@ -118,5 +118,41 @@
         }
       ]
     }
-  ]
+  ],
+  "dashboard": {
+    "fields": [
+      {
+        "id": "trim_automatic",
+        "type": "value",
+        "label_key": "dashboard_trim_automatic",
+        "value": {
+          "fact": "trim_automatic"
+        }
+      },
+      {
+        "id": "trim_last_result",
+        "type": "value",
+        "label_key": "dashboard_trim_last_result",
+        "value": {
+          "fact": "trim_last_result"
+        }
+      },
+      {
+        "id": "trim_completed_at",
+        "type": "value",
+        "label_key": "dashboard_trim_completed_at",
+        "value": {
+          "fact": "trim_completed_at"
+        }
+      },
+      {
+        "id": "trim_next_at",
+        "type": "value",
+        "label_key": "dashboard_trim_next_at",
+        "value": {
+          "fact": "trim_next_at"
+        }
+      }
+    ]
+  }
 }

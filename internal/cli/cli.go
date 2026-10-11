@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/TinyWarden/tinywarden-agent/internal/agent"
+	"github.com/TinyWarden/tinywarden-agent/internal/managed"
 	"github.com/TinyWarden/tinywarden-agent/internal/runner"
 	"github.com/TinyWarden/tinywarden-agent/internal/skills/builtin/disk"
 )
@@ -35,6 +37,31 @@ type catalog struct {
 const Version = agent.Version
 
 func Run(args []string, stdout, stderr io.Writer) int {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if len(args) == 1 && args[0] == "__remove-legacy" {
+		if managed.RemoveLegacyData() != nil {
+			return 1
+		}
+		return 0
+	}
+	if len(args) == 3 && args[0] == "__copy-legacy" && args[1] == "--destination" {
+		if managed.CopyLegacy(args[2]) != nil {
+			return 1
+		}
+		return 0
+	}
+	if handled, err := managed.Dispatch(ctx, args, stdout, stderr); handled {
+		if err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		return 0
+	}
+	if os.Geteuid() == 0 && len(args) > 0 && (args[0] == "run" || args[0] == "enroll" || args[0] == "resume-enrollment" || args[0] == "replace" || args[0] == runner.SupervisorArgument || args[0] == "__collect-disk-v1") {
+		fmt.Fprintln(stderr, "Monitoring and skills must run as the dedicated non-root service account.")
+		return 1
+	}
 	if len(args) == 1 && args[0] == runner.SupervisorArgument {
 		return runner.Supervise()
 	}
@@ -47,6 +74,18 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	var text catalog
 	if err := json.Unmarshal(english, &text); err != nil {
 		panic(err)
+	}
+	if len(args) == 3 && args[0] == "resume-enrollment" && args[1] == "--config" {
+		config, err := agent.LoadConfig(args[2])
+		if err == nil {
+			err = agent.ResumeEnrollment(ctx, config, agent.NewClient(config.ControlPlaneOrigin))
+		}
+		if err != nil {
+			fmt.Fprintln(stderr, text.CommandFailed)
+			return 1
+		}
+		fmt.Fprintln(stdout, text.Enrolled)
+		return 0
 	}
 	if len(args) == 1 {
 		switch args[0] {

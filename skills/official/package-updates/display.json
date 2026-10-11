@@ -154,5 +154,41 @@
         }
       ]
     }
-  ]
+  ],
+  "dashboard": {
+    "fields": [
+      {
+        "id": "upgraded",
+        "type": "value",
+        "label_key": "dashboard_upgraded",
+        "value": {
+          "fact": "upgraded"
+        }
+      },
+      {
+        "id": "installed",
+        "type": "value",
+        "label_key": "dashboard_installed",
+        "value": {
+          "fact": "installed"
+        }
+      },
+      {
+        "id": "removed",
+        "type": "value",
+        "label_key": "dashboard_removed",
+        "value": {
+          "fact": "removed"
+        }
+      },
+      {
+        "id": "held_back",
+        "type": "value",
+        "label_key": "dashboard_held_back",
+        "value": {
+          "fact": "held_back"
+        }
+      }
+    ]
+  }
 }

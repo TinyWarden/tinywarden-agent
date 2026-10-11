@@ -1,0 +1,14 @@
+[Unit]
+Description=TinyWarden verified agent update
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor="@BASE@"
+
+[Service]
+Type=oneshot
+User=root
+ExecStart="@BASE@/current/tinywarden-agent" update --config "@BASE@/config.json" --automatic
+UMask=0077
+TimeoutStartSec=5min
+NoNewPrivileges=true
+PrivateTmp=true

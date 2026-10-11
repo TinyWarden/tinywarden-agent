@@ -195,3 +195,13 @@ Compatible metric definitions include older package versions; uploading new UI
 metadata does not discard measurements. See the canonical
 [structure contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-widget-structure.md)
 and [author guide](authoring.md) for admission rules and examples.
+
+## Dashboard fields
+
+The display.json dashboard.fields extension offers1–8 scalar values/shared meters.
+The app handles rendering and per-user selection; no per-skill core code is needed.
+Use stable IDs and catalog labels, and compute derived scalar facts in evaluate.
+See the [author contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/dashboard.md)
+and skills/examples/memory-pressure/display.json. Upgrade trusted app/agent runtime
+assets with dashboard support (introduced2026-10-10) before activating these packages.
+Older validators reject the extra block; old packages still work on updated runtimes.

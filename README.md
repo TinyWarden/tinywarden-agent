@@ -9,10 +9,13 @@ Skills never install updates, reboot a host or perform trim. The server evaluate
 health and sends notifications.
 
 Verified platform: Debian 13 on amd64, running as a dedicated non-root account.
-Agent version: 0.0.4.
+The current platform version is printed by `tinywarden-agent --version`.
 Go 1.27.2 is required; the module uses only the Go standard library.
 
 ## Build
+
+For normal installation use [managed installation](docs/deploy/managed.md).
+Build instructions below are for contributors and explicit manual installations.
 
 ```sh
 go test ./...
@@ -54,6 +57,7 @@ and legal notices. It never installs or changes a running service.
 - [Architecture and protocol ownership](docs/architecture/overview.md)
 - [Complete codebase map](docs/architecture/codebase-map.md)
 - [Installation and operations](docs/deploy/native.md)
+- [Managed installation, updates and uninstall](docs/deploy/managed.md)
 - [Verification](docs/verification.md)
 - [Write a standalone skill](docs/skills/authoring.md) and [Python SDK v1](docs/skills/sdk-v1.md)
 - [Contributing](CONTRIBUTING.md)

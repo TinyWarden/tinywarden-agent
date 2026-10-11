@@ -115,5 +115,38 @@
         }
       ]
     }
-  ]
+  ],
+  "dashboard": {
+    "fields": [
+      {
+        "id": "used",
+        "label_key": "used_label",
+        "type": "meter",
+        "value": {
+          "fact": "used"
+        },
+        "min": {
+          "value": 0
+        },
+        "max": {
+          "value": 100
+        },
+        "thresholds": [
+          {
+            "at": {
+              "setting": "warning_percent"
+            },
+            "severity": "warning"
+          },
+          {
+            "at": {
+              "setting": "critical_percent"
+            },
+            "severity": "critical"
+          }
+        ],
+        "status": "assessment"
+      }
+    ]
+  }
 }

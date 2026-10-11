@@ -1,0 +1,11 @@
+[Unit]
+Description=TinyWarden daily agent update check
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=6h
+Persistent=true
+Unit=tinywarden-agent-update.service
+
+[Install]
+WantedBy=timers.target

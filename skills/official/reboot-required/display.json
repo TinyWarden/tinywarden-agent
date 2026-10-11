@@ -73,5 +73,17 @@
         }
       ]
     }
-  ]
+  ],
+  "dashboard": {
+    "fields": [
+      {
+        "id": "reboot_request",
+        "type": "value",
+        "label_key": "dashboard_reboot_request",
+        "value": {
+          "fact": "reboot_request"
+        }
+      }
+    ]
+  }
 }

@@ -1,5 +1,8 @@
 # Native agent installation and operations
 
+New deployments should use [managed installation](managed.md). This page retains
+the explicit manual layout and recovery instructions for earlier installations.
+
 Supported first target: Debian 13 amd64. Build/package in this repository.
 Installation or upgrade requires authorization for the specific host; the
 packaging command performs no remote action.
@@ -95,3 +98,12 @@ DNS, timeout, connection rejection, response interruption and local state failur
 can be distinguished without printing secrets or raw errors. A terminal authority
 or protocol failure still requires operator correction. Upgrade the app/schema020
 first, then replace only the agent binary and restart its existing service.
+
+### Dashboard display support
+
+Packages with display.json dashboard declarations require the trusted runtime
+assets with dashboard support introduced2026-10-10. Install and verify those
+assets before the app selects these package versions. The Go binary and wire
+protocol need no update for this extension. Preserve configuration, identity,
+state and queue data. Restore earlier package versions before restoring an older
+runtime validator. See the [dashboard API](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/dashboard.md).

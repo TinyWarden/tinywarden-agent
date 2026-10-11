@@ -3,6 +3,7 @@ package agent
 import (
 	"encoding/json"
 	"errors"
+	"github.com/TinyWarden/tinywarden-agent/internal/platform"
 	"io"
 	"net/url"
 	"os"
@@ -11,10 +12,12 @@ import (
 )
 
 type Config struct {
-	ControlPlaneOrigin string   `json:"control_plane_origin"`
-	StateDir           string   `json:"state_dir"`
-	RuntimeAssets      string   `json:"runtime_assets,omitempty"`
-	SkillOperations    []string `json:"skill_operations"`
+	ControlPlaneOrigin string                   `json:"control_plane_origin"`
+	StateDir           string                   `json:"state_dir"`
+	RuntimeAssets      string                   `json:"runtime_assets,omitempty"`
+	SkillOperations    []string                 `json:"skill_operations"`
+	Managed            bool                     `json:"managed,omitempty"`
+	Updates            *platform.UpdateSettings `json:"updates,omitempty"`
 	configPath         string
 }
 
@@ -64,5 +67,18 @@ func LoadConfig(path string) (Config, error) {
 	if err != nil {
 		return config, errors.New("invalid config path")
 	}
+	if config.Managed {
+		base := filepath.Dir(config.configPath)
+		if filepath.Base(config.configPath) != "config.json" || config.StateDir != filepath.Join(base, "data") || config.Updates == nil {
+			return config, errors.New("invalid managed configuration")
+		}
+		dir, e := platform.ReleaseDirectory(base)
+		if e != nil {
+			return config, e
+		}
+		config.RuntimeAssets = filepath.Join(dir, "runtime")
+	}
 	return config, nil
 }
+
+func (config Config) Path() string { return config.configPath }

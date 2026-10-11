@@ -88,6 +88,11 @@ def evaluate(context):
               "rows": sorted(issues, key=lambda issue: issue["path"].casefold()), "truncated": issues_truncated}]
     if worst:
         mount = worst[1]
+        facts.extend([
+            {"key": "fullest_used", "label_key": "fullest_used_label", "kind": "percent", "value": worst[0]},
+            {"key": "fullest_path", "label_key": "fullest_path_label", "kind": "text", "value": mount["mount_path"][:1024]},
+            {"key": "fullest_classification", "label_key": "fullest_classification_label", "kind": "text",
+             "value": next(row["classification"] for row in rows if row["mount_id"] == mount["mount_id"])}])
         facts.append({"key": "worst_mount", "label_key": "worst_mount_label", "kind": "table", "columns": [
             {"key": key, "label_key": key + "_label", "kind": kind} for key,kind in [("mount_id","number"),("path","text"),("total","text"),("available","text"),("shared","boolean"),("classification","text")]],
             "rows": [{"mount_id":mount["mount_id"],"path":mount["mount_path"][:1024],"total":mount["total_bytes"],"available":mount["available_bytes"],"shared":mount["shared_capacity"],"classification":next(row["classification"] for row in rows if row["mount_id"]==mount["mount_id"])}], "truncated":len(mount["mount_path"])>1024})

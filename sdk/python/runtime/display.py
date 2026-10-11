@@ -134,7 +134,7 @@ def inspect_display(data, catalog, settings):
     from display_widgets import inspect_widgets
     value = decode(data, 65536)
     depth(value)
-    closed(value, {"format", "sources", "sections"}, {"metrics"})
+    closed(value, {"format", "sources", "sections"}, {"metrics", "dashboard"})
     require(type(value["format"]) is int and value["format"] in (1, 2))
     sources = value["sources"]
     require(isinstance(sources, dict) and 1 <= len(sources) <= 64)
@@ -150,5 +150,31 @@ def inspect_display(data, catalog, settings):
                 verifier.scalar(scalar)
         else:
             verifier.scalar(source)
+    if "dashboard" in value:
+        dashboard = value["dashboard"]
+        closed(dashboard, {"fields"})
+        fields = dashboard["fields"]
+        require(isinstance(fields, list) and 1 <= len(fields) <= 8)
+        ids = set()
+        for field in fields:
+            require(isinstance(field, dict) and field.get("type") in ("value", "meter"))
+            required = {"id", "label_key", "type", "value"}
+            optional = {"context"}
+            if field["type"] == "meter":
+                required |= {"min", "max"}
+                optional |= {"thresholds", "status"}
+            closed(field, required, optional)
+            key(field["id"])
+            require(field["id"] not in ids)
+            ids.add(field["id"])
+            verifier.label(field["label_key"])
+            require(len(catalog[field["label_key"]]["text"].encode("utf-8")) <= 128)
+            closed(field["value"], {"fact"})
+            source = verifier.binding(field["value"], number=field["type"] == "meter")
+            if "context" in field:
+                closed(field["context"], {"fact"})
+                require(verifier.binding(field["context"])["kind"] == "text")
+            if field["type"] == "meter":
+                verifier.meter(field, None, source)
     inspect_widgets(value, verifier)
     return value

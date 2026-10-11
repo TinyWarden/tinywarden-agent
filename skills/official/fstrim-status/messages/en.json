@@ -813,5 +813,21 @@
   "trim_detail_fstrim_trigger_unconfirmed": {
     "text": "The schedule started a trim attempt, but its completion has not been confirmed.",
     "parameters": {}
+  },
+  "dashboard_trim_automatic": {
+    "text": "Automatic trim",
+    "parameters": {}
+  },
+  "dashboard_trim_last_result": {
+    "text": "Last result",
+    "parameters": {}
+  },
+  "dashboard_trim_completed_at": {
+    "text": "Last completed",
+    "parameters": {}
+  },
+  "dashboard_trim_next_at": {
+    "text": "Next scheduled",
+    "parameters": {}
   }
 }

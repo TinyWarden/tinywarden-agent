@@ -1,0 +1,65 @@
+name: Signed agent release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Reviewed version tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: agent-release
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
+    environment: agent-release
+    permissions:
+      contents: write
+    steps:
+      - name: Validate tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s\n' "$RELEASE_TAG" | grep -Eq '^v(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$'
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git passwd python3 openssl binutils systemd util-linux curl
+          useradd --create-home --uid 1001 --user-group tinywarden-ci
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify exact tagged source
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test "$RELEASE_TAG" = "v$(sed -n 's/^const Version = "\([^"]*\)"/\1/p' internal/platform/version.go)"
+          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          chown -R tinywarden-ci:tinywarden-ci "$GITHUB_WORKSPACE"
+          runuser --user tinywarden-ci -- ./scripts/verify.sh --phase-end
+          chown -R root:root "$GITHUB_WORKSPACE"
+      - name: Build and sign complete release
+        env:
+          SIGNING_KEY: ${{ secrets.AGENT_RELEASE_SIGNING_KEY }}
+        run: |
+          umask 077
+          keyfile=$(mktemp)
+          trap 'rm -f "$keyfile"' EXIT
+          printf '%s\n' "$SIGNING_KEY" > "$keyfile"
+          unset SIGNING_KEY
+          python3 scripts/release.py --output "$RUNNER_TEMP/release" --signing-key "$keyfile" --source-commit "$(git rev-parse HEAD)"
+      - name: Create draft containing every verified asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python3 scripts/publish-release.py --tag "$RELEASE_TAG" --directory "$RUNNER_TEMP/release"
