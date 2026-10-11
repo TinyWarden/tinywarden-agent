@@ -111,7 +111,24 @@ func lock(base string) (*os.File, error) {
 }
 
 func status(base string, s platform.UpdateStatus) error {
-	return atomicFile(filepath.Join(base, "updater", "status.json"), s, 0644)
+	path := filepath.Join(base, "updater", "status.json")
+	b, e := platform.ReadPublic(path, 2048)
+	if e != nil && !os.IsNotExist(e) {
+		return e
+	}
+	if e == nil {
+		var previous platform.UpdateStatus
+		if e = platform.Decode(b, &previous); e != nil {
+			return e
+		}
+		if s.CheckedAt == "" {
+			s.CheckedAt = previous.CheckedAt
+		}
+		if s.UpdatedAt == "" {
+			s.UpdatedAt = previous.UpdatedAt
+		}
+	}
+	return atomicFile(path, s, 0644)
 }
 func failStatus(base, target, code string) error {
 	s := platform.UpdateStatus{Outcome: "failed", Target: target, Error: code}

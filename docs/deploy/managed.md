@@ -62,6 +62,8 @@ Automatic updates default On. The app's general Settings page controls the defau
 each server can inherit it or choose On/Off. The local root-owned prohibition wins.
 The daily timer includes random delay and remembers attempts across reboot.
 Only a signed, compatible stable release with a fresh direct app policy can install.
+The last check and last successful update times are retained through later checks,
+failures and automatic-update policy changes.
 
 ```sh
 sudo /opt/tinywarden-agent/current/tinywarden-agent check

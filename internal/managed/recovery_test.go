@@ -7,6 +7,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/TinyWarden/tinywarden-agent/internal/platform"
 )
@@ -160,5 +161,45 @@ func TestSignedUnitTemplatesParseBeforeActivation(t *testing.T) {
 	c := exec.Command("/usr/bin/systemd-analyze", "verify", filepath.Join(dir, Service), filepath.Join(dir, UpdateService), filepath.Join(dir, Timer))
 	if output, e := c.CombinedOutput(); e != nil {
 		t.Fatalf("service parsing failed: %v %s", e, output)
+	}
+}
+
+func TestUpdateStatusRetainsCheckGuardAndLastSuccess(t *testing.T) {
+	if os.Geteuid() != 0 {
+		t.Skip("disposable root-owned status fixture")
+	}
+	d := t.TempDir()
+	if e := os.Mkdir(filepath.Join(d, "updater"), 0755); e != nil {
+		t.Fatal(e)
+	}
+	checked := time.Now().UTC().Format(time.RFC3339Nano)
+	updated := time.Now().UTC().Add(time.Second).Format(time.RFC3339Nano)
+	for _, next := range []platform.UpdateStatus{
+		{Outcome: "installing", CheckedAt: checked, Target: "0.0.10"},
+		{Outcome: "awaiting_confirmation", Target: "0.0.10"},
+		{Outcome: "updated", UpdatedAt: updated, Target: "0.0.10"},
+		{Outcome: "disabled"},
+		{Outcome: "idle"},
+	} {
+		if e := status(d, next); e != nil {
+			t.Fatal(e)
+		}
+	}
+	b, e := platform.ReadPublic(filepath.Join(d, "updater", "status.json"), 2048)
+	var got platform.UpdateStatus
+	if e != nil || platform.Decode(b, &got) != nil || got.CheckedAt != checked || got.UpdatedAt != updated || got.Outcome != "idle" || got.Target != "" || got.Error != "" {
+		t.Fatalf("last check/success lost or obsolete outcome fields retained: %+v, %v", got, e)
+	}
+	at, e := time.Parse(time.RFC3339Nano, got.CheckedAt)
+	if e != nil || time.Since(at) >= 20*time.Hour {
+		t.Fatal("successful update reset the automatic check guard")
+	}
+	later := time.Now().UTC().Add(time.Hour).Format(time.RFC3339Nano)
+	if e = status(d, platform.UpdateStatus{Outcome: "failed", CheckedAt: later, Error: "app_unreachable"}); e != nil {
+		t.Fatal(e)
+	}
+	b, e = platform.ReadPublic(filepath.Join(d, "updater", "status.json"), 2048)
+	if e != nil || platform.Decode(b, &got) != nil || got.CheckedAt != later || got.UpdatedAt != updated || got.Error != "app_unreachable" {
+		t.Fatal("later failed check erased the last successful update")
 	}
 }
