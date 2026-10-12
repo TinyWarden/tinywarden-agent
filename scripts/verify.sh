@@ -24,7 +24,6 @@ go test ./...
 mkdir -p bin
 go build -o bin/tinywarden-agent ./cmd/tinywarden-agent
 go mod verify
-python3 -B -m unittest discover -s tests/runtime -p test_official.py
 python3 -B -m unittest discover -s tests/runtime -p test_admission.py
 python3 -B -m unittest discover -s tests/runtime -p test_archives.py
 if [[ "$mode" == --phase-end ]]; then

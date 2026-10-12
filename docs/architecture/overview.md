@@ -9,7 +9,7 @@
 | internal/skills/runtime | Asset integrity/readiness, shared execution slot and the bounded trusted Python supervisor client. |
 | sdk/python/runtime | Canonical SDK, admission, cgroup/namespace/seccomp isolation and read-only host broker. |
 | sdk/python/authoring and skill_tool.py | Starter, static validation, deterministic ZIP packaging and isolated local tests. |
-| skills/official | Four independent Python packages with stable legacy aliases. |
+| [tinywarden-skills](https://github.com/TinyWarden/tinywarden-skills) | Independent official Python packages, tests and releases. |
 | skills/examples | Independently installable SDK example, never installed automatically. |
 | internal/skills/protocol | Immutable compiled observation shapes shared by transport and skill adapters. |
 | internal/skills/builtin | Registry and whole-recipe/normalization guards for compiled compatibility. |

@@ -3,7 +3,8 @@
 The host-side agent for [TinyWarden](https://github.com/TinyWarden/tinywarden).
 It enrolls over outbound HTTPS, reports heartbeat and typed observations, and
 executes enabled standalone Python skills through a bounded SDK. Four official
-skills observe disk space, package updates, reboot status and filesystem trim.
+skills are maintained in [tinywarden-skills](https://github.com/TinyWarden/tinywarden-skills)
+and observe disk space, package updates, reboot status and filesystem trim.
 Compatible community packages are delivered automatically without a binary rebuild.
 Skills never install updates, reboot a host or perform trim. The server evaluates
 health and sends notifications.

@@ -36,12 +36,6 @@ class Dashboard(unittest.TestCase):
             value["dashboard"]["fields"] = fields
             with self.assertRaises(ValueError): self.inspect(value)
 
-    def test_all_official_declarations(self):
-        for root in (ROOT / "skills/official").iterdir():
-            if not root.is_dir(): continue
-            self.catalog = json.loads((root / "messages/en.json").read_bytes())
-            self.settings = json.loads((root / "settings.schema.json").read_bytes())
-            self.inspect(json.loads((root / "display.json").read_bytes()))
 
 
 if __name__ == "__main__": unittest.main()

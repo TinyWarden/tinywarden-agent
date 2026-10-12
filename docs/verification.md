@@ -66,7 +66,8 @@ separate operation; source-only documentation changes do not require either.
 Static descriptor conformance: `python3 -B -m unittest discover -s sdk/python/tests`.
 Canonical disk formula, threshold, read-only/missing and stable-series acceptance
 uses the actual native SDK: under the documented delegated unit run
-`python3.13 -B -m unittest discover -s tests/runtime -p test_disk_display_sandbox.py`.
+`python3.13 -B scripts/verify.py --sandbox` in the separate
+[tinywarden-skills repository](https://github.com/TinyWarden/tinywarden-skills).
 This needs no agent service or database. Author starter/package tests use the
 existing `--skills-author` profile. App widgets, SQL history and browser acceptance
 belong to the app repository.
