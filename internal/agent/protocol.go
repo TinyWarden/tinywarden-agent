@@ -96,6 +96,9 @@ func (client *Client) post(ctx context.Context, path, credential string, input a
 	request.Header.Set("Accept", "application/json")
 	if path == "/api/v2/agent/skill-assignments" {
 		request.Header.Set("X-TinyWarden-Capabilities", "skill_runs.manual.v1")
+		if supports, _ := ctx.Value(resourceFeatureContext{}).(bool); supports {
+			request.Header.Set("X-TinyWarden-Package-Features", "skill_resources.python313.v1")
+		}
 	}
 	response, err := client.HTTP.Do(request)
 	if err != nil {
@@ -142,7 +145,8 @@ func (client *Client) post(ctx context.Context, path, credential string, input a
 	if err := json.Unmarshal(body, &wire); err != nil || wire == nil {
 		return nil, errors.New("invalid response")
 	}
-	if number(wire, "schema_version") != 1 {
+	resources, _ := ctx.Value(resourceFeatureContext{}).(bool)
+	if number(wire, "schema_version") != 1 && !(number(wire, "schema_version") == 2 && path == "/api/v2/agent/skill-assignments" && resources) {
 		return nil, errors.New("unsupported response version")
 	}
 	return wire, nil
@@ -270,29 +274,4 @@ func (client *Client) Heartbeat(ctx context.Context, credential string, pending 
 		return HeartbeatResult{}, errors.New("invalid heartbeat response")
 	}
 	return result, nil
-}
-
-// Give command adapters a safe category without exposing URLs, secrets or raw HTTP errors.
-func ErrorCategory(err error) string {
-	if err == nil {
-		return ""
-	}
-	if errors.Is(err, context.Canceled) {
-		return "cancelled"
-	}
-	var response *ResponseError
-	if errors.As(err, &response) {
-		if response.Status == 401 {
-			return "unauthorized"
-		}
-		if response.Status == 409 {
-			return "conflict"
-		}
-		return fmt.Sprintf("server_%d", response.Status)
-	}
-	var netError net.Error
-	if errors.As(err, &netError) {
-		return "network"
-	}
-	return "unavailable"
 }

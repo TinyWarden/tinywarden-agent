@@ -100,8 +100,12 @@ def invoke(request):
             parent_read, guest_write = os.pipe()
             descriptors += [guest_read, parent_write, parent_read, guest_write]
             broker = Broker(metadata["manifest"]["capabilities"], request.get("grants", []),
-                            request.get("ceiling", []), group, policy, request.get("filesystem_helper"), request.get("protected_paths", [])).handle
+                            request.get("ceiling", []), group, policy, request.get("filesystem_helper"), request.get("protected_paths", []), sdk=metadata["manifest"]["sdk"]).handle
             channels = (parent_read, parent_write)
+        sdk2 = metadata["manifest"]["sdk"] == 2
+        if sdk2 and function in {"collect", "validate_settings"}:
+            from resources import selection
+            selection(metadata, arguments)
         command = python_command(ASSETS, package, policy, pure, guest_read, guest_write)
         passed = (policy,) if pure else (policy, guest_read, guest_write)
         collector_wall = metadata["manifest"]["limits"]["wall_seconds"]
@@ -110,7 +114,7 @@ def invoke(request):
         wall = (5 if pure else collector_wall) - (time.monotonic() - started)
         if wall <= 0:
             raise RuntimeError("deadline_exceeded")
-        code, output, _ = capture(command, encode({"function": function, "arguments": arguments}),
+        code, output, _ = capture(command, encode({"function": function, "arguments": arguments}, 524288 if sdk2 else 1024 * 1024),
                                   group, wall, pass_fds=passed, broker=broker, channels=channels)
         if code != 0:
             raise RuntimeError("execution_failed" if code == 70 else "runtime_unavailable")
@@ -120,12 +124,21 @@ def invoke(request):
                 raise ValueError("output")
             result = envelope["result"]
             if function == "collect":
-                validate(metadata["schemas"]["observation"], result)
+                if sdk2:
+                    from resources import collected
+                    collected(result, metadata, arguments)
+                    validate(metadata["schemas"]["observation"], result["observation"])
+                else:
+                    validate(metadata["schemas"]["observation"], result)
             elif function == "reduce":
                 validate(metadata["schemas"]["state"], result)
-                encode(result, 16384)
+                encode(result, 65536 if sdk2 else 16384)
             elif function == "evaluate":
-                timeline(result, arguments, metadata["catalog"])
+                if sdk2:
+                    from resources import timeline as resource_timeline
+                    resource_timeline(result, arguments, metadata)
+                else:
+                    timeline(result, arguments, metadata["catalog"])
             elif function == "validate_settings":
                 errors(result, metadata)
             return {"result": result, "content_sha256": metadata["content_sha256"]}

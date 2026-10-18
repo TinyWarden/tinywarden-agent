@@ -1,0 +1,62 @@
+{
+  "format": 2,
+  "id": "example/resource-probe",
+  "version": "1.0.0",
+  "runtime": "python-3.13-v1",
+  "sdk": 2,
+  "state_version": 1,
+  "license": "Apache-2.0",
+  "publisher": "Example",
+  "name_key": "name",
+  "description_key": "description",
+  "category": "system",
+  "compatibility": {
+    "os": [
+      "debian:13"
+    ],
+    "architectures": [
+      "amd64",
+      "arm64"
+    ]
+  },
+  "defaults": {
+    "targets": [],
+    "interval_seconds": 60
+  },
+  "schedule": {
+    "minimum_seconds": 60,
+    "maximum_seconds": 86400
+  },
+  "capabilities": [],
+  "limits": {
+    "wall_seconds": 5
+  },
+  "fields": {
+    "targets": {
+      "label_key": "items",
+      "help_key": "help",
+      "unit": "",
+      "order": 0,
+      "scope": "host",
+      "editor": {
+        "kind": "resources",
+        "collection": "items"
+      }
+    },
+    "interval_seconds": {
+      "label_key": "items",
+      "help_key": "help",
+      "unit": "seconds",
+      "order": 1
+    }
+  },
+  "resource_collections": {
+    "items": {
+      "selection_field": "targets",
+      "label_key": "items",
+      "help_key": "help",
+      "max_discovered": 512,
+      "max_selected": 64
+    }
+  }
+}

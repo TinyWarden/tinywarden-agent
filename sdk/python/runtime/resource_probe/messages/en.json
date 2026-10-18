@@ -1,0 +1,34 @@
+{
+  "name": {
+    "text": "Probe",
+    "parameters": {}
+  },
+  "description": {
+    "text": "Synthetic probe",
+    "parameters": {}
+  },
+  "ok": {
+    "text": "Passed",
+    "parameters": {}
+  },
+  "items": {
+    "text": "items",
+    "parameters": {}
+  },
+  "help": {
+    "text": "help",
+    "parameters": {}
+  },
+  "running": {
+    "text": "running",
+    "parameters": {}
+  },
+  "partial": {
+    "text": "partial",
+    "parameters": {}
+  },
+  "ineligible": {
+    "text": "ineligible",
+    "parameters": {}
+  }
+}

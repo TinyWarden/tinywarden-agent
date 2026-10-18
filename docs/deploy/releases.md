@@ -13,7 +13,7 @@ Use a new output directory and a protected Ed25519 private key outside the repos
 ```sh
 python3 scripts/release.py --output /absolute/release-output \
   --signing-key /protected/release-key.pem --source-commit FULL_COMMIT_HASH \
-  --source-min 0.0.8 --source-max 0.0.9
+  --source-min 0.0.8 --source-max 0.0.11
 ```
 
 Choose the supported source range deliberately. It declares state compatibility;

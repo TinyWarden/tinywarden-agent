@@ -53,7 +53,7 @@ func newPackageLane(ctx context.Context, store *Store, client *Client, state Sta
 		config.RuntimeAssets = "/usr/local/lib/tinywarden-agent/runtime"
 	}
 	if config.SkillOperations == nil {
-		config.SkillOperations = []string{"files.read", "files.stat", "files.list", "filesystems.snapshot", "systemd.properties", "command.capture"}
+		config.SkillOperations = []string{"files.read", "files.stat", "files.list", "filesystems.snapshot", "systemd.properties", "command.capture", "systemd.services.list", "systemd.services.read"}
 	}
 	lane := &packageLane{store: store, client: client, state: state, config: config, ledger: ledger,
 		runtime: skillruntime.Client{Assets: config.RuntimeAssets}, ctx: ctx, cancel: cancel, emit: emit, now: time.Now,
@@ -85,7 +85,7 @@ func (lane *packageLane) tick(context.Context) error {
 		lane.fetching = true
 		paused := lane.ledger.Paused
 		go func() {
-			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx))
+			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx), !paused && lane.runtime.ResourcesReady(lane.ctx))
 			lane.fetch <- packageFetched{r, e}
 		}()
 	}

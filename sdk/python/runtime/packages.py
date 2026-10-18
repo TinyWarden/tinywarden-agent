@@ -14,12 +14,12 @@ from notifications import inspect_notifications
 
 MANIFEST_KEYS = {"format", "id", "version", "runtime", "sdk", "state_version", "license",
                  "publisher", "name_key", "description_key", "category", "compatibility",
-                 "defaults", "schedule", "capabilities", "limits", "fields", "alias"}
+                 "defaults", "schedule", "capabilities", "limits", "fields", "alias", "resource_collections"}
 REQUIRED = {"skill.json", "skill.py", "settings.schema.json", "observation.schema.json",
             "state.schema.json", "messages/en.json", "README.md", "LICENSE"}
 ALIASES = {"disk-local", "package-updates", "reboot-required", "fstrim-status"}
 OPERATIONS = {"files.read", "files.stat", "files.list", "filesystems.snapshot",
-              "systemd.properties", "command.capture"}
+              "systemd.properties", "command.capture", "systemd.services.list", "systemd.services.read"}
 
 
 def path_name(name):
@@ -53,10 +53,12 @@ def load(root, expected=None, official=False):
     if expected is not None and expected != digest:
         raise ValueError("package_digest")
     manifest = decode(files["skill.json"], 65536)
-    if not isinstance(manifest, dict) or set(manifest) - MANIFEST_KEYS or MANIFEST_KEYS - {"alias"} - manifest.keys():
+    if not isinstance(manifest, dict) or set(manifest) - MANIFEST_KEYS or MANIFEST_KEYS - {"alias", "resource_collections"} - manifest.keys():
         raise ValueError("package_manifest")
-    if type(manifest["format"]) is not int or type(manifest["sdk"]) is not int or manifest["format"] != 1 or manifest["sdk"] != 1 or manifest["runtime"] != "python-3.13-v1":
+    if type(manifest["format"]) is not int or type(manifest["sdk"]) is not int or (manifest["format"], manifest["sdk"]) not in {(1, 1), (2, 2)} or manifest["runtime"] != "python-3.13-v1":
         raise ValueError("package_runtime")
+    if manifest["sdk"] == 1 and "resource_collections" in manifest:
+        raise ValueError("package_manifest")
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}/[a-z][a-z0-9-]{0,63}", manifest["id"]):
         raise ValueError("package_id")
     if manifest["id"].startswith("tinywarden/") and not official:
@@ -78,6 +80,8 @@ def load(root, expected=None, official=False):
     for grant in manifest["capabilities"]:
         if not isinstance(grant, dict) or grant.get("operation") not in OPERATIONS:
             raise ValueError("package_capabilities")
+        if manifest["sdk"] == 1 and grant["operation"].startswith("systemd.services."):
+            raise ValueError("package_capabilities")
         inspect_grant(grant)
     if manifest["schedule"] != {"minimum_seconds": 60, "maximum_seconds": 86400}:
         raise ValueError("package_schedule")
@@ -87,7 +91,7 @@ def load(root, expected=None, official=False):
     schemas = {}
     for kind in ("settings", "observation", "state"):
         schemas[kind] = decode(files[kind + ".schema.json"], 65536)
-        inspect(schemas[kind], settings=kind == "settings")
+        inspect(schemas[kind], settings=kind == "settings", sdk=manifest["sdk"])
     validate(schemas["settings"], manifest["defaults"])
     interval = schemas["settings"].get("properties", {}).get("interval_seconds")
     if interval is not None and (interval.get("type") != "integer" or
@@ -112,13 +116,16 @@ def load(root, expected=None, official=False):
             raise ValueError("package_catalog")
     refs = [manifest["name_key"], manifest["description_key"]]
     for field in fields.values():
-        if not isinstance(field, dict) or set(field) != {"label_key", "help_key", "unit", "order"}:
+        if not isinstance(field, dict) or set(field) - {"label_key", "help_key", "unit", "order", "scope", "editor"} or not {"label_key", "help_key", "unit", "order"} <= set(field) or manifest["sdk"] == 1 and set(field) != {"label_key", "help_key", "unit", "order"}:
             raise ValueError("package_fields")
         if not isinstance(field["unit"], str) or len(field["unit"]) > 32 or type(field["order"]) is not int:
             raise ValueError("package_fields")
         refs += [field["label_key"], field["help_key"]]
     if any(key not in catalog or catalog[key]["parameters"] for key in refs):
         raise ValueError("package_catalog")
+    if manifest["sdk"] == 2:
+        from resources import inspect_resources
+        inspect_resources(manifest, schemas, catalog)
     # Names reach shared history even when a package is disabled.
     if len(catalog[manifest["name_key"]]["text"].encode("utf-16-le")) > 4096 or len(
             encode(catalog[manifest["name_key"]]["text"])) > 1024:

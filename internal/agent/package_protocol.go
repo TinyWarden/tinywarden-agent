@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 )
 
-func (client *Client) fetchPackages(ctx context.Context, state State, ready bool) (*packageResponse, error) {
+func (client *Client) fetchPackages(ctx context.Context, state State, ready bool, resources ...bool) (*packageResponse, error) {
+	if len(resources) > 0 && resources[0] {
+		ctx = context.WithValue(ctx, resourceFeatureContext{}, true)
+	}
 	wire, err := client.post(ctx, "/api/v2/agent/skill-assignments", state.Credential,
 		struct {
 			SchemaVersion int  `json:"schema_version"`
@@ -41,3 +44,5 @@ func (client *Client) uploadPackage(ctx context.Context, state State, pending pa
 	}
 	return nil
 }
+
+type resourceFeatureContext struct{}

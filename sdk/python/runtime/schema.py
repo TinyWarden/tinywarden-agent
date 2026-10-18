@@ -4,7 +4,7 @@ KEYWORDS = {"type", "properties", "required", "additionalProperties", "items", "
 TYPES = {"object", "array", "string", "integer", "number", "boolean"}
 
 
-def inspect(schema, depth=0, settings=False):
+def inspect(schema, depth=0, settings=False, sdk=1):
     if not isinstance(schema, dict) or set(schema) - KEYWORDS or depth > 8:
         raise ValueError("unsupported_schema")
     kind = schema.get("type")
@@ -25,9 +25,9 @@ def inspect(schema, depth=0, settings=False):
         for key, child in props.items():
             if not key.isascii() or not key.replace("_", "").isalnum() or len(key) > 64:
                 raise ValueError("schema_field")
-            if not isinstance(child, dict) or settings and child.get("type") in {"array", "object"}:
+            if not isinstance(child, dict) or settings and (child.get("type") == "object" or child.get("type") == "array" and sdk == 1):
                 raise ValueError("settings_scalar")
-            inspect(child, depth + 1)
+            inspect(child, depth + 1, sdk=sdk)
     elif kind == "array":
         if type(schema.get("minItems", 0)) is not int or type(schema.get("maxItems")) is not int or not 0 <= schema.get("minItems", 0) <= schema["maxItems"] <= 128:
             raise ValueError("schema_array")

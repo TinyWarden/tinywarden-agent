@@ -11,7 +11,7 @@ from packages import content
 
 files = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
          for p in sorted(root.rglob("*")) if p.is_file() and
-         (p.suffix == ".py" or "probe" in p.relative_to(root).parts)}
+         (p.suffix == ".py" or any(part in {"probe", "resource_probe"} for part in p.relative_to(root).parts))}
 artifact = {"format": 1, "runtime": "python-3.13-v1", "sdk": 1,
             "source": "TinyWarden/tinywarden-agent/sdk/python/runtime",
             "probe_sha256": content(root / "probe")[1], "files": files}

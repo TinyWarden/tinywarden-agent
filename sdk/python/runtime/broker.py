@@ -6,7 +6,7 @@ from json_values import decode, encode
 
 
 class Broker:
-    def __init__(self, requested, approved, ceiling, group, policy, filesystem_helper=None, protected_paths=None):
+    def __init__(self, requested, approved, ceiling, group, policy, filesystem_helper=None, protected_paths=None, sdk=1):
         self.layers = [requested, approved, ceiling]
         for layer in self.layers:
             if not isinstance(layer, list) or len(layer) > 32:
@@ -16,6 +16,7 @@ class Broker:
         self.group = group
         self.filesystem_helper = filesystem_helper
         self.protected_paths = protected_paths or []
+        self.raw_limit = (512 if sdk == 2 else 256) * 1024
         self.calls, self.raw, self.sequence = 0, 0, 0
 
     def handle(self, request, remaining):
@@ -43,6 +44,8 @@ class Broker:
             if not self.filesystem_helper:
                 raise RuntimeError("runtime_unavailable")
             timeout = min(remaining, 10)
+        elif operation.startswith("systemd.services."):
+            timeout = min(remaining, 25)
         elif operation == "command.capture":
             timeout = min(remaining, *(min(g["timeout_seconds"] for g in layer) for layer in matches))
         payload = {"operation": operation, "arguments": args, "timeout": timeout,
@@ -56,6 +59,6 @@ class Broker:
         if "error" in result:
             raise RuntimeError(result["error"])
         self.raw += result["raw_bytes"]
-        if self.raw > 256 * 1024:
+        if self.raw > self.raw_limit:
             raise RuntimeError("broker_limit")
         return {"sequence": self.sequence, "value": result["value"]}

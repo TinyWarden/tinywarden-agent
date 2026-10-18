@@ -60,6 +60,9 @@ def inspect_grant(grant):
             raise ValueError("package_capabilities")
         if not isinstance(grant["properties"], list) or not 1 <= len(grant["properties"]) <= 32 or not set(grant["properties"]) <= PROPERTIES:
             raise ValueError("package_capabilities")
+    elif operation in {"systemd.services.list", "systemd.services.read"}:
+        if set(grant) != {"operation"}:
+            raise ValueError("package_capabilities")
     elif operation == "command.capture":
         required = {"operation", "executable", "argv", "inputs", "timeout_seconds"}
         if not required <= set(grant) or set(grant) - required - {"helpers", "empty_directories"}:
@@ -130,6 +133,11 @@ def permits(grant, operation, args):
         return args == {}
     if operation == "systemd.properties":
         return set(args) == {"unit", "properties"} and isinstance(grant["units"], list) and isinstance(args["unit"], str) and not args["unit"].startswith("-") and args["unit"] in grant["units"] and isinstance(args["properties"], list) and 1 <= len(args["properties"]) <= 32 and set(args["properties"]) <= set(grant["properties"])
+    if operation == "systemd.services.list":
+        return args == {}
+    if operation == "systemd.services.read":
+        from systemd_services import unit_name
+        return set(args) == {"units"} and isinstance(args["units"], list) and len(args["units"]) <= 64 and all(unit_name(v) for v in args["units"]) and len(set(args["units"])) == len(args["units"])
     if operation == "command.capture":
         if not {"executable", "argv", "inputs"} <= set(args) or set(args) - {"executable", "argv", "inputs", "helpers", "empty_directories"} or args["executable"] != grant["executable"]:
             return False

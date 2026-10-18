@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "manifest": {
+      "format": 2,
+      "sdk": 2,
+      "resource_collections": {
+        "items": {
+          "selection_field": "targets",
+          "label_key": "items",
+          "help_key": "help",
+          "max_discovered": 512,
+          "max_selected": 64
+        }
+      },
+      "fields": {
+        "targets": {
+          "label_key": "items",
+          "help_key": "help",
+          "unit": "",
+          "order": 0,
+          "scope": "host",
+          "editor": {
+            "kind": "resources",
+            "collection": "items"
+          }
+        },
+        "interval_seconds": {
+          "label_key": "items",
+          "help_key": "help",
+          "unit": "seconds",
+          "order": 1
+        }
+      },
+      "defaults": {
+        "targets": [],
+        "interval_seconds": 60
+      }
+    },
+    "catalog": {
+      "items": {
+        "text": "items",
+        "parameters": {}
+      },
+      "help": {
+        "text": "help",
+        "parameters": {}
+      },
+      "running": {
+        "text": "running",
+        "parameters": {}
+      },
+      "partial": {
+        "text": "partial",
+        "parameters": {}
+      },
+      "ineligible": {
+        "text": "ineligible",
+        "parameters": {}
+      }
+    },
+    "schemas": {
+      "settings": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "minItems": 0,
+            "maxItems": 64
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400
+          }
+        },
+        "required": [
+          "targets",
+          "interval_seconds"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "settings": {
+    "targets": [
+      "a",
+      "b"
+    ],
+    "interval_seconds": 60
+  },
+  "inventory": [
+    {
+      "collection": "items",
+      "complete": true,
+      "reason": null,
+      "items": [
+        {
+          "key": "a",
+          "label": "a",
+          "description": "Resource a",
+          "selectable": true,
+          "selection_reason": null,
+          "state": {
+            "key": "running",
+            "params": {}
+          }
+        },
+        {
+          "key": "b",
+          "label": "b",
+          "description": "Resource b",
+          "selectable": true,
+          "selection_reason": null,
+          "state": {
+            "key": "running",
+            "params": {}
+          }
+        }
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "from": 1000,
+      "subjects": [
+        {
+          "collection": "items",
+          "key": "a",
+          "status": "healthy",
+          "reason": {
+            "key": "running",
+            "params": {}
+          },
+          "facts": []
+        },
+        {
+          "collection": "items",
+          "key": "b",
+          "status": "healthy",
+          "reason": {
+            "key": "running",
+            "params": {}
+          },
+          "facts": []
+        }
+      ],
+      "facts": []
+    }
+  ]
+}

@@ -202,7 +202,7 @@ func TestConfiguredOriginAndStatePathFailClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if loaded, err := LoadConfig(path); err != nil || loaded.ControlPlaneOrigin != valid.ControlPlaneOrigin || loaded.StateDir != valid.StateDir ||
-		loaded.RuntimeAssets != "/usr/local/lib/tinywarden-agent/runtime" || len(loaded.SkillOperations) != 6 || loaded.configPath != path {
+		loaded.RuntimeAssets != "/usr/local/lib/tinywarden-agent/runtime" || len(loaded.SkillOperations) != 8 || loaded.configPath != path {
 		t.Fatal("valid native configuration rejected", err)
 	}
 }

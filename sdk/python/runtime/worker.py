@@ -50,6 +50,10 @@ def run(request):
     if operation == "command.capture":
         value, raw = command(args, group, timeout)
         return {"value": value, "raw_bytes": raw}
+    if operation in {"systemd.services.list", "systemd.services.read"}:
+        from systemd_services import run as services
+        value = services(operation, args, group, timeout)
+        return {"value": value, "raw_bytes": len(encode(value))}
     if operation == "systemd.properties":
         argv = ["/usr/bin/systemctl", "--system", "--no-pager", "--no-ask-password", "--all",
                 "--timestamp=unix", "show", "--property=" + ",".join(args["properties"]), "--", args["unit"]]

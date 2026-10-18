@@ -19,6 +19,7 @@ type packageManualRequest struct {
 	ExpiresAt string `json:"expires_at"`
 }
 type packageAssignment struct {
+	Format         int                   `json:"package_format,omitempty"`
 	Manual         *packageManualRequest `json:"manual_request,omitempty"`
 	InstallationID string                `json:"installation_id"`
 	ID             string                `json:"assignment_id,omitempty"`
@@ -33,6 +34,7 @@ type packageAssignment struct {
 	Interval       int                   `json:"interval_seconds,omitempty"`
 }
 type packageResponse struct {
+	Features        []string            `json:"features,omitempty"`
 	ManualSupported bool                `json:"manual_runs_supported,omitempty"`
 	SchemaVersion   int                 `json:"schema_version"`
 	Generation      string              `json:"generation"`
@@ -42,6 +44,7 @@ type packageResponse struct {
 	Assignments     []packageAssignment `json:"assignments"`
 }
 type packageRun struct {
+	Resources     json.RawMessage `json:"resources,omitempty"`
 	ManualID      string          `json:"manual_request_id,omitempty"`
 	SchemaVersion int             `json:"schema_version"`
 	ID            string          `json:"run_id"`
@@ -73,7 +76,7 @@ type packageLedger struct {
 }
 
 func validPackageResponse(scope baselineScope, response packageResponse) bool {
-	if response.SchemaVersion != 1 || response.Generation != strconv.FormatUint(scope.Generation, 10) || len(response.Assignments) > 100 ||
+	if (response.SchemaVersion != 1 && response.SchemaVersion != 2) || response.Generation != strconv.FormatUint(scope.Generation, 10) || len(response.Assignments) > 100 ||
 		response.Assignments == nil || !validInstant(response.IssuedAt) || !validInstant(response.ValidUntil) {
 		return false
 	}
@@ -88,6 +91,12 @@ func validPackageResponse(scope baselineScope, response packageResponse) bool {
 			return false
 		}
 		ids[entry.InstallationID] = true
+		if entry.Format != 0 && entry.Format != 1 && entry.Format != 2 {
+			return false
+		}
+		if entry.Format == 2 && (response.SchemaVersion != 2 || len(response.Features) != 1 || response.Features[0] != "skill_resources.python313.v1") {
+			return false
+		}
 		if entry.ArchiveDigest != "" && (!contentDigest.MatchString(entry.ArchiveDigest) || entry.ArchiveBytes < 1 || entry.ArchiveBytes > 10<<20) || entry.ArchiveDigest == "" && entry.ArchiveBytes != 0 {
 			return false
 		}

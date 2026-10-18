@@ -50,6 +50,7 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 		active.Run.FinishedAt = active.Run.StartedAt
 		active.Run.Outcome = "execution_failed"
 		active.Run.Observation = json.RawMessage("null")
+		active.Run.Resources = nil
 		body, err := json.Marshal(active.Run)
 		if err != nil {
 			return fresh, err
@@ -69,7 +70,7 @@ func validStoredPackageRun(run packageRun) bool {
 	if run.ManualID != "" && !validID(run.ManualID) {
 		return false
 	}
-	if !validID(run.ID) || !validID(run.AssignmentID) || !validInstant(run.StartedAt) || !validInstant(run.FinishedAt) || run.SchemaVersion != 1 || run.Sequence < 1 || run.Sequence > safeCounter {
+	if !validID(run.ID) || !validID(run.AssignmentID) || !validInstant(run.StartedAt) || !validInstant(run.FinishedAt) || (run.SchemaVersion != 1 && run.SchemaVersion != 2) || run.Sequence < 1 || run.Sequence > safeCounter {
 		return false
 	}
 	started, _ := time.Parse(time.RFC3339Nano, run.StartedAt)
@@ -78,11 +79,11 @@ func validStoredPackageRun(run packageRun) bool {
 		return false
 	}
 	if run.Outcome == "observed" {
-		return string(run.Observation) != "null"
+		return string(run.Observation) != "null" && (run.SchemaVersion == 1 && len(run.Resources) == 0 || run.SchemaVersion == 2 && json.Valid(run.Resources) && len(run.Resources) <= 262144)
 	}
 	switch run.Outcome {
 	case "execution_failed", "runtime_unavailable", "capability_denied", "deadline_exceeded", "resource_exhausted", "broker_limit", "output_exceeded", "output_invalid", "observation_unavailable", "package_rejected", "cleanup_failed":
-		return string(run.Observation) == "null"
+		return string(run.Observation) == "null" && len(run.Resources) == 0
 	}
 	return false
 }

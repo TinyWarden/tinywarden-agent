@@ -1,5 +1,7 @@
 # Python SDK v1 reference
 
+For resource discovery and independent per-target health, see [SDK 2](sdk-v2.md).
+
 Implemented identifiers: `format: 1`, `sdk: 1`, `runtime: "python-3.13-v1"`.
 These identify the package protocol, not the app/agent release. See the
 [authoring walkthrough](authoring.md) for the starter, commands and version rules.

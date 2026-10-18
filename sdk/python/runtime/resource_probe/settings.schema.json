@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 255
+      },
+      "minItems": 0,
+      "maxItems": 64
+    },
+    "interval_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 86400
+    }
+  },
+  "required": [
+    "targets",
+    "interval_seconds"
+  ],
+  "additionalProperties": false
+}

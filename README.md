@@ -67,3 +67,9 @@ Agent CLI copy is embedded from internal/cli/en.json; author-tool help lives in
 sdk/python/authoring/en.json, for future translations.
 Authored source is Apache-2.0; bundled Go redistribution terms are retained in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Resource-capable SDK 2 source is implemented alongside SDK 1. See
+[the SDK 2 contract](docs/skills/sdk-v2.md) for explicit selections, independent
+subjects, the read-only systemd capabilities and mixed-version negotiation. The
+compatible signed platform release is prepared only from an approved exact source
+commit; source acceptance does not advertise a published release.

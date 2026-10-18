@@ -9,6 +9,9 @@ checkout and keep your own package in another directory. No app checkout, Go bui
 or database is needed. The SDK and `skills/examples/memory-pressure` can also be
 copied together into a standalone source kit, without any compiled core source.
 
+Resource skills use [SDK 2](sdk-v2.md) with the same tools. Host selection and
+independent subjects are metadata-driven; a new resource kind needs no app UI code.
+
 ## Create and edit
 
 From the SDK checkout:

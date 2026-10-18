@@ -21,6 +21,9 @@ func (lane *packageLane) allocate(entry packageAssignment, now time.Time) (packa
 	}
 	next := lane.ledger.Sequences[entry.InstallationID] + 1
 	active := packageActive{entry, packageRun{SchemaVersion: 1, ID: id, Sequence: next, AssignmentID: entry.ID, StartedAt: baselineStamp(now), FinishedAt: baselineStamp(now), Outcome: "execution_failed", Observation: json.RawMessage("null")}}
+	if entry.Format == 2 {
+		active.Run.SchemaVersion = 2
+	}
 	if lane.manualReady(entry, now) {
 		active.Run.ManualID = entry.Manual.ID
 		lane.ledger.Consumed[entry.InstallationID] = entry.Manual.ID
@@ -46,6 +49,7 @@ func (lane *packageLane) complete(run packageRun) error {
 	if len(body) > 1<<20 {
 		run.Outcome = "output_exceeded"
 		run.Observation = json.RawMessage("null")
+		run.Resources = nil
 		body, err = json.Marshal(run)
 		if err != nil {
 			return err
@@ -110,7 +114,20 @@ func (lane *packageLane) collect(ctx context.Context, active packageActive) pack
 	}
 	if err == nil {
 		run.Outcome = "observed"
-		run.Observation = observation
+		if active.Entry.Format == 2 {
+			var envelope struct {
+				Observation json.RawMessage `json:"observation"`
+				Resources   json.RawMessage `json:"resources"`
+			}
+			if decodeBaseline(observation, &envelope) != nil || len(envelope.Observation) == 0 || len(envelope.Resources) == 0 {
+				run.Outcome = "output_invalid"
+				return packageCompleted{run, false}
+			}
+			run.Observation = envelope.Observation
+			run.Resources = envelope.Resources
+		} else {
+			run.Observation = observation
+		}
 		return packageCompleted{run, false}
 	}
 	var failure *skillruntime.Error

@@ -8,18 +8,20 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "sdk/python/runtime"))
 from notifications import inspect_notifications
 from packages import load
+from official_fixtures import official_root
 
 
 class NotificationAdmission(unittest.TestCase):
     def setUp(self):
-        self.metadata = load(ROOT / "skills/official/disk-local", official=True)
+        self.official = official_root(self)
+        self.metadata = load(self.official / "disk-local", official=True)
         self.value = copy.deepcopy(self.metadata["notifications"])
 
     def inspect(self, value):
         return inspect_notifications(json.dumps(value).encode(), self.metadata["catalog"], self.metadata["schemas"]["settings"])
 
     def test_official_definitions_and_independent_package(self):
-        for p in (ROOT / "skills/official").iterdir():
+        for p in self.official.iterdir():
             self.assertEqual(load(p, official=True)["notifications"]["format"], 1)
         m = load(ROOT / "skills/examples/memory-pressure")
         m["catalog"]["notify.community"] = {"text": "Local use is {used}%.", "parameters": {"used": "number"}}

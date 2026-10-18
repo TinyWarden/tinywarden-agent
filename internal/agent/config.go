@@ -53,9 +53,9 @@ func LoadConfig(path string) (Config, error) {
 		return config, errors.New("invalid runtime path")
 	}
 	if config.SkillOperations == nil {
-		config.SkillOperations = []string{"files.read", "files.stat", "files.list", "filesystems.snapshot", "systemd.properties", "command.capture"}
+		config.SkillOperations = []string{"files.read", "files.stat", "files.list", "filesystems.snapshot", "systemd.properties", "command.capture", "systemd.services.list", "systemd.services.read"}
 	}
-	allowed := map[string]bool{"files.read": true, "files.stat": true, "files.list": true, "filesystems.snapshot": true, "systemd.properties": true, "command.capture": true}
+	allowed := map[string]bool{"files.read": true, "files.stat": true, "files.list": true, "filesystems.snapshot": true, "systemd.properties": true, "command.capture": true, "systemd.services.list": true, "systemd.services.read": true}
 	seen := map[string]bool{}
 	for _, operation := range config.SkillOperations {
 		if !allowed[operation] || seen[operation] {
