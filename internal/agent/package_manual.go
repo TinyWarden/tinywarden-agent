@@ -52,8 +52,14 @@ func (client *Client) startPackageManual(ctx context.Context, state State, run p
 		return time.Time{}, errPackageState
 	}
 	deadline, _ := time.Parse(time.RFC3339Nano, response.Deadline)
-	if !deadline.After(time.Now()) || deadline.After(time.Now().Add(90*time.Second)) {
+	now := time.Now()
+	// Match the protocol's 5s clock tolerance without extending the local budget.
+	// A server slightly ahead can otherwise reject its own valid 90s grant here.
+	if !deadline.After(now) || deadline.After(now.Add(95*time.Second)) {
 		return time.Time{}, errPackageState
+	}
+	if limit := now.Add(90 * time.Second); deadline.After(limit) {
+		deadline = limit
 	}
 	return deadline, nil
 }

@@ -85,6 +85,11 @@ New agents read older state; after manual state is written, a binary-only downgr
 is unsupported. Recover forward without resetting counters or restoring old state.
 See the [manual-run API](https://github.com/TinyWarden/tinywarden/blob/main/docs/architecture/skill-manual-runs.md).
 
+Agent0.0.12 fixes manual starts when the app clock is slightly ahead: it accepts
+five seconds of clock tolerance and clamps execution to the existing90-second
+local limit. A shorter server/assignment deadline still wins; expired or excessive
+deadlines remain invalid. Refresh resources uses the same corrected lifecycle.
+
 ### Contact recovery and diagnostics
 
 Agent0.0.6 keeps the existing protocol and state format. After five retryable

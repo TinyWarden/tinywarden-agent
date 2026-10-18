@@ -273,5 +273,6 @@
   "tests/runtime/test_authoring_sandbox.py": "Delegated native standalone SDK acceptance; real broker collection, expectations and host isolation.",
   "tests/runtime/test_dashboard.py": "Static dashboard declaration boundary tests for independent and official packages.",
   "tests/runtime/test_sandbox.py": "S2 test sandbox; generic package integration and verification.",
-  "tests/runtime/test_security_boundaries.py": "Regression checks for scope review, response budgets, values and killed-admission cleanup."
+  "tests/runtime/test_security_boundaries.py": "Regression checks for scope review, response budgets, values and killed-admission cleanup.",
+  "internal/agent/package_manual_deadline_test.go": "Manual claim clock tolerance, invalid deadlines and bounded local execution budget regression tests."
 }
