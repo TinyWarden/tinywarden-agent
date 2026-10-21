@@ -179,7 +179,7 @@ func TestPackageCleanupFailurePausesDurablyButReceivesAuthority(t *testing.T) {
 	response := *lane.ledger.Cache
 	response.Assignments = []packageAssignment{}
 	response.RuntimeReady = false
-	lane.fetch <- packageFetched{&response, nil}
+	lane.fetch <- packageFetched{response: &response}
 	if err := lane.receive(time.Now()); err != nil || !lane.ledger.Paused {
 		t.Fatal("authority refresh silently resumed", err)
 	}

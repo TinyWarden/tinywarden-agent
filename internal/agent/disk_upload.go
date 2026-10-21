@@ -31,23 +31,26 @@ type uploadedRun struct {
 	err error
 }
 type diskLane struct {
-	store          *Store
-	client         *Client
-	state          *State
-	known          **AssignmentCache
-	queue          diskQueue
-	sequence       diskSequence
-	collection     chan collectedRun
-	collecting     bool
-	upload         chan uploadedRun
-	uploading      bool
-	nextCollection time.Time
-	assignmentID   string
-	nextUpload     time.Time
-	uploadFailures int
-	lastWall       time.Time
-	collect        func(context.Context) CollectorResult
-	emit           func(string)
+	monitoring       *monitoringLane
+	controlEpoch     uint64
+	cancelCollection context.CancelFunc
+	store            *Store
+	client           *Client
+	state            *State
+	known            **AssignmentCache
+	queue            diskQueue
+	sequence         diskSequence
+	collection       chan collectedRun
+	collecting       bool
+	upload           chan uploadedRun
+	uploading        bool
+	nextCollection   time.Time
+	assignmentID     string
+	nextUpload       time.Time
+	uploadFailures   int
+	lastWall         time.Time
+	collect          func(context.Context) CollectorResult
+	emit             func(string)
 }
 
 func newDiskLane(store *Store, client *Client, state *State, known **AssignmentCache,
@@ -105,6 +108,10 @@ func (lane *diskLane) tick(ctx context.Context) error {
 	default:
 	}
 	now := time.Now()
+	allowed := lane.monitoring.allowed() && lane.controlEpoch == lane.monitoring.epoch()
+	if !allowed && lane.cancelCollection != nil {
+		lane.cancelCollection()
+	}
 	if !lane.lastWall.IsZero() && now.Before(lane.lastWall) {
 		*lane.known = nil
 		lane.emit("assignment_lease_invalid")
@@ -114,7 +121,7 @@ func (lane *diskLane) tick(ctx context.Context) error {
 		lane.assignmentID = (*lane.known).ID
 		lane.nextCollection = time.Time{}
 	}
-	if !lane.collecting && !now.Before(lane.nextCollection) && assignmentLease(*lane.known, now) {
+	if !lane.collecting && !now.Before(lane.nextCollection) && allowed && assignmentLease(*lane.known, now) {
 		sequence, err := allocateRunSequence(lane.store, &lane.sequence)
 		if err != nil {
 			return err
@@ -126,10 +133,13 @@ func (lane *diskLane) tick(ctx context.Context) error {
 		assignment := **lane.known
 		dropped := lane.queue.DroppedRuns
 		lane.collecting = true
+		collectCtx, cancel := context.WithCancel(ctx)
+		lane.cancelCollection = cancel
 		lane.nextCollection = now.Add(time.Duration(assignment.Assignment.Effective.IntervalSeconds) * time.Second)
 		go func() {
 			started := stamp()
-			result := lane.collect(ctx)
+			result := lane.collect(collectCtx)
+			cancel()
 			finished := stamp()
 			lane.collection <- collectedRun{request: DiskRunRequest{SchemaVersion: 1,
 				RunID: id, RunSequence: sequence, AssignmentID: assignment.ID,

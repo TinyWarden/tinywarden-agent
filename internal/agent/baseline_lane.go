@@ -10,10 +10,13 @@ import (
 )
 
 type baselineFetched struct {
-	response *baselineResponse
-	err      error
+	controlEpoch uint64
+	response     *baselineResponse
+	err          error
 }
 type baselineLane struct {
+	monitoring                            *monitoringLane
+	controlEpoch                          uint64
 	store                                 *Store
 	client                                *Client
 	state                                 State // Captured identity; heartbeat cannot race its credential reads.
@@ -128,6 +131,7 @@ func (lane *baselineLane) tick(context.Context) error {
 		return nil
 	}
 	expires, leased := baselineLease(lane.cache, wall)
+	leased = leased && lane.monitoring.allowed() && lane.controlEpoch == lane.monitoring.epoch()
 	if !leased && lane.cancelRun != nil {
 		lane.cancelRun()
 	}
@@ -135,9 +139,10 @@ func (lane *baselineLane) tick(context.Context) error {
 		lane.fetching = true
 		known := lane.cache // Immutable while this request is in flight.
 		caps := lane.capabilities()
+		controlEpoch := lane.monitoring.epoch()
 		go func() {
 			r, err := lane.client.fetchBaseline(lane.ctx, lane.state, known, caps)
-			lane.fetch <- baselineFetched{r, err}
+			lane.fetch <- baselineFetched{controlEpoch: controlEpoch, response: r, err: err}
 		}()
 	}
 	if !lane.running && leased && lane.available() {
@@ -199,6 +204,10 @@ func (lane *baselineLane) receive(now time.Time) error {
 	select {
 	case result := <-lane.fetch:
 		lane.fetching = false
+		if result.controlEpoch != lane.monitoring.epoch() {
+			lane.nextFetch = now
+			return nil
+		}
 		if result.err != nil {
 			if terminal(result.err) {
 				// Persistence failure must not hide the 401 that stops every lane.
@@ -224,6 +233,7 @@ func (lane *baselineLane) receive(now time.Time) error {
 					lane.due[i] = time.Time{}
 				}
 			}
+			lane.controlEpoch = result.controlEpoch
 			lane.cache = &cache
 			lane.fetchFailures = 0
 			lane.nextFetch = now.Add(60 * time.Second)

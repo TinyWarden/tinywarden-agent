@@ -13,7 +13,7 @@ import (
 	"github.com/TinyWarden/tinywarden-agent/internal/platform"
 )
 
-func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer) (bool, error) {
+func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, reconnectCopy ReconnectMessages) (bool, error) {
 	if len(args) == 0 {
 		return false, nil
 	}
@@ -22,7 +22,7 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer) (b
 		mode = "uninstall"
 	}
 	switch mode {
-	case "install", "update", "check", "repair", "auto-updates", "uninstall":
+	case "install", "update", "check", "repair", "reconnect", "auto-updates", "uninstall":
 	default:
 		return false, nil
 	}
@@ -60,6 +60,15 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer) (b
 			return true, errors.New("install requires --archive, --manifest and --signature; adoption does not accept a setup code")
 		}
 		return true, Install(ctx, InstallOptions{Base: *base, Archive: *archive, Manifest: *manifest, Signature: *signature, CodeFile: *codeFile, Automatic: !*noAuto, Adopt: *adopt})
+	case "reconnect":
+		if f.NArg() != 0 || *archive != "" || *manifest != "" || *signature != "" || *adopt || *purge || *keep || *automatic || *noAuto {
+			return true, errors.New(reconnectCopy.Arguments)
+		}
+		e := Reconnect(ctx, *base, *codeFile, reconnectCopy)
+		if e == nil {
+			fmt.Fprintln(out, reconnectCopy.Completed)
+		}
+		return true, e
 	case "auto-updates":
 		if f.NArg() != 1 || f.Arg(0) != "on" && f.Arg(0) != "off" {
 			return true, errors.New("choose auto-updates on or off")

@@ -1,6 +1,6 @@
 {
   "name": "tinywarden-agent",
-  "usage": "Usage: tinywarden-agent --version | --help | enroll --config CONFIG_PATH --token-file TOKEN_PATH | replace --config CONFIG_PATH --token-file TOKEN_PATH | run --config CONFIG_PATH\nAdministrative commands (sudo): install, update, check, repair, auto-updates on|off, --uninstall [--keep-data|--purge]. Use --install-dir for a custom managed location. Monitoring runs as the service account.",
+  "usage": "Usage: tinywarden-agent --version | --help | enroll --config CONFIG_PATH --token-file TOKEN_PATH | replace --config CONFIG_PATH --token-file TOKEN_PATH | run --config CONFIG_PATH\nAdministrative commands (sudo): install, update, check, repair, reconnect, auto-updates on|off, --uninstall [--keep-data|--purge]. Use --install-dir for a custom managed location. Monitoring runs as the service account.",
   "notReady": "Choose enroll, replace or run. Use --help for the required options.",
   "invalidArguments": "Unsupported arguments. Use --help for available options.",
   "enrolled": "Enrollment confirmed. Start the agent to send heartbeats.",
@@ -9,5 +9,11 @@
   "degraded": "The server is unavailable. Retrying the saved request at a slower rate.",
   "recovered": "Connection restored.",
   "commandFailed": "Agent stopped. Check its configuration, private state and server availability.",
-  "heartbeatDiagnostic": "Heartbeat diagnostic:"
+  "heartbeatDiagnostic": "Heartbeat diagnostic:",
+  "reconnect": {
+    "scopeMismatch": "This setup code belongs to a different server or app.",
+    "unfinished": "Reconnection is unfinished. The service will resume its saved replacement request.",
+    "arguments": "Use reconnect with --install-dir and optionally --setup-code-file.",
+    "completed": "Server reconnected. The agent follows its current monitoring policy."
+  }
 }

@@ -42,7 +42,7 @@ func TestTerminalAssignmentRejectionPersistsPauseAcrossRestartAndOutage(t *testi
 	var runCalls atomic.Int32
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/v1/agent/baseline-assignments":
+		case "/api/v1/agent/baseline-assignments", "/api/v1/agent/monitoring-control":
 			w.WriteHeader(404)
 		case "/api/v1/agent/heartbeat":
 			var input struct {

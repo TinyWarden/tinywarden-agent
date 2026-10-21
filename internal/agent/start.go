@@ -48,6 +48,11 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 	if len(diagnostics) > 0 {
 		diagnostic = diagnostics[0]
 	}
+	monitoring, controlErr := newMonitoringLane(store, client, state, emit)
+	if controlErr != nil {
+		emit("monitoring_control_invalid")
+		return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, diagnostic, maintenance.tick)
+	}
 	assets := config.RuntimeAssets
 	if assets == "" {
 		assets = "/usr/local/lib/tinywarden-agent/runtime"
@@ -59,17 +64,27 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 			return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(ctx context.Context) error { _, err := client.fetchPackages(ctx, state, false); return err }, emit, diagnostic, maintenance.tick)
 		}
 		defer packages.stop()
+		packages.monitoring = monitoring
+		monitoring.quiescent = func() bool { return !packages.running }
 		if packages.runtime.VerifyAssets() != nil {
 			emit("package_runtime_unavailable")
 		}
 		// Installing the platform SDK selects the package lane once. Compiled
 		// collectors and their cached leases never execute concurrently with it.
-		return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, diagnostic, packages.tick, maintenance.tick)
+		return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, func(context.Context) error { return nil }, emit, diagnostic, monitoring.tick, packages.tick, maintenance.tick)
 	}
+	var disk *diskLane
 	assignment := func(ctx context.Context) error {
+		controlEpoch := monitoring.epoch()
 		response, err := client.FetchAssignments(ctx, state, known)
+		if err == nil && controlEpoch != monitoring.epoch() {
+			return nil
+		}
 		if err == nil {
 			err = receiveAssignment(store, client.Origin, state, &known, response)
+			if err == nil && disk != nil {
+				disk.controlEpoch = controlEpoch
+			}
 		}
 		if err != nil && terminal(err) {
 			if pauseErr := pauseAssignmentLease(store, &known); pauseErr != nil {
@@ -79,11 +94,12 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 		}
 		return err
 	}
-	disk, err := newDiskLane(store, client, &state, &known, emit)
+	disk, err = newDiskLane(store, client, &state, &known, emit)
 	var diskTick func(context.Context) error
 	if err != nil {
 		emit("disk_queue_unavailable")
 	} else {
+		disk.monitoring = monitoring
 		diskTick = disk.tick
 	}
 	baseline, err := newBaselineLane(ctx, store, client, state, emit)
@@ -91,8 +107,10 @@ func Run(ctx context.Context, config Config, client *Client, emit func(string), 
 	if err != nil {
 		emit("baseline_state_unavailable")
 	} else {
+		baseline.monitoring = monitoring
 		baselineTick = baseline.tick
 		defer baseline.stop()
 	}
-	return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, assignment, emit, diagnostic, diskTick, baselineTick, maintenance.tick)
+	monitoring.quiescent = func() bool { return (disk == nil || !disk.collecting) && (baseline == nil || !baseline.running) }
+	return runHeartbeatLanes(ctx, state.HeartbeatIntervalSeconds, heartbeat, assignment, emit, diagnostic, monitoring.tick, diskTick, baselineTick, maintenance.tick)
 }

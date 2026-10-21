@@ -9,8 +9,9 @@ import (
 )
 
 type packageFetched struct {
-	response *packageResponse
-	err      error
+	controlEpoch uint64
+	response     *packageResponse
+	err          error
 }
 type packageCompleted struct {
 	run   packageRun
@@ -21,6 +22,8 @@ type packageUploaded struct {
 	err error
 }
 type packageLane struct {
+	monitoring                            *monitoringLane
+	controlEpoch                          uint64
 	store                                 *Store
 	client                                *Client
 	state                                 State
@@ -77,16 +80,17 @@ func (lane *packageLane) tick(context.Context) error {
 	if err := lane.receive(now); err != nil {
 		return err
 	}
-	leased := packageLease(lane.ledger, wall)
+	leased := packageLease(lane.ledger, wall) && lane.monitoring.allowed() && lane.controlEpoch == lane.monitoring.epoch()
 	if !leased && lane.cancelRun != nil {
 		lane.cancelRun()
 	}
 	if !lane.fetching && !now.Before(lane.nextFetch) {
 		lane.fetching = true
 		paused := lane.ledger.Paused
+		controlEpoch := lane.monitoring.epoch()
 		go func() {
 			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx), !paused && lane.runtime.ResourcesReady(lane.ctx))
-			lane.fetch <- packageFetched{r, e}
+			lane.fetch <- packageFetched{controlEpoch: controlEpoch, response: r, err: e}
 		}()
 	}
 	if !lane.running && leased && len(lane.ledger.Pending) < 8 {
@@ -157,6 +161,10 @@ func (lane *packageLane) receive(now time.Time) error {
 	select {
 	case result := <-lane.fetch:
 		lane.fetching = false
+		if result.controlEpoch != lane.monitoring.epoch() {
+			lane.nextFetch = now
+			return nil
+		}
 		if result.err != nil {
 			if terminal(result.err) {
 				return errors.Join(result.err, lane.pause("package_authority_invalid"))
@@ -173,6 +181,7 @@ func (lane *packageLane) receive(now time.Time) error {
 					delete(lane.due, entry.InstallationID)
 				}
 			}
+			lane.controlEpoch = result.controlEpoch
 			lane.ledger.Cache = result.response
 			lane.ledger.ValidatedAt = baselineStamp(now)
 			if err := savePackageLedger(lane.store, lane.ledger); err != nil {

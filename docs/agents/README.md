@@ -20,6 +20,11 @@ host for real collection; report missing sandbox prerequisites as failures.
 Preserve immutable published releases, signing key ownership and pinned asset
 identity. Check actual formats and supported releases before describing capability.
 
+Fleet control changes must preserve durable negotiated epochs across every lane,
+quiescent pause acknowledgements and heartbeat independence. Managed reconnection
+checks target identity before consuming a replacement code. See
+[Fleet contracts](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/fleet-management.md).
+
 ## Canonical references
 
 - [Architecture](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/architecture.md)
