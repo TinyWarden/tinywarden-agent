@@ -35,7 +35,8 @@ with tempfile.TemporaryDirectory(prefix="tinywarden-agent-package-") as work:
         if hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != expected:
             raise SystemExit("Source changed during build: " + name)
     binary_hash = hashlib.sha256(binary.read_bytes()).hexdigest()
-    assets = ["infra/systemd/tinywarden-agent.service", "docs/deploy/native.md", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"]
+    assets = ["infra/systemd/tinywarden-agent.service", "docs/deploy/native.md", "config/agent.example.json",
+              "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"]
     assets += [name for name in files if name.startswith("sdk/python/runtime/")]
     with tarfile.open(output, "x:gz") as archive:
         archive.add(binary, arcname="tinywarden-agent")

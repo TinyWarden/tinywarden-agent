@@ -1,22 +1,21 @@
-# TinyWarden agent
+# TinyWarden host agent
 
-The host-side agent for [TinyWarden](https://github.com/TinyWarden/tinywarden).
-It enrolls over outbound HTTPS, reports heartbeat and typed observations, and
-executes enabled standalone Python skills through a bounded SDK. Four official
-skills are maintained in [tinywarden-skills](https://github.com/TinyWarden/tinywarden-skills)
-and observe disk space, package updates, reboot status and filesystem trim.
-Compatible community packages are delivered automatically without a binary rebuild.
-Skills never install updates, reboot a host or perform trim. The server evaluates
-health and sends notifications.
+The host agent connects to [TinyWarden](https://github.com/TinyWarden/tinywarden)
+over outbound HTTPS, sends heartbeat and observations, and runs compatible Python
+monitoring skills with bounded host access. The application evaluates health.
 
-Verified platform: Debian 13 on amd64, running as a dedicated non-root account.
-The current platform version is printed by `tinywarden-agent --version`.
-Go 1.27.2 is required; the module uses only the Go standard library.
+Verified host platform: Debian 13 on amd64. Skills are distributed independently
+through [skill repositories](https://github.com/TinyWarden/tinywarden-skills).
+A skill using supported operations needs no host-agent binary change.
 
-## Build
+- [Installation and operations](docs/deploy/native.md)
+- [TinyWarden documentation](https://github.com/TinyWarden/tinywarden/blob/main/docs/README.md)
+- [Contributing](CONTRIBUTING.md)
 
-For normal installation use [managed installation](docs/deploy/managed.md).
-Build instructions below are for contributors and explicit manual installations.
+## Development
+
+Use the Go version in [go.mod](go.mod). The host executable uses the Go standard
+library. SDK work additionally uses Python 3.13 and the supported Linux sandbox.
 
 ```sh
 go test ./...
@@ -25,51 +24,6 @@ go build -o bin/tinywarden-agent ./cmd/tinywarden-agent
 bin/tinywarden-agent --version
 ```
 
-The agent builds independently of the app. Copy
-[agent.example.json](config/agent.example.json) to a private configuration file
-and set the HTTPS control-plane origin and absolute owned state directory.
-The one-use enrollment token belongs in a separate mode-0600 file, not in
-configuration or command arguments.
-
-```sh
-bin/tinywarden-agent enroll --config /path/to/agent.json --token-file /path/to/token
-bin/tinywarden-agent run --config /path/to/agent.json
-```
-
-An uncertain enrollment is recovered by run with the same state. Replacement
-uses a host-bound replacement token and the replace command after stopping the
-service; preserve all state and recover uncertain responses with run. Never
-delete state to clear an error or re-enroll an existing agent casually.
-
-## Verification and packaging
-
-```sh
-./scripts/verify.sh --batch
-./scripts/verify.sh --phase-end
-python3 scripts/package.py --output /absolute/path/to/tinywarden-agent.tar.gz
-```
-
-Verification tooling additionally requires Python 3, Git and native Linux tools.
-Phase-end checks require the pinned gitleaks/govulncheck tools; security and GitHub
-checks run at release closeout. Packaging requires reviewed source staged in Git,
-checks its exact tree, builds the binary and includes the service/install guide
-and legal notices. It never installs or changes a running service.
-
-- [Architecture and protocol ownership](docs/architecture/overview.md)
-- [Complete codebase map](docs/architecture/codebase-map.md)
-- [Installation and operations](docs/deploy/native.md)
-- [Managed installation, updates and uninstall](docs/deploy/managed.md)
-- [Verification](docs/verification.md)
-- [Write a standalone skill](docs/skills/authoring.md) and [Python SDK v1](docs/skills/sdk-v1.md)
-- [Contributing](CONTRIBUTING.md)
-
-Agent CLI copy is embedded from internal/cli/en.json; author-tool help lives in
-sdk/python/authoring/en.json, for future translations.
-Authored source is Apache-2.0; bundled Go redistribution terms are retained in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-Resource-capable SDK 2 source is implemented alongside SDK 1. See
-[the SDK 2 contract](docs/skills/sdk-v2.md) for explicit selections, independent
-subjects, the read-only systemd capabilities and mixed-version negotiation. The
-compatible signed platform release is prepared only from an approved exact source
-commit; source acceptance does not advertise a published release.
+See the [configuration example](config/agent.example.json) for manual installations.
+Authored source is Apache-2.0; preserve [LICENSE](LICENSE) and
+[third-party notices](THIRD_PARTY_NOTICES.md).

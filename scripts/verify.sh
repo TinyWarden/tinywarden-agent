@@ -9,6 +9,7 @@ case "$scope" in --all|--skills-author) ;; *) printf 'Unknown verification scope
 export GOTOOLCHAIN=local
 export PATH="$HOME/.local/bin:$PATH"
 python3 scripts/source_check.py
+python3 -B -m unittest discover -s tests -p test_source_check.py
 python3 -B scripts/runtime_assets.py --check
 python3 -B -m unittest discover -s tests/runtime -p test_authoring.py
 if [[ "$scope" == --skills-author ]]; then
