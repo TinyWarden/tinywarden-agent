@@ -10,6 +10,35 @@ from test_authoring import Workspace, ROOT, TOOL, call
 
 
 class AuthorIsolation(Workspace):
+    def test_platform_clock_contract_without_skill_tolerances(self):
+        path = self.skill / "skill.py"
+        path.write_text(path.read_text() + '''
+original_evaluate = evaluate
+def evaluate(context):
+    assert context["now"] >= context["captured_at"]
+    assert context["now"] >= context["received_at"]
+    assert context["evidence_expires_at"] == min(context["captured_at"], context["received_at"]) + 600000
+    return original_evaluate(context)
+''')
+        base = 1800000000000
+        template = json.loads((self.skill / "tests.json").read_text())["cases"][0]
+        rows = []
+        for lead in (-1000, 0, 403, 5000):
+            row = {**template, "name": "Clock difference " + str(lead),
+                   "captured_at": base + lead, "received_at": base,
+                   "now": base}
+            rows.append(row)
+        cases = self.directory / "clocks.json"
+        cases.write_text(json.dumps({"format": 1, "cases": rows}))
+        code, result = call(TOOL, "test", self.skill, "--cases", cases, cwd=self.directory)
+        self.assertEqual(code, 0, result)
+        self.assertEqual(len(result["cases"]), 4)
+        rows[0].update(captured_at=base + 5001)
+        cases.write_text(json.dumps({"format": 1, "cases": rows[:1]}))
+        code, result = call(TOOL, "test", self.skill, "--cases", cases, cwd=self.directory)
+        self.assertEqual(code, 1, result)
+        self.assertEqual(result["cases"][0]["error"], "fixture_clock")
+
     def test_captured_cases_with_standalone_sdk(self):
         kit = self.directory / "kit"
         shutil.copytree(ROOT / "sdk/python", kit / "sdk/python", ignore=shutil.ignore_patterns("__pycache__"))

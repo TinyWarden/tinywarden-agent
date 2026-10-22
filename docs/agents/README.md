@@ -34,6 +34,8 @@ checks target identity before consuming a replacement code. See
   [host broker](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/host-access.md)
   and [resources](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/resources.md):
   reuse bounded operations; separate collection from pure interpretation.
+  Author fixtures mirror the shared [clock contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/sdk.md#clock-contract).
+  Evaluation-time normalization does not replace pre-collection transport deadline checks.
 - [Verification](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/verification.md)
   and [releases](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/releases.md):
   local bundles are not signed managed releases; source edits do not update

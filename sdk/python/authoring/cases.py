@@ -54,8 +54,15 @@ def run_case(runtime, directory, metadata, case):
     now = case.get("now", 1800000000000)
     captured = case.get("captured_at", now)
     received = case.get("received_at", now)
-    expires = case.get("evidence_expires_at", now + 600000)
-    if any(type(value) is not int or value < 0 or value > 2 ** 53 - 1 for value in (now, captured, received, expires)) or now >= expires:
+    if any(type(value) is not int or value < 0 or value > 2 ** 53 - 1 for value in (now, captured, received)):
+        raise ValueError("fixture_clock")
+    expires = case.get("evidence_expires_at", min(captured, received) + 600000)
+    if type(expires) is not int or expires < 0 or expires > 2 ** 53 - 1:
+        raise ValueError("fixture_clock")
+    # Match the platform's admission/evaluation contract for both SDK versions.
+    # An explicit later now still supports future schedule-boundary fixtures.
+    now = max(now, captured, received)
+    if captured > received + 5000 or now >= expires:
         raise ValueError("fixture_clock")
     context = {"identity": {"installation_id": "11111111-1111-4111-8111-111111111111",
                             "assignment_id": "22222222-2222-4222-8222-222222222222",
