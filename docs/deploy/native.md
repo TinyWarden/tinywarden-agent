@@ -11,9 +11,8 @@ In TinyWarden choose **Add server**, enter a name and obtain the setup code. Dow
 the official installer completely before running it:
 
 ```sh
-tw_install_dir=$(mktemp -d)
-curl --fail --location --proto '=https' --proto-redir '=https'   --output "$tw_install_dir/install.sh"   https://github.com/TinyWarden/tinywarden-agent/releases/latest/download/install.sh   && sudo bash "$tw_install_dir/install.sh"
-rm -rf -- "$tw_install_dir"
+curl -fLO https://github.com/TinyWarden/tinywarden-agent/releases/latest/download/install.sh &&
+sudo bash install.sh
 ```
 
 Enter the setup code at the hidden prompt. Treat it as a credential and keep it out
