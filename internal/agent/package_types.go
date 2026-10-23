@@ -6,6 +6,9 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 const packageQueueLimit = 8 << 20
@@ -66,7 +69,7 @@ type packageActive struct {
 }
 type packageLedger struct {
 	Consumed    map[string]string `json:"consumed_manual_requests,omitempty"`
-	Scope       baselineScope     `json:"scope"`
+	Scope       agentstate.Scope  `json:"scope"`
 	Cache       *packageResponse  `json:"cache"`
 	ValidatedAt string            `json:"validated_at"`
 	Sequences   map[string]uint64 `json:"sequences"`
@@ -75,9 +78,9 @@ type packageLedger struct {
 	Paused      bool              `json:"paused"`
 }
 
-func validPackageResponse(scope baselineScope, response packageResponse) bool {
+func validPackageResponse(scope agentstate.Scope, response packageResponse) bool {
 	if (response.SchemaVersion != 1 && response.SchemaVersion != 2) || response.Generation != strconv.FormatUint(scope.Generation, 10) || len(response.Assignments) > 100 ||
-		response.Assignments == nil || !validInstant(response.IssuedAt) || !validInstant(response.ValidUntil) {
+		response.Assignments == nil || !agentstate.ValidInstant(response.IssuedAt) || !agentstate.ValidInstant(response.ValidUntil) {
 		return false
 	}
 	issued, _ := time.Parse(time.RFC3339Nano, response.IssuedAt)
@@ -87,7 +90,7 @@ func validPackageResponse(scope baselineScope, response packageResponse) bool {
 	}
 	ids := map[string]bool{}
 	for _, entry := range response.Assignments {
-		if !validID(entry.InstallationID) || ids[entry.InstallationID] || !contentDigest.MatchString(entry.Digest) || !packageSubject.MatchString(entry.Subject) {
+		if !agentstate.ValidID(entry.InstallationID) || ids[entry.InstallationID] || !contentDigest.MatchString(entry.Digest) || !packageSubject.MatchString(entry.Subject) {
 			return false
 		}
 		ids[entry.InstallationID] = true
@@ -100,7 +103,7 @@ func validPackageResponse(scope baselineScope, response packageResponse) bool {
 		if entry.ArchiveDigest != "" && (!contentDigest.MatchString(entry.ArchiveDigest) || entry.ArchiveBytes < 1 || entry.ArchiveBytes > 10<<20) || entry.ArchiveDigest == "" && entry.ArchiveBytes != 0 {
 			return false
 		}
-		if entry.Manual != nil && (!response.ManualSupported || !validID(entry.Manual.ID) || !validInstant(entry.Manual.ExpiresAt) || entry.Applicability != "ready") {
+		if entry.Manual != nil && (!response.ManualSupported || !agentstate.ValidID(entry.Manual.ID) || !agentstate.ValidInstant(entry.Manual.ExpiresAt) || entry.Applicability != "ready") {
 			return false
 		}
 		if entry.Applicability == "unavailable" {
@@ -109,11 +112,11 @@ func validPackageResponse(scope baselineScope, response packageResponse) bool {
 			}
 			continue
 		}
-		if entry.Applicability != "ready" || !response.RuntimeReady || !validID(entry.ID) || entry.Interval < 60 || entry.Interval > 86400 || len(entry.Settings) > 65536 || len(entry.Settings) == 0 || len(entry.Grants) > 32 {
+		if entry.Applicability != "ready" || !response.RuntimeReady || !agentstate.ValidID(entry.ID) || entry.Interval < 60 || entry.Interval > 86400 || len(entry.Settings) > 65536 || len(entry.Settings) == 0 || len(entry.Grants) > 32 {
 			return false
 		}
 		var settings map[string]json.RawMessage
-		if decodeBaseline(entry.Settings, &settings) != nil || settings == nil || len(settings) > 64 {
+		if controlplane.Decode(entry.Settings, &settings) != nil || settings == nil || len(settings) > 64 {
 			return false
 		}
 	}

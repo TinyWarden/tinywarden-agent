@@ -7,15 +7,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "sdk/python/runtime"))
-from display import inspect_display
-from packages import load
+from contracts.display import inspect_display
+from packages.admission import load
 from official_fixtures import official_root
 
 
 class DisplayAdmission(unittest.TestCase):
     def setUp(self):
         self.official = official_root(self)
-        self.metadata = load(ROOT / "skills/examples/memory-pressure")
+        self.metadata = load(ROOT / "examples/skills/memory-pressure")
         self.display = copy.deepcopy(self.metadata["display"])
         self.display["format"] = 1
         for section in self.display["sections"]:

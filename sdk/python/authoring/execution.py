@@ -5,7 +5,7 @@ import signal
 import subprocess
 from pathlib import Path
 
-from json_values import decode, encode
+from contracts.json_values import decode, encode
 
 ASSETS = Path(__file__).resolve().parents[1] / "runtime"
 

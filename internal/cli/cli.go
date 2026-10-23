@@ -12,27 +12,29 @@ import (
 	"syscall"
 
 	"github.com/TinyWarden/tinywarden-agent/internal/agent"
-	"github.com/TinyWarden/tinywarden-agent/internal/managed"
-	"github.com/TinyWarden/tinywarden-agent/internal/runner"
-	"github.com/TinyWarden/tinywarden-agent/internal/skills/builtin/disk"
+	loop "github.com/TinyWarden/tinywarden-agent/internal/agent/loop"
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	"github.com/TinyWarden/tinywarden-agent/internal/host/filesystems"
+	"github.com/TinyWarden/tinywarden-agent/internal/installation"
+	"github.com/TinyWarden/tinywarden-agent/internal/legacy/runner"
 )
 
 //go:embed en.json
 var english []byte
 
 type catalog struct {
-	Reconnect           managed.ReconnectMessages `json:"reconnect"`
-	Name                string                    `json:"name"`
-	Usage               string                    `json:"usage"`
-	NotReady            string                    `json:"notReady"`
-	InvalidArguments    string                    `json:"invalidArguments"`
-	Enrolled            string                    `json:"enrolled"`
-	Replaced            string                    `json:"replaced"`
-	Running             string                    `json:"running"`
-	Degraded            string                    `json:"degraded"`
-	Recovered           string                    `json:"recovered"`
-	CommandFailed       string                    `json:"commandFailed"`
-	HeartbeatDiagnostic string                    `json:"heartbeatDiagnostic"`
+	Reconnect           installation.ReconnectMessages `json:"reconnect"`
+	Name                string                         `json:"name"`
+	Usage               string                         `json:"usage"`
+	NotReady            string                         `json:"notReady"`
+	InvalidArguments    string                         `json:"invalidArguments"`
+	Enrolled            string                         `json:"enrolled"`
+	Replaced            string                         `json:"replaced"`
+	Running             string                         `json:"running"`
+	Degraded            string                         `json:"degraded"`
+	Recovered           string                         `json:"recovered"`
+	CommandFailed       string                         `json:"commandFailed"`
+	HeartbeatDiagnostic string                         `json:"heartbeatDiagnostic"`
 }
 
 const Version = agent.Version
@@ -45,18 +47,18 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	if len(args) == 1 && args[0] == "__remove-legacy" {
-		if managed.RemoveLegacyData() != nil {
+		if installation.RemoveLegacyData() != nil {
 			return 1
 		}
 		return 0
 	}
 	if len(args) == 3 && args[0] == "__copy-legacy" && args[1] == "--destination" {
-		if managed.CopyLegacy(args[2]) != nil {
+		if installation.CopyLegacy(args[2]) != nil {
 			return 1
 		}
 		return 0
 	}
-	if handled, err := managed.Dispatch(ctx, args, stdout, stderr, text.Reconnect); handled {
+	if handled, err := installation.Dispatch(ctx, args, stdout, stderr, text.Reconnect); handled {
 		if err != nil {
 			fmt.Fprintln(stderr, err)
 			return 1
@@ -71,13 +73,13 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runner.Supervise()
 	}
 	if len(args) == 1 && args[0] == "__collect-disk-v1" {
-		if err := disk.CollectDisk(stdout); err != nil {
+		if err := filesystems.CollectDisk(stdout); err != nil {
 			return 1
 		}
 		return 0
 	}
 	if len(args) == 3 && args[0] == "resume-enrollment" && args[1] == "--config" {
-		config, err := agent.LoadConfig(args[2])
+		config, err := agentconfig.LoadConfig(args[2])
 		if err == nil {
 			err = agent.ResumeEnrollment(ctx, config, agent.NewClient(config.ControlPlaneOrigin))
 		}
@@ -100,7 +102,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 	if len(args) == 5 && args[0] == "enroll" && args[1] == "--config" &&
 		args[3] == "--token-file" {
-		config, err := agent.LoadConfig(args[2])
+		config, err := agentconfig.LoadConfig(args[2])
 		if err != nil {
 			fmt.Fprintln(stderr, text.CommandFailed)
 			return 1
@@ -117,7 +119,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 	if len(args) == 5 && args[0] == "replace" && args[1] == "--config" &&
 		args[3] == "--token-file" {
-		config, err := agent.LoadConfig(args[2])
+		config, err := agentconfig.LoadConfig(args[2])
 		if err != nil {
 			fmt.Fprintln(stderr, text.CommandFailed)
 			return 1
@@ -133,7 +135,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	if len(args) == 3 && args[0] == "run" && args[1] == "--config" {
-		config, err := agent.LoadConfig(args[2])
+		config, err := agentconfig.LoadConfig(args[2])
 		if err != nil {
 			fmt.Fprintln(stderr, text.CommandFailed)
 			return 1
@@ -149,7 +151,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 			if event == "recovered" {
 				fmt.Fprintln(stdout, text.Recovered)
 			}
-		}, func(diagnostic agent.HeartbeatDiagnostic) {
+		}, func(diagnostic loop.HeartbeatDiagnostic) {
 			fmt.Fprintf(stderr, "%s %s\n", text.HeartbeatDiagnostic, diagnostic.JSON())
 		})
 		if errors.Is(err, context.Canceled) {

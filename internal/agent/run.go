@@ -2,21 +2,19 @@ package agent
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"io"
-	"math/rand/v2"
-	"net"
 	"os"
-	"regexp"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
-)
 
-var tokenPattern = regexp.MustCompile(`^tw_e_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.[A-Za-z0-9_-]{43}$`)
+	loop "github.com/TinyWarden/tinywarden-agent/internal/agent/loop"
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	host "github.com/TinyWarden/tinywarden-agent/internal/host"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
+)
 
 func readToken(path string) (string, error) {
 	fd, err := syscall.Open(path, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
@@ -42,48 +40,14 @@ func readToken(path string) (string, error) {
 		return "", errors.New("unsafe token file")
 	}
 	token := strings.TrimSuffix(string(bytes), "\n")
-	if !tokenPattern.MatchString(token) {
+	if !agentstate.TokenPattern.MatchString(token) {
 		return "", errors.New("invalid enrollment token")
 	}
 	return token, nil
 }
 
-func metadata() (string, string, string, string, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "", "", "", "", err
-	}
-	if len(hostname) < 1 || len(hostname) > 253 {
-		return "", "", "", "", errors.New("invalid hostname")
-	}
-	for _, char := range hostname {
-		if (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') &&
-			(char < '0' || char > '9') && char != '.' && char != '-' {
-			return "", "", "", "", errors.New("invalid hostname")
-		}
-	}
-	contents, err := os.ReadFile("/etc/os-release")
-	if err != nil {
-		return "", "", "", "", err
-	}
-	values := map[string]string{}
-	for _, line := range strings.Split(string(contents), "\n") {
-		key, value, found := strings.Cut(line, "=")
-		if found && (key == "ID" || key == "VERSION_ID") {
-			values[key] = strings.Trim(value, `"'`)
-		}
-	}
-	if values["ID"] != "debian" || values["VERSION_ID"] != "13" {
-		return "", "", "", "", errors.New("unsupported distribution")
-	}
-	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
-		return "", "", "", "", errors.New("unsupported architecture")
-	}
-	return hostname, values["ID"], values["VERSION_ID"], runtime.GOARCH, nil
-}
-
-func StartEnrollment(ctx context.Context, config Config, tokenFile string, client *Client) error {
-	store, err := OpenStore(config.StateDir)
+func StartEnrollment(ctx context.Context, config agentconfig.Config, tokenFile string, client *Client) error {
+	store, err := agentstate.OpenStore(config.StateDir)
 	if err != nil {
 		return err
 	}
@@ -99,19 +63,19 @@ func StartEnrollment(ctx context.Context, config Config, tokenFile string, clien
 	if err != nil {
 		return err
 	}
-	hostname, osID, osVersion, architecture, err := metadata()
+	hostname, osID, osVersion, architecture, err := host.Metadata()
 	if err != nil {
 		return err
 	}
-	requestID, err := randomID()
+	requestID, err := agentstate.RandomID()
 	if err != nil {
 		return err
 	}
-	credential, err := newCredential()
+	credential, err := agentstate.NewCredential()
 	if err != nil {
 		return err
 	}
-	state := State{Version: 1, Enrollment: &Enrollment{RequestID: requestID,
+	state := agentstate.State{Version: 1, Enrollment: &agentstate.Enrollment{RequestID: requestID,
 		Token: token, Credential: credential, Hostname: hostname, OSID: osID,
 		OSVersion: osVersion, Architecture: architecture, AgentVersion: Version}}
 	if err := store.Save(state); err != nil {
@@ -120,7 +84,7 @@ func StartEnrollment(ctx context.Context, config Config, tokenFile string, clien
 	return finishEnrollment(ctx, store, &state, client)
 }
 
-func finishEnrollment(ctx context.Context, store *Store, state *State, client *Client) error {
+func finishEnrollment(ctx context.Context, store *agentstate.Store, state *agentstate.State, client *Client) error {
 	if state.Enrollment == nil {
 		return errors.New("no pending enrollment")
 	}
@@ -138,86 +102,36 @@ func finishEnrollment(ctx context.Context, store *Store, state *State, client *C
 	return store.Save(*state)
 }
 
-func sendHeartbeat(ctx context.Context, store *Store, state *State, client *Client) error {
+func sendHeartbeat(ctx context.Context, store *agentstate.Store, state *agentstate.State, client *Client) error {
 	_, err := sendHeartbeatAttempt(ctx, store, state, client)
 	return err
 }
 
-func sendHeartbeatAttempt(ctx context.Context, store *Store, state *State, client *Client) (HeartbeatOutcome, error) {
+func sendHeartbeatAttempt(ctx context.Context, store *agentstate.Store, state *agentstate.State, client *Client) (loop.HeartbeatOutcome, error) {
 	if state.PendingHeartbeat == nil {
 		if state.LastSequence >= 9007199254740991 {
-			return HeartbeatOutcome{}, heartbeatError("pending_state", errors.New("sequence exhausted"))
+			return loop.HeartbeatOutcome{}, loop.HeartbeatError("pending_state", errors.New("sequence exhausted"))
 		}
-		state.PendingHeartbeat = &PendingHeartbeat{Sequence: state.LastSequence + 1,
+		state.PendingHeartbeat = &agentstate.PendingHeartbeat{Sequence: state.LastSequence + 1,
 			SentAt:       time.Now().UTC().Truncate(time.Millisecond).Format("2006-01-02T15:04:05.000Z"),
 			AgentVersion: Version}
 		if err := store.Save(*state); err != nil {
-			return HeartbeatOutcome{}, heartbeatError("pending_state", err)
+			return loop.HeartbeatOutcome{}, loop.HeartbeatError("pending_state", err)
 		}
 	}
 	result, err := client.Heartbeat(ctx, state.Credential, *state.PendingHeartbeat)
 	if err != nil {
-		return HeartbeatOutcome{}, heartbeatError("exchange", err)
+		return loop.HeartbeatOutcome{}, loop.HeartbeatError("exchange", err)
 	}
 	if result.Interval != state.HeartbeatIntervalSeconds || result.StaleAfter != state.StaleAfterSeconds {
-		return HeartbeatOutcome{}, heartbeatError("cadence", errors.New("cadence changed unexpectedly"))
+		return loop.HeartbeatOutcome{}, loop.HeartbeatError("cadence", errors.New("cadence changed unexpectedly"))
 	}
 	state.LastSequence = result.Sequence
 	state.PendingHeartbeat = nil
 	if err := store.Save(*state); err != nil {
-		return HeartbeatOutcome{}, heartbeatError("ack_state", err)
+		return loop.HeartbeatOutcome{}, loop.HeartbeatError("ack_state", err)
 	}
-	return HeartbeatOutcome{Duplicate: result.Duplicate}, nil
-}
-
-func terminal(err error) bool {
-	var response *ResponseError
-	if errors.As(err, &response) {
-		return response.Status != 429 && response.Status < 500
-	}
-	var authority x509.UnknownAuthorityError
-	var hostname x509.HostnameError
-	var invalid x509.CertificateInvalidError
-	var verification *tls.CertificateVerificationError
-	if errors.As(err, &authority) || errors.As(err, &hostname) ||
-		errors.As(err, &invalid) || errors.As(err, &verification) {
-		return true
-	}
-	var readError *responseReadError
-	if errors.As(err, &readError) {
-		return false
-	}
-	var netError net.Error
-	return !errors.As(err, &netError)
-}
-
-func retryWait(err error, base time.Duration) time.Duration {
-	delay := base/2 + time.Duration(rand.Int64N(int64(base/2)+1))
-	var response *ResponseError
-	if errors.As(err, &response) && response.RetryAfter > delay {
-		return response.RetryAfter
-	}
-	return delay
-}
-
-func degradedWait(err error) time.Duration {
-	delay := 300*time.Second + time.Duration(rand.Int64N(int64(30*time.Second)+1))
-	var response *ResponseError
-	if errors.As(err, &response) && response.RetryAfter > delay {
-		return response.RetryAfter
-	}
-	return delay
-}
-
-func wait(ctx context.Context, delay time.Duration) error {
-	timer := time.NewTimer(delay)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-timer.C:
-		return nil
-	}
+	return loop.HeartbeatOutcome{Duplicate: result.Duplicate}, nil
 }
 
 func runCycle(ctx context.Context, attempt func(context.Context) error, emit func(string)) error {
@@ -231,11 +145,11 @@ func runCycle(ctx context.Context, attempt func(context.Context) error, emit fun
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if terminal(err) {
+		if controlplane.Terminal(err) {
 			return err
 		}
 		if index < len(delays) {
-			if err := wait(ctx, retryWait(err, delays[index])); err != nil {
+			if err := loop.Wait(ctx, controlplane.RetryWait(err, delays[index])); err != nil {
 				return err
 			}
 			continue
@@ -245,7 +159,7 @@ func runCycle(ctx context.Context, attempt func(context.Context) error, emit fun
 	}
 	emit("degraded")
 	for {
-		if err := wait(ctx, degradedWait(lastError)); err != nil {
+		if err := loop.Wait(ctx, controlplane.DegradedWait(lastError)); err != nil {
 			return err
 		}
 		err := attempt(ctx)
@@ -253,7 +167,7 @@ func runCycle(ctx context.Context, attempt func(context.Context) error, emit fun
 			emit("recovered")
 			return nil
 		}
-		if terminal(err) {
+		if controlplane.Terminal(err) {
 			return err
 		}
 		lastError = err

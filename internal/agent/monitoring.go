@@ -6,15 +6,18 @@ import (
 	"errors"
 	"strconv"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 type monitoringState struct {
-	Scope       baselineScope `json:"scope"`
-	Epoch       uint64        `json:"epoch"`
-	Mode        string        `json:"mode"`
-	IssuedAt    string        `json:"issued_at"`
-	ValidUntil  string        `json:"valid_until"`
-	ValidatedAt string        `json:"validated_at"`
+	Scope       agentstate.Scope `json:"scope"`
+	Epoch       uint64           `json:"epoch"`
+	Mode        string           `json:"mode"`
+	IssuedAt    string           `json:"issued_at"`
+	ValidUntil  string           `json:"valid_until"`
+	ValidatedAt string           `json:"validated_at"`
 }
 type monitoringResponse struct {
 	SchemaVersion int    `json:"schema_version"`
@@ -32,9 +35,9 @@ type monitoringResult struct {
 	err      error
 }
 type monitoringLane struct {
-	store                          *Store
+	store                          *agentstate.Store
 	client                         *Client
-	state                          State
+	state                          agentstate.State
 	saved                          monitoringState
 	now                            func() time.Time
 	emit                           func(string)
@@ -45,25 +48,25 @@ type monitoringLane struct {
 }
 
 func validMonitoring(s monitoringState) bool {
-	if !s.Scope.valid() || s.Epoch < 1 || s.Epoch > 9007199254740991 || (s.Mode != "active" && s.Mode != "paused") || !validInstant(s.IssuedAt) || !validInstant(s.ValidUntil) || !validInstant(s.ValidatedAt) {
+	if !s.Scope.Valid() || s.Epoch < 1 || s.Epoch > 9007199254740991 || (s.Mode != "active" && s.Mode != "paused") || !agentstate.ValidInstant(s.IssuedAt) || !agentstate.ValidInstant(s.ValidUntil) || !agentstate.ValidInstant(s.ValidatedAt) {
 		return false
 	}
 	issued, _ := time.Parse(time.RFC3339Nano, s.IssuedAt)
 	until, _ := time.Parse(time.RFC3339Nano, s.ValidUntil)
 	return until.After(issued) && until.Sub(issued) <= 5*time.Minute
 }
-func newMonitoringLane(store *Store, client *Client, state State, emit func(string)) (*monitoringLane, error) {
-	scope := scopeBaseline(client.Origin, state)
+func newMonitoringLane(store *agentstate.Store, client *Client, state agentstate.State, emit func(string)) (*monitoringLane, error) {
+	scope := agentstate.ScopeFor(client.Origin, state)
 	var saved monitoringState
-	found, err := readBaselineState(store, "monitoring.json", 4096, &saved)
+	found, err := controlplane.ReadState(store, "monitoring.json", 4096, &saved)
 	if err != nil {
 		return nil, err
 	}
 	if found && !validMonitoring(saved) {
-		return nil, errBaselineState
+		return nil, controlplane.ErrInvalidState
 	}
 	if found && saved.Scope != scope {
-		if err := archiveBaselineState(store, "monitoring.json"); err != nil {
+		if err := agentstate.ArchiveState(store, "monitoring.json"); err != nil {
 			return nil, err
 		}
 		saved = monitoringState{}
@@ -74,13 +77,13 @@ func newMonitoringLane(store *Store, client *Client, state State, emit func(stri
 	}
 	return lane, nil
 }
-func (lane *monitoringLane) epoch() uint64 {
+func (lane *monitoringLane) Epoch() uint64 {
 	if lane == nil {
 		return 0
 	}
 	return lane.saved.Epoch
 }
-func (lane *monitoringLane) allowed() bool {
+func (lane *monitoringLane) Allowed() bool {
 	if lane == nil {
 		return true
 	}
@@ -112,7 +115,7 @@ func (lane *monitoringLane) tick(ctx context.Context) error {
 		lane.fetching = false
 		lane.nextFetch = now.Add(time.Minute)
 		if result.err != nil {
-			var response *ResponseError
+			var response *controlplane.ResponseError
 			if errors.As(result.err, &response) && response.Status == 401 {
 				return result.err
 			}
@@ -124,13 +127,13 @@ func (lane *monitoringLane) tick(ctx context.Context) error {
 		} else {
 			r := result.response
 			epoch, err := strconv.ParseUint(r.Epoch, 10, 64)
-			saved := monitoringState{Scope: scopeBaseline(lane.client.Origin, lane.state), Epoch: epoch, Mode: r.Mode, IssuedAt: r.IssuedAt, ValidUntil: r.ValidUntil, ValidatedAt: baselineStamp(now)}
+			saved := monitoringState{Scope: agentstate.ScopeFor(lane.client.Origin, lane.state), Epoch: epoch, Mode: r.Mode, IssuedAt: r.IssuedAt, ValidUntil: r.ValidUntil, ValidatedAt: controlplane.Timestamp(now)}
 			issued, _ := time.Parse(time.RFC3339Nano, r.IssuedAt)
 			if err != nil || r.SchemaVersion != 1 || r.HostID != lane.state.HostID || r.AgentID != lane.state.AgentID || r.Generation != strconv.FormatUint(lane.state.Generation, 10) || r.PollInterval != 60 || !validMonitoring(saved) || epoch < lane.saved.Epoch || epoch == lane.saved.Epoch && lane.saved.Epoch > 0 && r.Mode != lane.saved.Mode || issued.After(now.Add(2*time.Minute)) || issued.Before(now.Add(-2*time.Minute)) {
 				lane.invalidClock = true
 				lane.emit("monitoring_control_invalid")
 			} else {
-				if err := saveBaselineState(lane.store, "monitoring.json", saved, 4096); err != nil {
+				if err := agentstate.SaveState(lane.store, "monitoring.json", saved, 4096); err != nil {
 					return err
 				}
 				lane.saved = saved
@@ -155,13 +158,13 @@ func (lane *monitoringLane) tick(ctx context.Context) error {
 		}{1, []string{"monitoring_control.v1"}, applied}
 		lane.fetching = true
 		go func() {
-			wire, err := lane.client.post(ctx, "/api/v1/agent/monitoring-control", lane.state.Credential, input, false, 4096, 4096)
+			wire, err := lane.client.Request(ctx, "/api/v1/agent/monitoring-control", lane.state.Credential, input, false, 4096, 4096)
 			var response monitoringResponse
 			if err == nil {
 				body, e := json.Marshal(wire)
 				err = e
 				if err == nil {
-					err = decodeBaseline(body, &response)
+					err = controlplane.Decode(body, &response)
 				}
 			}
 			select {

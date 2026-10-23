@@ -3,13 +3,16 @@ package agent
 import (
 	"context"
 	"encoding/json"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
-func (client *Client) fetchPackages(ctx context.Context, state State, ready bool, resources ...bool) (*packageResponse, error) {
+func (client *Client) fetchPackages(ctx context.Context, state agentstate.State, ready bool, resources ...bool) (*packageResponse, error) {
 	if len(resources) > 0 && resources[0] {
 		ctx = context.WithValue(ctx, resourceFeatureContext{}, true)
 	}
-	wire, err := client.post(ctx, "/api/v2/agent/skill-assignments", state.Credential,
+	wire, err := client.Request(ctx, "/api/v2/agent/skill-assignments", state.Credential,
 		struct {
 			SchemaVersion int  `json:"schema_version"`
 			RuntimeReady  bool `json:"runtime_ready"`
@@ -22,27 +25,27 @@ func (client *Client) fetchPackages(ctx context.Context, state State, ready bool
 		return nil, err
 	}
 	var response packageResponse
-	if decodeBaseline(body, &response) != nil || !validPackageResponse(scopeBaseline(client.Origin, state), response) {
+	if controlplane.Decode(body, &response) != nil || !validPackageResponse(agentstate.ScopeFor(client.Origin, state), response) {
 		return nil, errPackageState
 	}
 	return &response, nil
 }
-func (client *Client) uploadPackage(ctx context.Context, state State, pending packagePending) error {
+func (client *Client) uploadPackage(ctx context.Context, state agentstate.State, pending packagePending) error {
 	var run packageRun
-	if decodeBaseline(pending.Body, &run) != nil {
+	if controlplane.Decode(pending.Body, &run) != nil {
 		return errPackageState
 	}
-	wire, err := client.post(ctx, "/api/v2/agent/skill-runs", state.Credential, json.RawMessage(pending.Body), false, 1<<20, 4096)
+	wire, err := client.Request(ctx, "/api/v2/agent/skill-runs", state.Credential, json.RawMessage(pending.Body), false, 1<<20, 4096)
 	if err != nil {
 		return err
 	}
 	var id string
 	var sequence uint64
 	var at string
-	if json.Unmarshal(wire["run_id"], &id) != nil || json.Unmarshal(wire["run_sequence"], &sequence) != nil || json.Unmarshal(wire["received_at"], &at) != nil || id != run.ID || sequence != run.Sequence || !validInstant(at) {
+	if json.Unmarshal(wire["run_id"], &id) != nil || json.Unmarshal(wire["run_sequence"], &sequence) != nil || json.Unmarshal(wire["received_at"], &at) != nil || id != run.ID || sequence != run.Sequence || !agentstate.ValidInstant(at) {
 		return errPackageState
 	}
 	return nil
 }
 
-type resourceFeatureContext struct{}
+type resourceFeatureContext = controlplane.ResourceFeatureContext

@@ -11,13 +11,13 @@ from pathlib import Path
 
 ASSETS = Path(__file__).resolve().parent
 sys.path.insert(0, str(ASSETS))
-from capture import capture
-from cgroups import BudgetGroup
-from json_values import decode, encode
-from schema import validate
-from seccomp import policy_fd
-from sandbox import python_command
-from outcomes import timeline, errors
+from host.capture import capture
+from isolation.cgroups import BudgetGroup
+from contracts.json_values import decode, encode
+from contracts.schema import validate
+from isolation.seccomp import policy_fd
+from isolation.sandbox import python_command
+from contracts.outcomes import timeline, errors
 
 ERRORS = {"runtime_unavailable", "capability_denied", "broker_limit", "output_exceeded",
           "deadline_exceeded", "resource_exhausted", "execution_failed", "output_invalid", "cleanup_failed",
@@ -57,9 +57,9 @@ def remove_workspace(workspace):
 
 def inspect_package(request, group, timeout=5):
     payload = {key: request[key] for key in ("package", "content_sha256", "official", "store", "archive", "archive_sha256") if key in request}
-    script = {"publish": "publisher.py", "publish_archive": "archives.py"}.get(request.get("action"), "inspector.py")
+    script = {"publish": "packages/publisher.py", "publish_archive": "packages/archives.py"}.get(request.get("action"), "packages/inspector.py")
     command = ["/usr/bin/python3.13", "-I", "-S", "-B", str(ASSETS / script)]
-    if script != "inspector.py":
+    if script != "packages/inspector.py":
         with admission_workspace(request["store"]) as (workspace, lock_fd):
             payload["workspace"] = str(workspace)
             code, out, _ = capture(command, encode(payload, 65536), group, timeout, pass_fds=(lock_fd,))
@@ -95,7 +95,7 @@ def invoke(request):
         broker, channels = None, None
         guest_read, guest_write = None, None
         if not pure:
-            from broker import Broker
+            from host.broker import Broker
             guest_read, parent_write = os.pipe()
             parent_read, guest_write = os.pipe()
             descriptors += [guest_read, parent_write, parent_read, guest_write]
@@ -104,7 +104,7 @@ def invoke(request):
             channels = (parent_read, parent_write)
         sdk2 = metadata["manifest"]["sdk"] == 2
         if sdk2 and function in {"collect", "validate_settings"}:
-            from resources import selection
+            from contracts.resources import selection
             selection(metadata, arguments)
         command = python_command(ASSETS, package, policy, pure, guest_read, guest_write)
         passed = (policy,) if pure else (policy, guest_read, guest_write)
@@ -125,7 +125,7 @@ def invoke(request):
             result = envelope["result"]
             if function == "collect":
                 if sdk2:
-                    from resources import collected
+                    from contracts.resources import collected
                     collected(result, metadata, arguments)
                     validate(metadata["schemas"]["observation"], result["observation"])
                 else:
@@ -135,7 +135,7 @@ def invoke(request):
                 encode(result, 65536 if sdk2 else 16384)
             elif function == "evaluate":
                 if sdk2:
-                    from resources import timeline as resource_timeline
+                    from contracts.resources import timeline as resource_timeline
                     resource_timeline(result, arguments, metadata)
                 else:
                     timeline(result, arguments, metadata["catalog"])

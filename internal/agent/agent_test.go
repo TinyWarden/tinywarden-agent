@@ -11,23 +11,26 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
-func testPending(t *testing.T) Enrollment {
+func testPending(t *testing.T) agentstate.Enrollment {
 	t.Helper()
-	requestID, err := randomID()
+	requestID, err := agentstate.RandomID()
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenID, err := randomID()
+	tokenID, err := agentstate.RandomID()
 	if err != nil {
 		t.Fatal(err)
 	}
-	credential, err := newCredential()
+	credential, err := agentstate.NewCredential()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return Enrollment{RequestID: requestID, Token: "tw_e_" + tokenID + "." + strings.Repeat("A", 43),
+	return agentstate.Enrollment{RequestID: requestID, Token: "tw_e_" + tokenID + "." + strings.Repeat("A", 43),
 		Credential: credential, AgentVersion: Version, Hostname: "fixture.example.org", OSID: "debian",
 		OSVersion: "13", Architecture: "amd64"}
 }
@@ -36,14 +39,14 @@ func testClient(server *httptest.Server) *Client {
 	httpClient := server.Client()
 	httpClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	httpClient.Timeout = 10 * time.Second
-	return &Client{Origin: server.URL, HTTP: httpClient}
+	return &Client{Client: controlplane.Client{Origin: server.URL, HTTP: httpClient}}
 }
 
 func TestLostEnrollmentAndHeartbeatResponseRetainOnePendingRequest(t *testing.T) {
 	pending := testPending(t)
 	credentialID := strings.SplitN(strings.TrimPrefix(pending.Credential, "tw_a_"), ".", 2)[0]
-	hostID, _ := randomID()
-	agentID, _ := randomID()
+	hostID, _ := agentstate.RandomID()
+	agentID, _ := agentstate.RandomID()
 	enrollCalls := 0
 	beatCalls := 0
 	seenBeat := ""
@@ -101,11 +104,11 @@ func TestLostEnrollmentAndHeartbeatResponseRetainOnePendingRequest(t *testing.T)
 	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	store, err := OpenStore(dir)
+	store, err := agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Save(State{Version: 1, Enrollment: &pending}); err != nil {
+	if err := store.Save(agentstate.State{Version: 1, Enrollment: &pending}); err != nil {
 		t.Fatal(err)
 	}
 	state, err := store.Load()
@@ -123,7 +126,7 @@ func TestLostEnrollmentAndHeartbeatResponseRetainOnePendingRequest(t *testing.T)
 	if err := store.Close(); err != nil {
 		t.Fatal(err)
 	}
-	store, err = OpenStore(store.dir)
+	store, err = agentstate.OpenStore(store.Dir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +150,7 @@ func TestLostEnrollmentAndHeartbeatResponseRetainOnePendingRequest(t *testing.T)
 	if err := store.Close(); err != nil {
 		t.Fatal(err)
 	}
-	store, err = OpenStore(store.dir)
+	store, err = agentstate.OpenStore(store.Dir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,18 +177,18 @@ func TestClientRejectsRedirectAndOversizedResponse(t *testing.T) {
 	defer server.Close()
 	client := testClient(server)
 	_, err := client.Enroll(context.Background(), testPending(t))
-	if err == nil || forwarded != 0 || !terminal(err) {
+	if err == nil || forwarded != 0 || !controlplane.Terminal(err) {
 		t.Fatal("redirect was followed or retried")
 	}
 
 	large := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, strings.Repeat("x", maxBody+1))
+		fmt.Fprint(w, strings.Repeat("x", controlplane.MaxBody+1))
 	}))
 	defer large.Close()
 	client = testClient(large)
 	_, err = client.Enroll(context.Background(), testPending(t))
-	if err == nil || !terminal(err) {
+	if err == nil || !controlplane.Terminal(err) {
 		t.Fatal("oversized response accepted or retried")
 	}
 }
@@ -197,7 +200,7 @@ func TestProductionClientRequiresTrustedTLSAndPrivateState(t *testing.T) {
 	defer server.Close()
 	client := NewClient(server.URL)
 	_, err := client.Enroll(context.Background(), testPending(t))
-	if err == nil || !terminal(err) {
+	if err == nil || !controlplane.Terminal(err) {
 		t.Fatal("untrusted TLS certificate accepted")
 	}
 
@@ -205,11 +208,11 @@ func TestProductionClientRequiresTrustedTLSAndPrivateState(t *testing.T) {
 	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	store, err := OpenStore(dir)
+	store, err := agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := OpenStore(dir); err == nil {
+	if _, err := agentstate.OpenStore(dir); err == nil {
 		t.Fatal("second process acquired state lock")
 	}
 	if err := store.Close(); err != nil {
@@ -218,7 +221,7 @@ func TestProductionClientRequiresTrustedTLSAndPrivateState(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "state.json"), []byte("broken"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	store, err = OpenStore(dir)
+	store, err = agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

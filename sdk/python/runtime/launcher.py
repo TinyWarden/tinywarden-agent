@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.insert(0, "/runtime")
-from json_values import decode, encode
+from contracts.json_values import decode, encode
 
 
 class Host:

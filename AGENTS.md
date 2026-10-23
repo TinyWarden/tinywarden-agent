@@ -13,6 +13,9 @@ Human documentation starts at the
   process cleanup, resource budgets or runtime integrity checks.
 - SDK assets are pinned and consumed by other repositories. Review runtime asset
   manifests, fixtures and affected consumers together; never silently change pins.
+- Follow the package ownership in the working guide. Shared config, transport,
+  state, release and observation code must not import daemon or installer owners.
+  Official monitoring packages stay in the separate skills repository.
 - Keep CLI copy in `internal/cli/en.json` and author-tool copy in
   `sdk/python/authoring/en.json`.
 - Maintain source roles and the generated file map. Run focused affected tests and

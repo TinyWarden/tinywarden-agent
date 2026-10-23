@@ -5,7 +5,11 @@ import (
 	"errors"
 	"time"
 
-	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	host "github.com/TinyWarden/tinywarden-agent/internal/host"
+	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skillruntime"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 type packageFetched struct {
@@ -24,10 +28,10 @@ type packageUploaded struct {
 type packageLane struct {
 	monitoring                            *monitoringLane
 	controlEpoch                          uint64
-	store                                 *Store
+	store                                 *agentstate.Store
 	client                                *Client
-	state                                 State
-	config                                Config
+	state                                 agentstate.State
+	config                                agentconfig.Config
 	ledger                                packageLedger
 	runtime                               skillruntime.Client
 	ctx                                   context.Context
@@ -46,8 +50,8 @@ type packageLane struct {
 	execute                               func(context.Context, packageActive) packageCompleted
 }
 
-func newPackageLane(ctx context.Context, store *Store, client *Client, state State, config Config, emit func(string)) (*packageLane, error) {
-	ledger, err := loadPackageLedger(store, scopeBaseline(client.Origin, state))
+func newPackageLane(ctx context.Context, store *agentstate.Store, client *Client, state agentstate.State, config agentconfig.Config, emit func(string)) (*packageLane, error) {
+	ledger, err := loadPackageLedger(store, agentstate.ScopeFor(client.Origin, state))
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +65,7 @@ func newPackageLane(ctx context.Context, store *Store, client *Client, state Sta
 	lane := &packageLane{store: store, client: client, state: state, config: config, ledger: ledger,
 		runtime: skillruntime.Client{Assets: config.RuntimeAssets}, ctx: ctx, cancel: cancel, emit: emit, now: time.Now,
 		due: map[string]time.Time{}, fetch: make(chan packageFetched, 1), run: make(chan packageCompleted, 1), upload: make(chan packageUploaded, 1)}
-	lane.ready = func(ctx context.Context) bool { return baselineCapable() && lane.runtime.Ready(ctx) }
+	lane.ready = func(ctx context.Context) bool { return host.CanObserve() && lane.runtime.Ready(ctx) }
 	lane.execute = lane.collect
 	if ledger.Cache != nil {
 		lane.lastWall, _ = time.Parse(time.RFC3339Nano, ledger.ValidatedAt)
@@ -80,14 +84,14 @@ func (lane *packageLane) tick(context.Context) error {
 	if err := lane.receive(now); err != nil {
 		return err
 	}
-	leased := packageLease(lane.ledger, wall) && lane.monitoring.allowed() && lane.controlEpoch == lane.monitoring.epoch()
+	leased := packageLease(lane.ledger, wall) && lane.monitoring.Allowed() && lane.controlEpoch == lane.monitoring.Epoch()
 	if !leased && lane.cancelRun != nil {
 		lane.cancelRun()
 	}
 	if !lane.fetching && !now.Before(lane.nextFetch) {
 		lane.fetching = true
 		paused := lane.ledger.Paused
-		controlEpoch := lane.monitoring.epoch()
+		controlEpoch := lane.monitoring.Epoch()
 		go func() {
 			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx), !paused && lane.runtime.ResourcesReady(lane.ctx))
 			lane.fetch <- packageFetched{controlEpoch: controlEpoch, response: r, err: e}
@@ -121,7 +125,7 @@ func (lane *packageLane) tick(context.Context) error {
 		lane.uploading = true
 		go func() {
 			var run packageRun
-			_ = decodeBaseline(item.Body, &run)
+			_ = controlplane.Decode(item.Body, &run)
 			lane.upload <- packageUploaded{run.ID, lane.client.uploadPackage(lane.ctx, lane.state, item)}
 		}()
 	}
@@ -161,16 +165,16 @@ func (lane *packageLane) receive(now time.Time) error {
 	select {
 	case result := <-lane.fetch:
 		lane.fetching = false
-		if result.controlEpoch != lane.monitoring.epoch() {
+		if result.controlEpoch != lane.monitoring.Epoch() {
 			lane.nextFetch = now
 			return nil
 		}
 		if result.err != nil {
-			if terminal(result.err) {
+			if controlplane.Terminal(result.err) {
 				return errors.Join(result.err, lane.pause("package_authority_invalid"))
 			}
 			lane.fetchFailures++
-			lane.nextFetch = now.Add(baselineRetry(result.err, lane.fetchFailures))
+			lane.nextFetch = now.Add(controlplane.WorkerRetry(result.err, lane.fetchFailures))
 			lane.emit("package_fetch_deferred")
 		} else {
 			if lane.ledger.Active != nil && !packageEntryCurrent(result.response, lane.ledger.Active.Entry) && lane.cancelRun != nil {
@@ -183,7 +187,7 @@ func (lane *packageLane) receive(now time.Time) error {
 			}
 			lane.controlEpoch = result.controlEpoch
 			lane.ledger.Cache = result.response
-			lane.ledger.ValidatedAt = baselineStamp(now)
+			lane.ledger.ValidatedAt = controlplane.Timestamp(now)
 			if err := savePackageLedger(lane.store, lane.ledger); err != nil {
 				return err
 			}
@@ -224,7 +228,7 @@ func (lane *packageLane) receive(now time.Time) error {
 				return errPackageState
 			}
 			var run packageRun
-			if decodeBaseline(lane.ledger.Pending[0].Body, &run) != nil || run.ID != result.id {
+			if controlplane.Decode(lane.ledger.Pending[0].Body, &run) != nil || run.ID != result.id {
 				return errPackageState
 			}
 			lane.ledger.Pending = lane.ledger.Pending[1:]
@@ -237,11 +241,11 @@ func (lane *packageLane) receive(now time.Time) error {
 				lane.emit("package_pending_obsolete")
 			}
 		} else {
-			if terminal(result.err) {
+			if controlplane.Terminal(result.err) {
 				return errors.Join(result.err, lane.pause("package_authority_invalid"))
 			}
 			lane.uploadFailures++
-			lane.nextUpload = now.Add(baselineRetry(result.err, lane.uploadFailures))
+			lane.nextUpload = now.Add(controlplane.WorkerRetry(result.err, lane.uploadFailures))
 			lane.emit("package_upload_deferred")
 		}
 	default:
@@ -257,6 +261,6 @@ func packageEntryCurrent(response *packageResponse, entry packageAssignment) boo
 	return false
 }
 func packageObsolete(err error) bool {
-	var response *ResponseError
+	var response *controlplane.ResponseError
 	return errors.As(err, &response) && (response.Status == 400 || response.Status == 409 || response.Status == 410)
 }

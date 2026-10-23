@@ -4,6 +4,9 @@ import (
 	"context"
 	"testing"
 	"testing/synctest"
+
+	loop "github.com/TinyWarden/tinywarden-agent/internal/agent/loop"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 )
 
 func TestAssignmentBackoffKeepsHeartbeatPriorityAndPendingReplay(t *testing.T) {
@@ -13,12 +16,12 @@ func TestAssignmentBackoffKeepsHeartbeatPriorityAndPendingReplay(t *testing.T) {
 		order := []string{}
 		heartbeats, assignments := 0, 0
 		pending := false
-		err := runLanes(ctx, 10, func(context.Context) error {
+		err := loop.RunLanes(ctx, 10, func(context.Context) error {
 			order = append(order, "heartbeat")
 			heartbeats++
 			if heartbeats == 1 {
 				pending = true
-				return &ResponseError{Status: 503}
+				return &controlplane.ResponseError{Status: 503}
 			}
 			if heartbeats == 2 {
 				if !pending {
@@ -33,7 +36,7 @@ func TestAssignmentBackoffKeepsHeartbeatPriorityAndPendingReplay(t *testing.T) {
 		}, func(context.Context) error {
 			order = append(order, "assignment")
 			assignments++
-			return &ResponseError{Status: 503}
+			return &controlplane.ResponseError{Status: 503}
 		}, func(string) {})
 		if err != context.Canceled || heartbeats != 4 || assignments < 2 || pending ||
 			len(order) < 2 || order[0] != "heartbeat" || order[1] != "assignment" {

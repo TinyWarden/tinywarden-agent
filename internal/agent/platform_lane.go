@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/TinyWarden/tinywarden-agent/internal/platform"
-	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentrelease "github.com/TinyWarden/tinywarden-agent/internal/release"
+	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skillruntime"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 type platformCounter struct {
@@ -16,24 +19,24 @@ type platformCounter struct {
 	Sequence   uint64 `json:"sequence"`
 }
 type platformResult struct {
-	policy *platform.Policy
+	policy *agentrelease.Policy
 	err    error
 }
 type platformLane struct {
-	config           Config
-	store            *Store
-	state            *State
+	config           agentconfig.Config
+	store            *agentstate.Store
+	state            *agentstate.State
 	result           chan platformResult
 	working, sending bool
 	due              time.Time
 	counter          platformCounter
 }
 
-func newPlatformLane(config Config, store *Store, state *State) *platformLane {
+func newPlatformLane(config agentconfig.Config, store *agentstate.Store, state *agentstate.State) *platformLane {
 	l := &platformLane{config: config, store: store, state: state, result: make(chan platformResult, 1)}
 	// This auxiliary counter never changes enrollment, heartbeat or skill state.
-	if b, e := os.ReadFile(filepath.Join(store.dir, "platform-report.json")); e == nil && len(b) <= 512 {
-		_ = platform.Decode(b, &l.counter)
+	if b, e := os.ReadFile(filepath.Join(store.Dir(), "platform-report.json")); e == nil && len(b) <= 512 {
+		_ = agentrelease.Decode(b, &l.counter)
 	}
 	return l
 }
@@ -78,51 +81,51 @@ func (l *platformLane) tick(ctx context.Context) error {
 		l.working = true
 		s := *l.state
 		go func() {
-			var p platform.Policy
-			r := platform.PolicyRequest{Schema: 1, HostID: s.HostID, AgentID: s.AgentID, Generation: s.Generation, Version: Version, Managed: l.config.Managed}
-			e := platform.Post(ctx, platform.HTTP(false), l.config.ControlPlaneOrigin, "/api/v1/agent/update-policy", s.Credential, r, &p, 32768)
+			var p agentrelease.Policy
+			r := agentrelease.PolicyRequest{Schema: 1, HostID: s.HostID, AgentID: s.AgentID, Generation: s.Generation, Version: Version, Managed: l.config.Managed}
+			e := controlplane.Post(ctx, controlplane.HTTP(false), l.config.ControlPlaneOrigin, "/api/v1/agent/update-policy", s.Credential, r, &p, 32768)
 			l.result <- platformResult{policy: &p, err: e}
 		}()
 	}
 	// Optional maintenance failures never stop, delay or fake host contact.
 	return nil
 }
-func (l *platformLane) report(ctx context.Context, s State, seq uint64) error {
+func (l *platformLane) report(ctx context.Context, s agentstate.State, seq uint64) error {
 	automatic := false
 	base := filepath.Dir(l.config.Path())
 	if l.config.Updates != nil {
 		automatic = l.config.Updates.Automatic
 	}
 	if l.config.Managed {
-		if b, e := platform.ReadPublic(filepath.Join(base, "config.json"), 8192); e == nil {
-			var c Config
-			if platform.Decode(b, &c) == nil && c.Updates != nil {
+		if b, e := agentrelease.ReadPublic(filepath.Join(base, "config.json"), 8192); e == nil {
+			var c agentconfig.Config
+			if agentrelease.Decode(b, &c) == nil && c.Updates != nil {
 				automatic = c.Updates.Automatic
 			}
 		}
 	}
-	o, e := platform.Identity(base, l.config.Managed, automatic)
+	o, e := agentrelease.Identity(base, l.config.Managed, automatic)
 	if e != nil {
 		o.Managed = false
-		o.Updater = platform.UpdateStatus{Outcome: "failed", Error: "identity_invalid"}
+		o.Updater = agentrelease.UpdateStatus{Outcome: "failed", Error: "identity_invalid"}
 	}
 	if l.config.Managed && (skillruntime.Client{Assets: l.config.RuntimeAssets}).VerifyAssets() != nil {
 		o.RuntimeSHA256 = ""
-		o.Updater = platform.UpdateStatus{Outcome: "failed", Error: "runtime_invalid"}
+		o.Updater = agentrelease.UpdateStatus{Outcome: "failed", Error: "runtime_invalid"}
 	}
-	request := platform.StatusRequest{Schema: 1, HostID: s.HostID, AgentID: s.AgentID, Generation: s.Generation, Sequence: seq, ObservedAt: time.Now().UTC().Format(time.RFC3339Nano), Platform: o}
+	request := agentrelease.StatusRequest{Schema: 1, HostID: s.HostID, AgentID: s.AgentID, Generation: s.Generation, Sequence: seq, ObservedAt: time.Now().UTC().Format(time.RFC3339Nano), Platform: o}
 	var response struct {
 		Schema   int  `json:"schema_version"`
 		Accepted bool `json:"accepted"`
 	}
-	return platform.Post(ctx, platform.HTTP(false), l.config.ControlPlaneOrigin, "/api/v1/agent/platform-status", s.Credential, request, &response, 2048)
+	return controlplane.Post(ctx, controlplane.HTTP(false), l.config.ControlPlaneOrigin, "/api/v1/agent/platform-status", s.Credential, request, &response, 2048)
 }
 func (l *platformLane) saveCounter() error {
 	b, e := json.Marshal(l.counter)
 	if e != nil {
 		return e
 	}
-	f, e := os.CreateTemp(l.store.dir, ".platform-")
+	f, e := os.CreateTemp(l.store.Dir(), ".platform-")
 	if e != nil {
 		return e
 	}
@@ -138,10 +141,10 @@ func (l *platformLane) saveCounter() error {
 	if e = f.Close(); e != nil {
 		return e
 	}
-	if e = os.Rename(f.Name(), filepath.Join(l.store.dir, "platform-report.json")); e != nil {
+	if e = os.Rename(f.Name(), filepath.Join(l.store.Dir(), "platform-report.json")); e != nil {
 		return e
 	}
-	directory, e := os.Open(l.store.dir)
+	directory, e := os.Open(l.store.Dir())
 	if e != nil {
 		return e
 	}

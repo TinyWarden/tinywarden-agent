@@ -1,6 +1,6 @@
 """Deterministic captured-observation tests, run through production entrypoints."""
-from json_values import decode
-from schema import validate
+from contracts.json_values import decode
+from contracts.schema import validate
 from authoring.execution import invoke
 
 KEYS = {"name", "settings", "observation", "previous_state", "captured_at", "received_at",

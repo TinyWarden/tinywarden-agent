@@ -3,8 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).parents[1]/'runtime'))
-from systemd_services import PROPERTIES, read_units, unit_name
-from grants import inspect_grant, permits
+from host.systemd_services import PROPERTIES, read_units, unit_name
+from contracts.grants import inspect_grant, permits
 
 
 def properties(name, load='loaded'):
@@ -29,7 +29,7 @@ class SystemdServicesTest(unittest.TestCase):
             inspect_grant({'operation':'systemd.services.read','action':'restart'})
 
     def test_templates_do_not_abort_other_queries(self):
-        with patch('systemd_services.query',return_value=(0,properties('a.service'),b'')) as query:
+        with patch('host.systemd_services.query',return_value=(0,properties('a.service'),b'')) as query:
             rows=read_units(['a.service','worker@.service'],None,100)
         self.assertEqual(len(rows),2)
         self.assertEqual(next(r for r in rows if r['requested']=='worker@.service')['reason'],'template')
@@ -37,16 +37,16 @@ class SystemdServicesTest(unittest.TestCase):
         self.assertTrue(next(r for r in rows if r['requested']=='a.service')['available'])
 
     def test_explicit_not_found_and_read_failure_differ(self):
-        with patch('systemd_services.query',return_value=(1,properties('gone.service','not-found'),b'')):
+        with patch('host.systemd_services.query',return_value=(1,properties('gone.service','not-found'),b'')):
             row=read_units(['gone.service'],None,100)[0]
         self.assertTrue(row['available']);self.assertEqual(row['properties']['LoadState'],'not-found')
-        with patch('systemd_services.query',return_value=(1,b'',b'')):
+        with patch('host.systemd_services.query',return_value=(1,b'',b'')):
             row=read_units(['gone.service'],None,100)[0]
         self.assertFalse(row['available']);self.assertEqual(row['reason'],'unreadable')
 
     def test_aliases_share_canonical_identity(self):
         raw=properties('canonical.service').replace(b'Names=canonical.service',b'Names=canonical.service alias.service')
-        with patch('systemd_services.query',return_value=(0,raw,b'')):
+        with patch('host.systemd_services.query',return_value=(0,raw,b'')):
             rows=read_units(['alias.service','canonical.service'],None,100)
         self.assertEqual([r['properties']['Id'] for r in rows],['canonical.service','canonical.service'])
 

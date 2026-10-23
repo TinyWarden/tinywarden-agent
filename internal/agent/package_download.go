@@ -12,12 +12,14 @@ import (
 	"path/filepath"
 	"time"
 
-	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skillruntime"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 // Download into a private temporary file; credentials never reach the Python child.
 func (client *Client) downloadPackage(ctx context.Context, credential string, entry packageAssignment, directory string) (string, error) {
-	if !validID(entry.ID) || !contentDigest.MatchString(entry.ArchiveDigest) || entry.ArchiveBytes < 1 || entry.ArchiveBytes > 10<<20 {
+	if !agentstate.ValidID(entry.ID) || !contentDigest.MatchString(entry.ArchiveDigest) || entry.ArchiveBytes < 1 || entry.ArchiveBytes > 10<<20 {
 		return "", errPackageState
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -34,7 +36,7 @@ func (client *Client) downloadPackage(ctx context.Context, credential string, en
 	}
 	defer response.Body.Close()
 	if response.StatusCode != 200 {
-		return "", &ResponseError{Status: response.StatusCode, Code: "package_download_rejected", RetryAfter: retryAfter(response.Header.Get("Retry-After"))}
+		return "", &controlplane.ResponseError{Status: response.StatusCode, Code: "package_download_rejected", RetryAfter: controlplane.RetryAfter(response.Header.Get("Retry-After"))}
 	}
 	if response.Header.Get("Content-Type") != "application/zip" || response.Header.Get("Content-Encoding") != "" ||
 		response.Header.Get("X-TinyWarden-Archive-SHA256") != entry.ArchiveDigest || response.Header.Get("X-TinyWarden-Content-SHA256") != entry.Digest ||

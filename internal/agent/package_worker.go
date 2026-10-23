@@ -8,19 +8,21 @@ import (
 	"path/filepath"
 	"time"
 
-	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skills/runtime"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skillruntime"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func (lane *packageLane) allocate(entry packageAssignment, now time.Time) (packageActive, error) {
-	if lane.ledger.Active != nil || lane.ledger.Sequences[entry.InstallationID] >= safeCounter {
+	if lane.ledger.Active != nil || lane.ledger.Sequences[entry.InstallationID] >= agentstate.MaxSafeCounter {
 		return packageActive{}, errPackageState
 	}
-	id, err := randomID()
+	id, err := agentstate.RandomID()
 	if err != nil {
 		return packageActive{}, err
 	}
 	next := lane.ledger.Sequences[entry.InstallationID] + 1
-	active := packageActive{entry, packageRun{SchemaVersion: 1, ID: id, Sequence: next, AssignmentID: entry.ID, StartedAt: baselineStamp(now), FinishedAt: baselineStamp(now), Outcome: "execution_failed", Observation: json.RawMessage("null")}}
+	active := packageActive{entry, packageRun{SchemaVersion: 1, ID: id, Sequence: next, AssignmentID: entry.ID, StartedAt: controlplane.Timestamp(now), FinishedAt: controlplane.Timestamp(now), Outcome: "execution_failed", Observation: json.RawMessage("null")}}
 	if entry.Format == 2 {
 		active.Run.SchemaVersion = 2
 	}
@@ -55,7 +57,7 @@ func (lane *packageLane) complete(run packageRun) error {
 			return err
 		}
 	}
-	lane.ledger.Pending = append(lane.ledger.Pending, packagePending{lane.ledger.Active.Entry.InstallationID, body, baselineBodyDigest(body)})
+	lane.ledger.Pending = append(lane.ledger.Pending, packagePending{lane.ledger.Active.Entry.InstallationID, body, controlplane.BodyDigest(body)})
 	lane.ledger.Active = nil
 	return savePackageLedger(lane.store, lane.ledger)
 }
@@ -68,7 +70,7 @@ func (lane *packageLane) collect(ctx context.Context, active packageActive) pack
 		return packageCompleted{run, false}
 	}
 	defer release()
-	run.StartedAt = baselineStamp(time.Now())
+	run.StartedAt = controlplane.Timestamp(time.Now())
 	run.FinishedAt = run.StartedAt
 	helper, err := os.Executable()
 	if err != nil {
@@ -99,14 +101,14 @@ func (lane *packageLane) collect(ctx context.Context, active packageActive) pack
 			}
 		}
 	}
-	protected := []string{lane.config.StateDir, lane.config.configPath, lane.config.RuntimeAssets}
+	protected := []string{lane.config.StateDir, lane.config.Path(), lane.config.RuntimeAssets}
 	if lane.config.Managed {
-		protected = append(protected, filepath.Dir(lane.config.configPath))
+		protected = append(protected, filepath.Dir(lane.config.Path()))
 	}
 	observation, err := lane.runtime.Collect(ctx, skillruntime.Request{Package: directory, ContentSHA256: active.Entry.Digest,
 		Official: active.Entry.Official, Arguments: active.Entry.Settings, Grants: active.Entry.Grants, Ceiling: ceiling,
 		FilesystemHelper: helper, ProtectedPaths: protected})
-	run.FinishedAt = baselineStamp(time.Now())
+	run.FinishedAt = controlplane.Timestamp(time.Now())
 	if run.FinishedAt < run.StartedAt {
 		run.FinishedAt = run.StartedAt
 		run.Outcome = "execution_failed"
@@ -119,7 +121,7 @@ func (lane *packageLane) collect(ctx context.Context, active packageActive) pack
 				Observation json.RawMessage `json:"observation"`
 				Resources   json.RawMessage `json:"resources"`
 			}
-			if decodeBaseline(observation, &envelope) != nil || len(envelope.Observation) == 0 || len(envelope.Resources) == 0 {
+			if controlplane.Decode(observation, &envelope) != nil || len(envelope.Observation) == 0 || len(envelope.Resources) == 0 {
 				run.Outcome = "output_invalid"
 				return packageCompleted{run, false}
 			}

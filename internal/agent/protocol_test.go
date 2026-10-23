@@ -13,6 +13,10 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func TestResponseFailuresStayBoundedAndClassified(t *testing.T) {
@@ -28,7 +32,7 @@ func TestResponseFailuresStayBoundedAndClassified(t *testing.T) {
 		{"bad json", "application/json", "{", "", 200, 0, true},
 		{"bad media", "text/html", "{}", "", 200, 0, true},
 		{"missing version", "application/json", "{}", "", 200, 0, true},
-		{"oversize chunked", "application/json", strings.Repeat("x", maxBody+1), "", 200, 0, true},
+		{"oversize chunked", "application/json", strings.Repeat("x", controlplane.MaxBody+1), "", 200, 0, true},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
@@ -42,15 +46,15 @@ func TestResponseFailuresStayBoundedAndClassified(t *testing.T) {
 			}))
 			defer server.Close()
 			_, err := testClient(server).Enroll(context.Background(), testPending(t))
-			if err == nil || terminal(err) != test.terminal {
+			if err == nil || controlplane.Terminal(err) != test.terminal {
 				t.Fatal("response classification was incorrect", err)
 			}
 			if test.status == 429 || test.status == 503 {
-				var response *ResponseError
+				var response *controlplane.ResponseError
 				if !errors.As(err, &response) || response.RetryAfter != time.Duration(test.expectedDelay)*time.Second {
 					t.Fatal("retry delay was incorrect", err)
 				}
-				if test.expectedDelay > 0 && retryWait(err, 2*time.Second) != response.RetryAfter {
+				if test.expectedDelay > 0 && controlplane.RetryWait(err, 2*time.Second) != response.RetryAfter {
 					t.Fatal("server retry delay was ignored")
 				}
 			}
@@ -60,8 +64,8 @@ func TestResponseFailuresStayBoundedAndClassified(t *testing.T) {
 
 func TestInterruptedResponseBodyRetriesSavedEnrollment(t *testing.T) {
 	pending := testPending(t)
-	host, _ := randomID()
-	agent, _ := randomID()
+	host, _ := agentstate.RandomID()
+	agent, _ := agentstate.RandomID()
 	calls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var request map[string]any
@@ -85,7 +89,7 @@ func TestInterruptedResponseBodyRetriesSavedEnrollment(t *testing.T) {
 	}))
 	defer server.Close()
 	client := testClient(server)
-	if _, err := client.Enroll(context.Background(), pending); err == nil || terminal(err) {
+	if _, err := client.Enroll(context.Background(), pending); err == nil || controlplane.Terminal(err) {
 		t.Fatal("interrupted body was accepted or treated as terminal", err)
 	}
 	if result, err := client.Enroll(context.Background(), pending); err != nil ||
@@ -108,7 +112,7 @@ func TestBodyTimeoutAfterHeadersIsRetryable(t *testing.T) {
 	defer server.Close()
 	client := testClient(server)
 	client.HTTP.Timeout = 50 * time.Millisecond
-	if _, err := client.Enroll(context.Background(), testPending(t)); err == nil || terminal(err) {
+	if _, err := client.Enroll(context.Background(), testPending(t)); err == nil || controlplane.Terminal(err) {
 		t.Fatal("body timeout was accepted or treated as terminal", err)
 	}
 }
@@ -120,11 +124,11 @@ func TestLastRetryAfterCarriesIntoDegradedMode(t *testing.T) {
 		err := runCycle(context.Background(), func(context.Context) error {
 			calls++
 			if calls < 5 {
-				return &ResponseError{Status: 503}
+				return &controlplane.ResponseError{Status: 503}
 			}
 			if calls == 5 {
 				fifth = time.Now()
-				return &ResponseError{Status: 429, RetryAfter: 900 * time.Second}
+				return &controlplane.ResponseError{Status: 429, RetryAfter: 900 * time.Second}
 			}
 			if since := time.Since(fifth); since < 900*time.Second {
 				t.Errorf("degraded retry preceded server delay: %v", since)
@@ -168,16 +172,16 @@ func TestRequestTimeoutRemainsRetryable(t *testing.T) {
 	client := testClient(server)
 	client.HTTP.Timeout = 50 * time.Millisecond
 	_, err := client.Enroll(context.Background(), testPending(t))
-	if err == nil || terminal(err) {
+	if err == nil || controlplane.Terminal(err) {
 		t.Fatal("hung request was accepted or classified terminal", err)
 	}
 }
 
 func TestConfiguredOriginAndStatePathFailClosed(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "agent.json")
-	valid := Config{ControlPlaneOrigin: "https://neutralisp.tinywarden.com",
+	valid := agentconfig.Config{ControlPlaneOrigin: "https://neutralisp.tinywarden.com",
 		StateDir: filepath.Join(t.TempDir(), "state")}
-	for _, candidate := range []Config{
+	for _, candidate := range []agentconfig.Config{
 		{ControlPlaneOrigin: "http://neutralisp.tinywarden.com", StateDir: valid.StateDir},
 		{ControlPlaneOrigin: "https://neutralisp.tinywarden.com/other", StateDir: valid.StateDir},
 		{ControlPlaneOrigin: "https://user@neutralisp.tinywarden.com", StateDir: valid.StateDir},
@@ -190,7 +194,7 @@ func TestConfiguredOriginAndStatePathFailClosed(t *testing.T) {
 		if err := os.WriteFile(path, data, 0600); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := LoadConfig(path); err == nil {
+		if _, err := agentconfig.LoadConfig(path); err == nil {
 			t.Fatalf("unsafe configuration accepted: %q", candidate.ControlPlaneOrigin)
 		}
 	}
@@ -201,8 +205,8 @@ func TestConfiguredOriginAndStatePathFailClosed(t *testing.T) {
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	if loaded, err := LoadConfig(path); err != nil || loaded.ControlPlaneOrigin != valid.ControlPlaneOrigin || loaded.StateDir != valid.StateDir ||
-		loaded.RuntimeAssets != "/usr/local/lib/tinywarden-agent/runtime" || len(loaded.SkillOperations) != 8 || loaded.configPath != path {
+	if loaded, err := agentconfig.LoadConfig(path); err != nil || loaded.ControlPlaneOrigin != valid.ControlPlaneOrigin || loaded.StateDir != valid.StateDir ||
+		loaded.RuntimeAssets != "/usr/local/lib/tinywarden-agent/runtime" || len(loaded.SkillOperations) != 8 || loaded.Path() != path {
 		t.Fatal("valid native configuration rejected", err)
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 )
 
 // The declared length is larger than the sent body, so reading it fails after
@@ -35,9 +37,9 @@ func TestInterruptedErrorBodiesKeepHTTPStatus(t *testing.T) {
 			}))
 			defer server.Close()
 			_, err := testClient(server).Enroll(context.Background(), testPending(t))
-			var response *ResponseError
+			var response *controlplane.ResponseError
 			if !errors.As(err, &response) || response.Status != test.status ||
-				!terminal(err) || ErrorCategory(err) != test.category {
+				!controlplane.Terminal(err) || controlplane.ErrorCategory(err) != test.category {
 				t.Fatalf("interrupted rejection lost its status/category: %v", err)
 			}
 		})
@@ -67,9 +69,9 @@ func TestKnownInvalidSuccessMetadataStopsBeforeBodyRead(t *testing.T) {
 			defer server.Close()
 			client := testClient(server)
 			client.HTTP.Transport.(*http.Transport).DisableCompression = true
-			_, err := client.post(context.Background(), "/api/v1/agent/heartbeat", "test",
+			_, err := client.Request(context.Background(), "/api/v1/agent/heartbeat", "test",
 				map[string]any{"schema_version": 1}, test.allowCreated)
-			if err == nil || !terminal(err) {
+			if err == nil || !controlplane.Terminal(err) {
 				t.Fatalf("known-invalid response became retryable: %v", err)
 			}
 		})
@@ -86,17 +88,17 @@ func TestInterruptedAllowedSuccessAndTransientStatusStayRetryable(t *testing.T) 
 			}))
 			defer server.Close()
 			_, err := testClient(server).Enroll(context.Background(), testPending(t))
-			if err == nil || terminal(err) {
+			if err == nil || controlplane.Terminal(err) {
 				t.Fatalf("interrupted/rejected request became terminal: %v", err)
 			}
 			if status == 429 || status == 503 {
-				var response *ResponseError
+				var response *controlplane.ResponseError
 				if !errors.As(err, &response) || response.Status != status ||
 					response.RetryAfter != 900*time.Second {
 					t.Fatalf("transient status/delay lost: %v", err)
 				}
 			} else {
-				var interrupted *responseReadError
+				var interrupted *controlplane.ResponseReadError
 				if !errors.As(err, &interrupted) {
 					t.Fatalf("successful response body was not retryable: %v", err)
 				}

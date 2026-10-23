@@ -5,9 +5,9 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "runtime"))
-from resources import inventory, timeline, selection, inspect_resources, resource_key, LIMITS
-from schema import inspect
-from json_values import encode
+from contracts.resources import inventory, timeline, selection, inspect_resources, resource_key, LIMITS
+from contracts.schema import inspect
+from contracts.json_values import encode
 
 
 class ResourcesTest(unittest.TestCase):

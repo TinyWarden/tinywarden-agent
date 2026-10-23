@@ -58,10 +58,10 @@ For an explicitly managed manual layout, build/package the reviewed source and
 create a dedicated non-root `tinywarden-agent` account. Install the executable as
 `/usr/local/bin/tinywarden-agent`, the trusted `sdk/python/runtime` directory as
 `/usr/local/lib/tinywarden-agent/runtime`, and the supplied
-[service template](../../infra/systemd/tinywarden-agent.service) as a system service.
+[service template](../../deploy/systemd/manual/tinywarden-agent.service) as a system service.
 Keep executable/runtime assets root-owned and not writable by the service account.
 
-Use [config/agent.example.json](../../config/agent.example.json) for
+Use [deploy/config/agent.example.json](../../deploy/config/agent.example.json) for
 `/etc/tinywarden-agent/agent.json`. Set the public HTTPS app origin and an absolute
 state directory owned by the service account, normally `/var/lib/tinywarden-agent`.
 Allow only the administrator and service account to read configuration; keep the

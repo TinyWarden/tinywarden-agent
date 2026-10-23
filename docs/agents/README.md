@@ -5,17 +5,28 @@ The [file map](codebase-map.md) lists exact ownership. Read root
 
 | Area | Source | Checks |
 | --- | --- | --- |
-| Host executable and transport | `cmd/`, `internal/` | Go format, vet and affected Go tests |
-| Skill admission and isolation | `sdk/python/runtime/`, `tests/runtime/` | Runtime asset integrity, admission/archive tests and affected real sandbox cases |
-| Skill authoring | `sdk/python/skill_tool.py`, `sdk/python/authoring/` | Authoring and supported delegated sandbox tests |
-| Installation and updates | `scripts/install.sh`, `internal/platform/`, `scripts/release.py` | Installer/update compatibility and package asset inspection |
-| Source and documentation tooling | `scripts/source_check.py`, map roles | Guard tests, generated map and links |
+| Executable and orchestration | `cmd/`, `internal/cli/`, `internal/agent/` | CLI, startup, heartbeat, package-worker and Fleet tests |
+| Transport and durable identity | `internal/controlplane/`, `internal/config/`, `internal/state/` | Bounded responses, exact retries, locking and recovery |
+| Installation and release trust | `internal/installation/`, `internal/release/`, `deploy/`, `scripts/release/` | Signature vectors, installer/update recovery and complete bundles |
+| Host observation and runtime bridge | `internal/host/`, `internal/skillruntime/` | Filesystem helper, runtime verification and shared execution capacity |
+| Compiled compatibility | `internal/legacy/` | Retained assignments, queues, fixed recipes and pause/resume |
+| Python contracts, host access, isolation and admission | `sdk/python/runtime/{contracts,host,isolation,packages}/` | SDK unit tests in `sdk/python/tests/`; process boundaries in `tests/integration/` |
+| Skill authoring | `sdk/python/skill_tool.py`, `sdk/python/authoring/`, `examples/skills/` | Independent init/validate/test/collect/pack and native sandbox cases |
+| Source and documentation tooling | `scripts/checks/source_check.py`, map roles | Guard tests, generated map and links |
 
-`python3 -B scripts/runtime_assets.py --check` checks the trusted SDK asset set.
+`python3 -B scripts/checks/runtime_assets.py --check` checks the trusted SDK asset set.
 `./scripts/verify.sh --batch` runs the repository verification profile. The
-`--skills-author` profile additionally needs supported delegated native cgroup
-limits. Use captured observations for deterministic skill tests and a controlled
+`--skills-author` profile runs SDK/authoring checks without the Go gate and needs
+supported delegated native cgroup limits. `--sandbox` includes the ordinary Go
+gate plus authoring and runtime isolation cases. Use captured observations for deterministic skill tests and a controlled
 host for real collection; report missing sandbox prerequisites as failures.
+
+Keep root `supervisor.py`, `launcher.py`, `seccomp.py`, `probe/` and
+`resource_probe/` paths stable. Old installed updaters verify these assets before
+running the new binary. The root seccomp module delegates to `isolation/seccomp.py`;
+it is not a second implementation. Include package initializers in `artifact.json`.
+Lower-level Go owners must not depend on daemon or installation orchestration.
+Worker ledgers stay with their worker; shared persistence must retain one lock.
 
 Preserve immutable published releases, signing key ownership and pinned asset
 identity. Check actual formats and supported releases before describing capability.

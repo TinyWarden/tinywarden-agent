@@ -13,6 +13,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func TestReplacementSurvivesLostResponseAndRunRestart(t *testing.T) {
@@ -20,14 +23,14 @@ func TestReplacementSurvivesLostResponseAndRunRestart(t *testing.T) {
 	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	old, _ := newCredential()
-	hostID, _ := randomID()
-	agentID, _ := randomID()
-	store, err := OpenStore(dir)
+	old, _ := agentstate.NewCredential()
+	hostID, _ := agentstate.RandomID()
+	agentID, _ := agentstate.RandomID()
+	store, err := agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Save(State{Version: 1, Credential: old, HostID: hostID,
+	if err := store.Save(agentstate.State{Version: 1, Credential: old, HostID: hostID,
 		AgentID: agentID, Generation: 1, HeartbeatIntervalSeconds: 60,
 		StaleAfterSeconds: 180}); err != nil {
 		t.Fatal(err)
@@ -85,11 +88,11 @@ func TestReplacementSurvivesLostResponseAndRunRestart(t *testing.T) {
 	}))
 	defer server.Close()
 	client := testClient(server)
-	config := Config{ControlPlaneOrigin: server.URL, StateDir: dir}
+	config := agentconfig.Config{ControlPlaneOrigin: server.URL, StateDir: dir}
 	if err := StartReplacement(context.Background(), config, tokenPath, client); err == nil {
 		t.Fatal("expected uncertain first replacement response")
 	}
-	store, err = OpenStore(dir)
+	store, err = agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +115,7 @@ func TestReplacementSurvivesLostResponseAndRunRestart(t *testing.T) {
 	if err := Run(ctx, config, client, func(string) {}); !errors.Is(err, context.Canceled) {
 		t.Fatal("run did not finish after restart and cancellation", err)
 	}
-	store, err = OpenStore(dir)
+	store, err = agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,7 +8,13 @@ Verified host platform: Debian 13 on amd64. Skills are distributed independently
 through [skill repositories](https://github.com/TinyWarden/tinywarden-skills).
 A skill using supported operations needs no host-agent binary change.
 
+This repository owns the reusable SDK and execution runtime. The separate skills
+repository owns official monitoring packages, tests and independent releases.
+Its build tools use an exact SDK pin; the repositories do not need adjacent
+checkouts to build or test.
+
 - [Installation and operations](docs/deploy/native.md)
+- [Agent and SDK documentation](docs/README.md)
 - [TinyWarden documentation](https://github.com/TinyWarden/tinywarden/blob/main/docs/README.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -24,6 +30,6 @@ go build -o bin/tinywarden-agent ./cmd/tinywarden-agent
 bin/tinywarden-agent --version
 ```
 
-See the [configuration example](config/agent.example.json) for manual installations.
+See the [configuration example](deploy/config/agent.example.json) for manual installations.
 Authored source is Apache-2.0; preserve [LICENSE](LICENSE) and
 [third-party notices](THIRD_PARTY_NOTICES.md).

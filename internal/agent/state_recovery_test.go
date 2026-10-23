@@ -9,6 +9,9 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func TestLegacyPendingEnrollmentAndReplacementUpgradeBeforeReplay(t *testing.T) {
@@ -22,19 +25,19 @@ func TestLegacyPendingEnrollmentAndReplacementUpgradeBeforeReplay(t *testing.T) 
 			if err := os.Chmod(dir, 0700); err != nil {
 				t.Fatal(err)
 			}
-			store, err := OpenStore(dir)
+			store, err := agentstate.OpenStore(dir)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer store.Close()
 			pending := testPending(t)
 			pending.AgentVersion = "" // Version-1 state written by the 0.0.1 client.
-			state := State{Version: 1}
+			state := agentstate.State{Version: 1}
 			if replacing {
-				old, _ := newCredential()
+				old, _ := agentstate.NewCredential()
 				state.Credential = old
-				state.HostID, _ = randomID()
-				state.AgentID, _ = randomID()
+				state.HostID, _ = agentstate.RandomID()
+				state.AgentID, _ = agentstate.RandomID()
 				state.Generation = 1
 				state.HeartbeatIntervalSeconds = 60
 				state.StaleAfterSeconds = 180
@@ -56,7 +59,7 @@ func TestLegacyPendingEnrollmentAndReplacementUpgradeBeforeReplay(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			var saved *Enrollment
+			var saved *agentstate.Enrollment
 			if replacing {
 				saved = reloaded.Replacement
 				if reloaded.Credential != state.Credential || reloaded.HostID != state.HostID ||
@@ -94,17 +97,17 @@ func TestPendingHeartbeatReplaysPreviousVersionThenUsesCurrentVersion(t *testing
 	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	store, err := OpenStore(dir)
+	store, err := agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer store.Close()
-	credential, _ := newCredential()
-	host, _ := randomID()
-	agent, _ := randomID()
-	state := State{Version: 1, Credential: credential, HostID: host, AgentID: agent,
+	credential, _ := agentstate.NewCredential()
+	host, _ := agentstate.RandomID()
+	agent, _ := agentstate.RandomID()
+	state := agentstate.State{Version: 1, Credential: credential, HostID: host, AgentID: agent,
 		Generation: 1, HeartbeatIntervalSeconds: 60, StaleAfterSeconds: 180,
-		PendingHeartbeat: &PendingHeartbeat{Sequence: 1,
+		PendingHeartbeat: &agentstate.PendingHeartbeat{Sequence: 1,
 			SentAt: "2026-09-28T15:00:00.000Z", AgentVersion: "0.0.0"}}
 	if err := store.Save(state); err != nil {
 		t.Fatal(err)
@@ -163,17 +166,17 @@ func TestInterruptedHeartbeatBodyReplaysExactSavedRequest(t *testing.T) {
 	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	store, err := OpenStore(dir)
+	store, err := agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer store.Close()
-	credential, _ := newCredential()
-	host, _ := randomID()
-	agent, _ := randomID()
-	initial := State{Version: 1, Credential: credential, HostID: host, AgentID: agent,
+	credential, _ := agentstate.NewCredential()
+	host, _ := agentstate.RandomID()
+	agent, _ := agentstate.RandomID()
+	initial := agentstate.State{Version: 1, Credential: credential, HostID: host, AgentID: agent,
 		Generation: 1, HeartbeatIntervalSeconds: 60, StaleAfterSeconds: 180,
-		PendingHeartbeat: &PendingHeartbeat{Sequence: 1,
+		PendingHeartbeat: &agentstate.PendingHeartbeat{Sequence: 1,
 			SentAt: "2026-09-28T15:00:00.000Z", AgentVersion: "0.0.1"}}
 	if err := store.Save(initial); err != nil {
 		t.Fatal(err)
@@ -205,7 +208,7 @@ func TestInterruptedHeartbeatBodyReplaysExactSavedRequest(t *testing.T) {
 	}))
 	defer server.Close()
 	client := testClient(server)
-	if err := sendHeartbeat(context.Background(), store, &state, client); err == nil || terminal(err) {
+	if err := sendHeartbeat(context.Background(), store, &state, client); err == nil || controlplane.Terminal(err) {
 		t.Fatal("interrupted heartbeat became terminal", err)
 	}
 	reloaded, err := store.Load()
@@ -223,14 +226,14 @@ func TestSavedPendingVersionRejectsInvalidWireGrammar(t *testing.T) {
 	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	store, err := OpenStore(dir)
+	store, err := agentstate.OpenStore(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer store.Close()
 	pending := testPending(t)
 	pending.AgentVersion = "bad version"
-	if err := store.Save(State{Version: 1, Enrollment: &pending}); err != nil {
+	if err := store.Save(agentstate.State{Version: 1, Enrollment: &pending}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.Load(); err == nil {

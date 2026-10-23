@@ -10,25 +10,28 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+
+	loop "github.com/TinyWarden/tinywarden-agent/internal/agent/loop"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 )
 
 func TestHeartbeatDegradedRetryIsBoundedAndHonorsRetryAfter(t *testing.T) {
 	for _, interval := range []int{10, 60, 300} {
 		base := time.Duration(min(interval, 30)) * time.Second
 		for range 100 {
-			delay := heartbeatRetryWait(&ResponseError{Status: 503}, 5, interval)
+			delay := loop.HeartbeatRetryWait(&controlplane.ResponseError{Status: 503}, 5, interval)
 			if delay < base || delay > base+base/10 {
 				t.Fatalf("heartbeat delay outside cadence: %v", delay)
 			}
 		}
 	}
 	for _, count := range []int{1, 5, 100} {
-		delay := heartbeatRetryWait(&ResponseError{Status: 429, RetryAfter: 900 * time.Second}, count, 60)
+		delay := loop.HeartbeatRetryWait(&controlplane.ResponseError{Status: 429, RetryAfter: 900 * time.Second}, count, 60)
 		if delay != 900*time.Second {
 			t.Fatalf("server delay not honored: %v", delay)
 		}
 	}
-	if delay := degradedWait(&ResponseError{Status: 503}); delay < 300*time.Second {
+	if delay := controlplane.DegradedWait(&controlplane.ResponseError{Status: 503}); delay < 300*time.Second {
 		t.Fatal("other lanes lost their existing backoff")
 	}
 }
@@ -39,13 +42,13 @@ func TestDuplicateHeartbeatSchedulesOneFreshRequestWithOtherLanes(t *testing.T) 
 		defer cancel()
 		calls := []time.Time{}
 		order := []string{}
-		err := runHeartbeatLanes(ctx, 60, func(context.Context) (HeartbeatOutcome, error) {
+		err := loop.RunHeartbeatLanes(ctx, 60, func(context.Context) (loop.HeartbeatOutcome, error) {
 			calls = append(calls, time.Now())
 			order = append(order, "heartbeat")
 			if len(calls) == 3 {
 				cancel()
 			}
-			return HeartbeatOutcome{Duplicate: len(calls) == 1}, nil
+			return loop.HeartbeatOutcome{Duplicate: len(calls) == 1}, nil
 		}, func(context.Context) error { order = append(order, "assignment"); return nil }, func(string) {}, nil)
 		if !errors.Is(err, context.Canceled) || len(calls) != 3 {
 			t.Fatal(err, calls)
@@ -68,16 +71,16 @@ func TestHeartbeatFailuresReportSafeDiagnosticsAndRecoverWithoutLongSleep(t *tes
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		calls := []time.Time{}
-		records := []HeartbeatDiagnostic{}
+		records := []loop.HeartbeatDiagnostic{}
 		assignments := 0
-		err := runHeartbeatLanes(ctx, 60, func(context.Context) (HeartbeatOutcome, error) {
+		err := loop.RunHeartbeatLanes(ctx, 60, func(context.Context) (loop.HeartbeatOutcome, error) {
 			calls = append(calls, time.Now())
 			if len(calls) <= 5 {
-				return HeartbeatOutcome{}, heartbeatError("exchange", &ResponseError{Status: 503})
+				return loop.HeartbeatOutcome{}, loop.HeartbeatError("exchange", &controlplane.ResponseError{Status: 503})
 			}
 			cancel()
-			return HeartbeatOutcome{}, nil
-		}, func(context.Context) error { assignments++; return nil }, func(string) {}, func(d HeartbeatDiagnostic) { records = append(records, d) })
+			return loop.HeartbeatOutcome{}, nil
+		}, func(context.Context) error { assignments++; return nil }, func(string) {}, func(d loop.HeartbeatDiagnostic) { records = append(records, d) })
 		if !errors.Is(err, context.Canceled) || len(calls) != 6 || len(records) != 6 {
 			t.Fatal(err, calls, records)
 		}
@@ -95,10 +98,10 @@ func TestHeartbeatFailuresReportSafeDiagnosticsAndRecoverWithoutLongSleep(t *tes
 }
 
 func TestTerminalHeartbeatReportsRejectionAndStops(t *testing.T) {
-	records := []HeartbeatDiagnostic{}
-	err := runHeartbeatLanes(context.Background(), 60, func(context.Context) (HeartbeatOutcome, error) {
-		return HeartbeatOutcome{}, &ResponseError{Status: 401, Code: "untrusted secret"}
-	}, func(context.Context) error { t.Fatal("rejected authority continued polling"); return nil }, func(string) {}, func(d HeartbeatDiagnostic) { records = append(records, d) })
+	records := []loop.HeartbeatDiagnostic{}
+	err := loop.RunHeartbeatLanes(context.Background(), 60, func(context.Context) (loop.HeartbeatOutcome, error) {
+		return loop.HeartbeatOutcome{}, &controlplane.ResponseError{Status: 401, Code: "untrusted secret"}
+	}, func(context.Context) error { t.Fatal("rejected authority continued polling"); return nil }, func(string) {}, func(d loop.HeartbeatDiagnostic) { records = append(records, d) })
 	if err == nil || len(records) != 1 || records[0].Retryable || records[0].HTTPStatus != 401 || strings.Contains(records[0].JSON(), "untrusted") {
 		t.Fatal(err, records)
 	}
@@ -114,18 +117,18 @@ func TestHeartbeatDiagnosticCategoriesNeverExposeRawErrors(t *testing.T) {
 		{&net.OpError{Op: "dial", Net: "tcp", Err: syscall.ECONNREFUSED}, "exchange", "connection_refused"},
 		{context.DeadlineExceeded, "exchange", "timeout"},
 		{x509.HostnameError{Host: marker}, "exchange", "tls_validation"},
-		{&responseReadError{cause: errors.New(marker)}, "exchange", "response_interrupted"},
+		{controlplane.InterruptedResponse(errors.New(marker)), "exchange", "response_interrupted"},
 		{errors.New(marker), "ack_state", "local_state"},
 		{errors.New(marker), "pending_state", "local_state"},
 		{errors.New(marker), "cadence", "invalid_response"},
 	}
 	for _, c := range cases {
-		d := heartbeatDiagnostic(heartbeatError(c.stage, c.err), 1, time.Second, 30*time.Second)
+		d := loop.NewHeartbeatDiagnostic(loop.HeartbeatError(c.stage, c.err), 1, time.Second, 30*time.Second)
 		if d.Reason != c.reason || d.Stage != c.stage || strings.Contains(d.JSON(), marker) || len(d.JSON()) > 512 {
 			t.Fatal(d)
 		}
 	}
-	d := HeartbeatDiagnostic{Event: marker, Stage: marker, Reason: marker, Attempt: -1, ElapsedMS: -1, RetrySeconds: 10000, HTTPStatus: 123456}
+	d := loop.HeartbeatDiagnostic{Event: marker, Stage: marker, Reason: marker, Attempt: -1, ElapsedMS: -1, RetrySeconds: 10000, HTTPStatus: 123456}
 	if strings.Contains(d.JSON(), marker) || len(d.JSON()) > 512 {
 		t.Fatal("diagnostic serialization accepted arbitrary text", d.JSON())
 	}

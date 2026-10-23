@@ -3,12 +3,15 @@ package agent
 import (
 	"encoding/json"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
-func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error) {
+func loadPackageLedger(store *agentstate.Store, scope agentstate.Scope) (packageLedger, error) {
 	fresh := packageLedger{Consumed: map[string]string{}, Scope: scope, Sequences: map[string]uint64{}, Pending: []packagePending{}}
 	var ledger packageLedger
-	found, err := readBaselineState(store, "package-lane.json", packageQueueLimit, &ledger)
+	found, err := controlplane.ReadState(store, "package-lane.json", packageQueueLimit, &ledger)
 	if err != nil {
 		return fresh, err
 	}
@@ -21,30 +24,30 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 	if !validConsumed(ledger.Consumed) {
 		return fresh, errPackageState
 	}
-	if !ledger.Scope.valid() || ledger.Sequences == nil || ledger.Pending == nil || len(ledger.Sequences) > 100 || len(ledger.Pending) > 8 {
+	if !ledger.Scope.Valid() || ledger.Sequences == nil || ledger.Pending == nil || len(ledger.Sequences) > 100 || len(ledger.Pending) > 8 {
 		return fresh, errPackageState
 	}
 	if ledger.Scope != scope {
 		return fresh, savePackageLedger(store, fresh)
 	}
-	if ledger.Cache != nil && (!validPackageResponse(scope, *ledger.Cache) || !validInstant(ledger.ValidatedAt)) {
+	if ledger.Cache != nil && (!validPackageResponse(scope, *ledger.Cache) || !agentstate.ValidInstant(ledger.ValidatedAt)) {
 		return fresh, errPackageState
 	}
 	for id, sequence := range ledger.Sequences {
-		if !validID(id) || sequence > safeCounter {
+		if !agentstate.ValidID(id) || sequence > agentstate.MaxSafeCounter {
 			return fresh, errPackageState
 		}
 	}
 	for _, item := range ledger.Pending {
 		var run packageRun
-		if !validID(item.InstallationID) || len(item.Body) > 1<<20 || baselineBodyDigest(item.Body) != item.Digest || decodeBaseline(item.Body, &run) != nil ||
+		if !agentstate.ValidID(item.InstallationID) || len(item.Body) > 1<<20 || controlplane.BodyDigest(item.Body) != item.Digest || controlplane.Decode(item.Body, &run) != nil ||
 			!validStoredPackageRun(run) || run.Sequence > ledger.Sequences[item.InstallationID] {
 			return fresh, errPackageState
 		}
 	}
 	if ledger.Active != nil {
 		active := ledger.Active
-		if !validID(active.Entry.InstallationID) || !validStoredPackageRun(active.Run) || active.Run.AssignmentID != active.Entry.ID || active.Run.Sequence != ledger.Sequences[active.Entry.InstallationID] || active.Run.ManualID != "" && (active.Entry.Manual == nil || active.Entry.Manual.ID != active.Run.ManualID || ledger.Consumed[active.Entry.InstallationID] != active.Run.ManualID) {
+		if !agentstate.ValidID(active.Entry.InstallationID) || !validStoredPackageRun(active.Run) || active.Run.AssignmentID != active.Entry.ID || active.Run.Sequence != ledger.Sequences[active.Entry.InstallationID] || active.Run.ManualID != "" && (active.Entry.Manual == nil || active.Entry.Manual.ID != active.Run.ManualID || ledger.Consumed[active.Entry.InstallationID] != active.Run.ManualID) {
 			return fresh, errPackageState
 		}
 		active.Run.FinishedAt = active.Run.StartedAt
@@ -58,7 +61,7 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 		if len(ledger.Pending) >= 8 {
 			return fresh, errPackageState
 		}
-		ledger.Pending = append(ledger.Pending, packagePending{active.Entry.InstallationID, body, baselineBodyDigest(body)})
+		ledger.Pending = append(ledger.Pending, packagePending{active.Entry.InstallationID, body, controlplane.BodyDigest(body)})
 		ledger.Active = nil
 		if err := savePackageLedger(store, ledger); err != nil {
 			return fresh, err
@@ -67,10 +70,10 @@ func loadPackageLedger(store *Store, scope baselineScope) (packageLedger, error)
 	return ledger, nil
 }
 func validStoredPackageRun(run packageRun) bool {
-	if run.ManualID != "" && !validID(run.ManualID) {
+	if run.ManualID != "" && !agentstate.ValidID(run.ManualID) {
 		return false
 	}
-	if !validID(run.ID) || !validID(run.AssignmentID) || !validInstant(run.StartedAt) || !validInstant(run.FinishedAt) || (run.SchemaVersion != 1 && run.SchemaVersion != 2) || run.Sequence < 1 || run.Sequence > safeCounter {
+	if !agentstate.ValidID(run.ID) || !agentstate.ValidID(run.AssignmentID) || !agentstate.ValidInstant(run.StartedAt) || !agentstate.ValidInstant(run.FinishedAt) || (run.SchemaVersion != 1 && run.SchemaVersion != 2) || run.Sequence < 1 || run.Sequence > agentstate.MaxSafeCounter {
 		return false
 	}
 	started, _ := time.Parse(time.RFC3339Nano, run.StartedAt)
@@ -87,11 +90,11 @@ func validStoredPackageRun(run packageRun) bool {
 	}
 	return false
 }
-func savePackageLedger(store *Store, ledger packageLedger) error {
-	return saveBaselineState(store, "package-lane.json", ledger, packageQueueLimit)
+func savePackageLedger(store *agentstate.Store, ledger packageLedger) error {
+	return agentstate.SaveState(store, "package-lane.json", ledger, packageQueueLimit)
 }
 func packageLease(ledger packageLedger, now time.Time) bool {
-	if ledger.Paused || ledger.Cache == nil || !validInstant(ledger.ValidatedAt) {
+	if ledger.Paused || ledger.Cache == nil || !agentstate.ValidInstant(ledger.ValidatedAt) {
 		return false
 	}
 	validated, _ := time.Parse(time.RFC3339Nano, ledger.ValidatedAt)

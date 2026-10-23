@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "sdk/python/runtime"))
-from notifications import inspect_notifications
-from packages import load
+from contracts.notifications import inspect_notifications
+from packages.admission import load
 from official_fixtures import official_root
 
 
@@ -23,7 +23,7 @@ class NotificationAdmission(unittest.TestCase):
     def test_official_definitions_and_independent_package(self):
         for p in self.official.iterdir():
             self.assertEqual(load(p, official=True)["notifications"]["format"], 1)
-        m = load(ROOT / "skills/examples/memory-pressure")
+        m = load(ROOT / "examples/skills/memory-pressure")
         m["catalog"]["notify.community"] = {"text": "Local use is {used}%.", "parameters": {"used": "number"}}
         reason = next(iter(m["catalog"]))
         value = {"format": 1, "rules": [{"reason": reason, "states": ["warning"], "message_key": "notify.community",

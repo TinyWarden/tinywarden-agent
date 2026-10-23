@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 )
 
 // The server grants 90s using its clock. Small clock differences must not make
@@ -29,7 +31,7 @@ func TestManualClaimDeadlineClockTolerance(t *testing.T) {
 				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 					t.Error(err)
 				}
-				body["run_deadline"] = baselineStamp(time.Now().Add(tc.remaining))
+				body["run_deadline"] = controlplane.Timestamp(time.Now().Add(tc.remaining))
 				w.Header().Set("Content-Type", "application/json")
 				_ = json.NewEncoder(w).Encode(body)
 			}))

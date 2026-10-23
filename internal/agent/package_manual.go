@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func validConsumed(consumed map[string]string) bool {
@@ -11,7 +14,7 @@ func validConsumed(consumed map[string]string) bool {
 		return false
 	}
 	for installation, request := range consumed {
-		if !validID(installation) || !validID(request) {
+		if !agentstate.ValidID(installation) || !agentstate.ValidID(request) {
 			return false
 		}
 	}
@@ -24,7 +27,7 @@ func (lane *packageLane) manualReady(entry packageAssignment, now time.Time) boo
 	expiry, err := time.Parse(time.RFC3339Nano, entry.Manual.ExpiresAt)
 	return err == nil && now.Before(expiry)
 }
-func (client *Client) startPackageManual(ctx context.Context, state State, run packageRun) (time.Time, error) {
+func (client *Client) startPackageManual(ctx context.Context, state agentstate.State, run packageRun) (time.Time, error) {
 	input := struct {
 		SchemaVersion int    `json:"schema_version"`
 		ManualID      string `json:"manual_request_id"`
@@ -32,7 +35,7 @@ func (client *Client) startPackageManual(ctx context.Context, state State, run p
 		RunID         string `json:"run_id"`
 		Sequence      uint64 `json:"run_sequence"`
 	}{1, run.ManualID, run.AssignmentID, run.ID, run.Sequence}
-	wire, err := client.post(ctx, "/api/v2/agent/skill-run-starts", state.Credential, input, false, 4096, 4096)
+	wire, err := client.Request(ctx, "/api/v2/agent/skill-run-starts", state.Credential, input, false, 4096, 4096)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -48,7 +51,7 @@ func (client *Client) startPackageManual(ctx context.Context, state State, run p
 		Sequence      uint64 `json:"run_sequence"`
 		Deadline      string `json:"run_deadline"`
 	}
-	if decodeBaseline(body, &response) != nil || response.SchemaVersion != 1 || response.ManualID != run.ManualID || response.AssignmentID != run.AssignmentID || response.RunID != run.ID || response.Sequence != run.Sequence || !validInstant(response.Deadline) {
+	if controlplane.Decode(body, &response) != nil || response.SchemaVersion != 1 || response.ManualID != run.ManualID || response.AssignmentID != run.AssignmentID || response.RunID != run.ID || response.Sequence != run.Sequence || !agentstate.ValidInstant(response.Deadline) {
 		return time.Time{}, errPackageState
 	}
 	deadline, _ := time.Parse(time.RFC3339Nano, response.Deadline)

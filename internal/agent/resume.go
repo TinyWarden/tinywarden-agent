@@ -1,10 +1,16 @@
 package agent
 
-import "context"
+import (
+	"context"
+
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
+)
 
 // ResumeEnrollment repeats only the existing persisted handshake. It never creates credentials.
-func ResumeEnrollment(ctx context.Context, config Config, client *Client) error {
-	store, err := OpenStore(config.StateDir)
+
+func ResumeEnrollment(ctx context.Context, config agentconfig.Config, client *Client) error {
+	store, err := agentstate.OpenStore(config.StateDir)
 	if err != nil {
 		return err
 	}

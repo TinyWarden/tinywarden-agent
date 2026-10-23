@@ -13,7 +13,7 @@ sys.path.insert(0, str(SDK))
 from authoring.cases import run_cases
 from authoring.execution import ASSETS, invoke, runtime_assets
 from authoring.packages import create_zip, exclusive_write, initialize, snapshot, summary
-from json_values import decode, encode
+from contracts.json_values import decode, encode
 
 COPY = json.loads((SDK / "authoring/en.json").read_text(encoding="utf-8"))
 

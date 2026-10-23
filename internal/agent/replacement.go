@@ -3,10 +3,14 @@ package agent
 import (
 	"context"
 	"errors"
+
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	host "github.com/TinyWarden/tinywarden-agent/internal/host"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
-func StartReplacement(ctx context.Context, config Config, tokenFile string, client *Client) error {
-	store, err := OpenStore(config.StateDir)
+func StartReplacement(ctx context.Context, config agentconfig.Config, tokenFile string, client *Client) error {
+	store, err := agentstate.OpenStore(config.StateDir)
 	if err != nil {
 		return err
 	}
@@ -23,19 +27,19 @@ func StartReplacement(ctx context.Context, config Config, tokenFile string, clie
 	if err != nil {
 		return err
 	}
-	hostname, osID, osVersion, architecture, err := metadata()
+	hostname, osID, osVersion, architecture, err := host.Metadata()
 	if err != nil {
 		return err
 	}
-	requestID, err := randomID()
+	requestID, err := agentstate.RandomID()
 	if err != nil {
 		return err
 	}
-	credential, err := newCredential()
+	credential, err := agentstate.NewCredential()
 	if err != nil {
 		return err
 	}
-	state.Replacement = &Enrollment{RequestID: requestID, Token: token,
+	state.Replacement = &agentstate.Enrollment{RequestID: requestID, Token: token,
 		Credential: credential, Hostname: hostname, OSID: osID,
 		OSVersion: osVersion, Architecture: architecture, AgentVersion: Version}
 	if err := store.Save(state); err != nil {
@@ -44,7 +48,7 @@ func StartReplacement(ctx context.Context, config Config, tokenFile string, clie
 	return finishReplacement(ctx, store, &state, client)
 }
 
-func finishReplacement(ctx context.Context, store *Store, state *State, client *Client) error {
+func finishReplacement(ctx context.Context, store *agentstate.Store, state *agentstate.State, client *Client) error {
 	if state.Replacement == nil {
 		return errors.New("no pending replacement")
 	}

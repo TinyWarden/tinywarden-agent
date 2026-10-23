@@ -8,6 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func manualServer(t *testing.T, fail bool) *httptest.Server {
@@ -25,15 +28,15 @@ func manualServer(t *testing.T, fail bool) *httptest.Server {
 		if json.NewDecoder(r.Body).Decode(&body) != nil {
 			t.Error("invalid claim")
 		}
-		body["run_deadline"] = baselineStamp(time.Now().Add(90 * time.Second))
+		body["run_deadline"] = controlplane.Timestamp(time.Now().Add(90 * time.Second))
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(body)
 	}))
 }
 func prepareManual(lane *packageLane, now time.Time) packageAssignment {
 	lane.ledger.Cache.ManualSupported = true
-	id, _ := randomID()
-	lane.ledger.Cache.Assignments[0].Manual = &packageManualRequest{id, baselineStamp(now.Add(5 * time.Minute))}
+	id, _ := agentstate.RandomID()
+	lane.ledger.Cache.Assignments[0].Manual = &packageManualRequest{id, controlplane.Timestamp(now.Add(5 * time.Minute))}
 	for _, entry := range lane.ledger.Cache.Assignments {
 		lane.due[entry.InstallationID] = now.Add(time.Hour)
 	}
@@ -158,7 +161,7 @@ func TestManualDueCoalescesAndFairWorkerPreservesBackpressure(t *testing.T) {
 	for len(lane.ledger.Pending) < 8 {
 		lane.ledger.Pending = append(lane.ledger.Pending, lane.ledger.Pending[0])
 	}
-	next, _ := randomID()
+	next, _ := agentstate.RandomID()
 	lane.ledger.Cache.Assignments[0].Manual.ID = next
 	_ = lane.tick(context.Background())
 	if lane.running {
@@ -186,7 +189,7 @@ func TestManualNegotiatedHeaderAndOlderServerResponse(t *testing.T) {
 	if err != nil || wire.ManualSupported {
 		t.Fatal("old server compatibility failed", err)
 	}
-	wire.Assignments[0].Manual = &packageManualRequest{ID: "bad", ExpiresAt: baselineStamp(time.Now())}
+	wire.Assignments[0].Manual = &packageManualRequest{ID: "bad", ExpiresAt: controlplane.Timestamp(time.Now())}
 	if validPackageResponse(lane.ledger.Scope, *wire) {
 		t.Fatal("accepted invalid unnegotiated manual request")
 	}

@@ -7,12 +7,12 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-from archives import canonical_archive, extract
-from json_values import decode
-from packages import content, load
+from packages.archives import canonical_archive, extract
+from contracts.json_values import decode
+from packages.admission import content, load
 
 ROOT = Path(__file__).resolve().parents[3]
-STARTER = ROOT / "skills/examples/memory-pressure"
+STARTER = ROOT / "examples/skills/memory-pressure"
 
 
 def write_json(path, value):

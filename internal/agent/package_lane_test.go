@@ -9,12 +9,16 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
+	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 func packageFixture(t *testing.T, server *httptest.Server) *packageLane {
 	t.Helper()
-	state, _ := baselineFixture(t, server.URL)
-	lane, err := newPackageLane(context.Background(), baselineStore(t), testClient(server), state, Config{SkillOperations: []string{}}, func(string) {})
+	state := testAssignmentState(t)
+	lane, err := newPackageLane(context.Background(), baselineStore(t), testClient(server), state, agentconfig.Config{SkillOperations: []string{}}, func(string) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,12 +26,12 @@ func packageFixture(t *testing.T, server *httptest.Server) *packageLane {
 	now := time.Now().UTC()
 	entries := []packageAssignment{}
 	for range 3 {
-		id, _ := randomID()
-		assignment, _ := randomID()
+		id, _ := agentstate.RandomID()
+		assignment, _ := agentstate.RandomID()
 		entries = append(entries, packageAssignment{InstallationID: id, ID: assignment, Subject: "example/memory", Digest: strings.Repeat("a", 64), Applicability: "ready", Interval: 300, Settings: json.RawMessage(`{"interval_seconds":300}`)})
 	}
-	lane.ledger.Cache = &packageResponse{SchemaVersion: 1, Generation: strconv.FormatUint(state.Generation, 10), IssuedAt: baselineStamp(now), ValidUntil: baselineStamp(now.Add(5 * time.Minute)), RuntimeReady: true, Assignments: entries}
-	lane.ledger.ValidatedAt = baselineStamp(now)
+	lane.ledger.Cache = &packageResponse{SchemaVersion: 1, Generation: strconv.FormatUint(state.Generation, 10), IssuedAt: controlplane.Timestamp(now), ValidUntil: controlplane.Timestamp(now.Add(5 * time.Minute)), RuntimeReady: true, Assignments: entries}
+	lane.ledger.ValidatedAt = controlplane.Timestamp(now)
 	lane.nextFetch, lane.nextUpload = now.Add(time.Hour), now.Add(time.Hour)
 	return lane
 }
