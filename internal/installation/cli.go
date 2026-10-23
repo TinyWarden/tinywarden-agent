@@ -13,7 +13,12 @@ import (
 	agentrelease "github.com/TinyWarden/tinywarden-agent/internal/release"
 )
 
-func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, reconnectCopy ReconnectMessages) (bool, error) {
+type SetupMessages struct {
+	StdinHelp string `json:"stdinHelp"`
+	Arguments string `json:"arguments"`
+}
+
+func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, reconnectCopy ReconnectMessages, setupCopy SetupMessages) (bool, error) {
 	if len(args) == 0 {
 		return false, nil
 	}
@@ -37,6 +42,7 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, re
 	manifest := f.String("manifest", "", "signed release manifest")
 	signature := f.String("signature", "", "detached release signature")
 	codeFile := f.String("setup-code-file", "", "root-owned mode-0600 setup code file")
+	codeStdin := f.Bool("setup-code-stdin", false, setupCopy.StdinHelp)
 	noAuto := f.Bool("no-auto-updates", false, "prohibit automatic updates locally")
 	adopt := f.Bool("adopt", false, "migrate the known manual 0.0.7 installation")
 	automatic := f.Bool("automatic", false, "scheduled policy-controlled update")
@@ -44,6 +50,9 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, re
 	purge := f.Bool("purge", false, "remove this local installation and its enrolled state")
 	if e := f.Parse(args[1:]); e != nil {
 		return true, e
+	}
+	if *codeStdin && (mode != "install" || *codeFile != "" || *adopt) {
+		return true, errors.New(setupCopy.Arguments)
 	}
 	if *configPath != "" {
 		if filepath.Base(*configPath) != "config.json" {
@@ -59,7 +68,11 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, re
 		if f.NArg() != 0 || *archive == "" || *manifest == "" || *signature == "" || *adopt && *codeFile != "" {
 			return true, errors.New("install requires --archive, --manifest and --signature; adoption does not accept a setup code")
 		}
-		return true, Install(ctx, InstallOptions{Base: *base, Archive: *archive, Manifest: *manifest, Signature: *signature, CodeFile: *codeFile, Automatic: !*noAuto, Adopt: *adopt})
+		var input io.Reader
+		if *codeStdin {
+			input = os.Stdin
+		}
+		return true, Install(ctx, InstallOptions{Base: *base, Archive: *archive, Manifest: *manifest, Signature: *signature, CodeFile: *codeFile, CodeInput: input, Automatic: !*noAuto, Adopt: *adopt})
 	case "reconnect":
 		if f.NArg() != 0 || *archive != "" || *manifest != "" || *signature != "" || *adopt || *purge || *keep || *automatic || *noAuto {
 			return true, errors.New(reconnectCopy.Arguments)

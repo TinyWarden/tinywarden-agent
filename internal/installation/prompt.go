@@ -6,11 +6,25 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"syscall"
 	"unsafe"
 )
 
-func readSetup(path string) (string, error) {
+func readSetup(path string, input io.Reader) (string, error) {
+	if input != nil {
+		if path != "" {
+			return "", errors.New("invalid_setup_input_options")
+		}
+		// One code, optionally newline-terminated. Never fall back to a terminal
+		// after an explicitly selected input fails or exceeds the protocol limit.
+		b, e := io.ReadAll(io.LimitReader(input, 4099))
+		code := strings.TrimSuffix(strings.TrimSuffix(string(b), "\n"), "\r")
+		if e != nil || len(code) == 0 || len(code) > 4096 || strings.ContainsAny(code, "\r\n") {
+			return "", errors.New("invalid_setup_code")
+		}
+		return code, nil
+	}
 	if path != "" {
 		fd, e := syscall.Open(path, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
 		if e != nil {

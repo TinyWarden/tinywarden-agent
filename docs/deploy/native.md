@@ -12,17 +12,30 @@ rerun the installer. If Debian cannot find `python3`, check that the host is Deb
 
 ## Install
 
-In TinyWarden choose **Add server**, enter a name and obtain the setup code. Download
-the official installer completely before running it:
+In TinyWarden choose **Add server**, enter a name and create a setup code. Copy the
+**Install on the server** command. It includes the single-use code and installs
+and connects automatically. The separate **Setup code** section remains available.
+The command is private and can remain in shell history; the code expires and
+becomes unusable after successful enrollment. Never share it or paste it into logs.
+
+To enter the code yourself instead, download the official installer completely
+before running it:
 
 ```sh
 curl -fLO https://github.com/TinyWarden/tinywarden-agent/releases/latest/download/install.sh &&
 sudo bash install.sh
 ```
 
-Enter the setup code at the hidden prompt. Treat it as a credential and keep it out
-of command arguments and logs. Automation can use `--setup-code-file` with a
-root-owned regular file of mode 0600; remove the file after use. The initial
+Without an input option, the installer still asks for the setup code at the hidden
+terminal prompt. Agent 0.0.16 and later also accept `--setup-code-stdin`: supply one
+code through standard input (up to 4096 bytes, optionally followed by a newline).
+Empty, oversized or failed input is rejected without falling back to a prompt.
+This option is only for a new installation and cannot be combined with
+`--setup-code-file` or `--adopt`. The Fleet command uses the shell's `printf` builtin
+to pipe the code; the installer/agent receives no secret command-line argument.
+Automation can also use `--setup-code-file` with a root-owned regular file of mode
+0600; remove the file after use. Treat every input as a credential and keep it out
+of process arguments and logs. The initial
 installer is obtained through official GitHub HTTPS. Its embedded key verifies
 release signatures; established installations use their installed trusted key.
 

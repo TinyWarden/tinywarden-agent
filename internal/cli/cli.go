@@ -23,6 +23,7 @@ import (
 var english []byte
 
 type catalog struct {
+	Setup               installation.SetupMessages     `json:"setup"`
 	Reconnect           installation.ReconnectMessages `json:"reconnect"`
 	Name                string                         `json:"name"`
 	Usage               string                         `json:"usage"`
@@ -58,7 +59,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		}
 		return 0
 	}
-	if handled, err := installation.Dispatch(ctx, args, stdout, stderr, text.Reconnect); handled {
+	if handled, err := installation.Dispatch(ctx, args, stdout, stderr, text.Reconnect, text.Setup); handled {
 		if err != nil {
 			fmt.Fprintln(stderr, err)
 			return 1

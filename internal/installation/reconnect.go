@@ -54,7 +54,7 @@ func Reconnect(ctx context.Context, base, codeFile string, copy ReconnectMessage
 	if e != nil {
 		return e
 	}
-	code, e := readSetup(codeFile)
+	code, e := readSetup(codeFile, nil)
 	if e != nil {
 		return e
 	}

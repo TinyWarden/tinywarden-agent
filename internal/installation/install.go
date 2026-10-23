@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -14,6 +15,7 @@ import (
 
 type InstallOptions struct {
 	Base, Archive, Manifest, Signature, CodeFile string
+	CodeInput                                    io.Reader
 	Automatic, Adopt                             bool
 }
 
@@ -71,6 +73,9 @@ func stage(base, archive string, m agentrelease.Manifest) (string, error) {
 	return final, syncDirectory(filepath.Dir(final))
 }
 func Install(ctx context.Context, o InstallOptions) error {
+	if o.CodeInput != nil && (o.CodeFile != "" || o.Adopt) {
+		return errors.New("invalid_setup_input_options")
+	}
 	m, receipt, e := verifiedInput(o)
 	if e != nil {
 		return e
@@ -80,7 +85,7 @@ func Install(ctx context.Context, o InstallOptions) error {
 	}
 	var setup controlplane.Setup
 	if !o.Adopt {
-		code, e := readSetup(o.CodeFile)
+		code, e := readSetup(o.CodeFile, o.CodeInput)
 		if e != nil {
 			return e
 		}
