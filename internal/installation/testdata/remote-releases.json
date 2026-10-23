@@ -1,0 +1,17 @@
+{
+  "format": 1,
+  "releases": [
+    {
+      "version": "0.0.16",
+      "source": "https://github.com/TinyWarden/tinywarden-agent/releases/tag/v0.0.16",
+      "manifest": "{\"format\":1,\"repository\":\"TinyWarden/tinywarden-agent\",\"tag\":\"v0.0.16\",\"version\":\"0.0.16\",\"source_commit\":\"afb005856aaa5d69c1af780944a4c45742c6dfa9\",\"channel\":\"stable\",\"os\":\"debian\",\"os_version\":\"13\",\"architecture\":\"amd64\",\"source_min\":\"0.0.8\",\"source_max\":\"0.0.16\",\"automatic\":true,\"required_app_capabilities\":[\"agent_updates.v1\"],\"binary_sha256\":\"fa29ad685aafc97a6e8089b5f34fe68e6b697049f15ce892e4bedb98ed21b38c\",\"runtime_sha256\":\"24d4bb1b7f30a176f7dfb5262c84e2fbb8d5f70b37181eebc3b32a60b227dbb9\",\"descriptor_sha256\":\"19522d9e214fe753cef238c5ae0ad3b830fb9ef70f9e8422aa647b7efb031178\",\"asset\":{\"name\":\"tinywarden-agent-0.0.16-linux-amd64.tar.gz\",\"size\":6674564,\"sha256\":\"3241e5c91ba2c05c7957def5875edeff776581068aa8df95bebbc9420e374925\"}}\n",
+      "signature": "yoWcP0GEyLR3tjsXcBGsbiAn6/d+R3FqlJkE6i1PfQmWx5mAataEqrRRksDBC+WQowCP/XwdHZvXRfO6Gr8jCw=="
+    },
+    {
+      "version": "0.0.17",
+      "source": "https://github.com/TinyWarden/tinywarden-agent/releases/tag/v0.0.17",
+      "manifest": "{\"format\":1,\"repository\":\"TinyWarden/tinywarden-agent\",\"tag\":\"v0.0.17\",\"version\":\"0.0.17\",\"source_commit\":\"9d701180e099fbb420a8bca667bf1a1b306038d6\",\"channel\":\"stable\",\"os\":\"debian\",\"os_version\":\"13\",\"architecture\":\"amd64\",\"source_min\":\"0.0.8\",\"source_max\":\"0.0.17\",\"automatic\":true,\"required_app_capabilities\":[\"agent_updates.v1\"],\"binary_sha256\":\"3097f6f53890cfef0d951bc46c52faf8993f7f8f82f2c3fabd9c7aa03f535ab8\",\"runtime_sha256\":\"72e309f982dfd0565604004a0d7ca15af5238d04162ba2c12c7641f9153bea70\",\"descriptor_sha256\":\"1681e4c5c6412bea8d1b49891e17b752a9570cf8bbd0efa383123752bd4c621c\",\"asset\":{\"name\":\"tinywarden-agent-0.0.17-linux-amd64.tar.gz\",\"size\":6674622,\"sha256\":\"38e879492ce917497001330dfe257916ac3d615234fdc4095dbfec7bba70fc7f\"}}\n",
+      "signature": "u1VRT+4WOMnzbOSGEHxrHixRUzOH2rIZkkr/pNUdVPlCvMhoUT5VDZS6v/HktAoeq39KIdGsilFbnQQDjbueBQ=="
+    }
+  ]
+}

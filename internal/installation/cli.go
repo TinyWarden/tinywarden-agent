@@ -14,8 +14,10 @@ import (
 )
 
 type SetupMessages struct {
-	StdinHelp string `json:"stdinHelp"`
-	Arguments string `json:"arguments"`
+	StdinHelp     string `json:"stdinHelp"`
+	Arguments     string `json:"arguments"`
+	PollHelp      string `json:"pollHelp"`
+	PollArguments string `json:"pollArguments"`
 }
 
 func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, reconnectCopy ReconnectMessages, setupCopy SetupMessages) (bool, error) {
@@ -46,6 +48,7 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, re
 	noAuto := f.Bool("no-auto-updates", false, "prohibit automatic updates locally")
 	adopt := f.Bool("adopt", false, "migrate the known manual 0.0.7 installation")
 	automatic := f.Bool("automatic", false, "scheduled policy-controlled update")
+	poll := f.Bool("poll", false, setupCopy.PollHelp)
 	keep := f.Bool("keep-data", false, "stop and disable services; keep files and data")
 	purge := f.Bool("purge", false, "remove this local installation and its enrolled state")
 	if e := f.Parse(args[1:]); e != nil {
@@ -53,6 +56,9 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, re
 	}
 	if *codeStdin && (mode != "install" || *codeFile != "" || *adopt) {
 		return true, errors.New(setupCopy.Arguments)
+	}
+	if *poll && (mode != "update" || *automatic || *codeStdin || *codeFile != "" || *archive != "" || *manifest != "" || *signature != "" || *adopt || *noAuto || *keep || *purge) {
+		return true, errors.New(setupCopy.PollArguments)
 	}
 	if *configPath != "" {
 		if filepath.Base(*configPath) != "config.json" {
@@ -125,7 +131,12 @@ func Dispatch(ctx context.Context, args []string, out, diagnostics io.Writer, re
 		if mode == "repair" {
 			return true, Repair(ctx, *base)
 		}
-		e := Update(ctx, *base, *automatic, mode == "check")
+		var e error
+		if *poll {
+			e = PollUpdates(ctx, *base)
+		} else {
+			e = Update(ctx, *base, *automatic, mode == "check")
+		}
 		if e == nil {
 			fmt.Fprintln(out, strings.Title(mode)+" finished. See agent maintenance status in the app.")
 		}

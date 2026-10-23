@@ -20,6 +20,7 @@ type Observation struct {
 	DescriptorSHA256 string       `json:"descriptor_sha256"`
 	InstalledVersion string       `json:"installed_version"`
 	LocalAutomatic   bool         `json:"local_automatic"`
+	RemoteUpdates    bool         `json:"remote_updates,omitempty"`
 	Updater          UpdateStatus `json:"updater"`
 }
 type PolicyRequest struct {

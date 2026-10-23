@@ -12,7 +12,9 @@
   "heartbeatDiagnostic": "Heartbeat diagnostic:",
   "setup": {
     "stdinHelp": "read the setup code from standard input instead of prompting",
-    "arguments": "Use --setup-code-stdin only with install, without --setup-code-file or --adopt."
+    "arguments": "Use --setup-code-stdin only with install, without --setup-code-file or --adopt.",
+    "pollHelp": "check Fleet update requests and run scheduled automatic work when due",
+    "pollArguments": "Use --poll only with update, without automatic, setup, archive or removal options."
   },
   "reconnect": {
     "scopeMismatch": "This setup code belongs to a different server or app.",

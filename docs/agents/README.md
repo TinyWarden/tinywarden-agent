@@ -60,3 +60,8 @@ checks target identity before consuming a replacement code. See
 Load the affected reference and owning tests. Update its human guide under the
 [documentation policy](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/documentation.md).
 Never weaken sandbox/cleanup checks or silently change provenance to fix a prerequisite.
+
+Managed remote requests reuse the installation lock, signed target checks and
+transaction recovery. Preserve the root-only request journal and retry terminal
+acknowledgements without reinstalling. See the canonical
+[update protocol](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/agent-updates.md).

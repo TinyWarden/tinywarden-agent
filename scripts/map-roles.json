@@ -109,6 +109,10 @@
   "internal/installation/reconnect_test.go": "Reject mismatched app/server/purpose before managed replacement consumes a setup code.",
   "internal/installation/recovery.go": "Managed platform recovery: root-only installation, update or recovery with preserved agent state.",
   "internal/installation/recovery_test.go": "Managed platform recovery test: root-only installation, update or recovery with preserved agent state.",
+  "internal/installation/remote.go": "Authenticated root-updater request scope/signature validation and shared-lock polling adapter.",
+  "internal/installation/remote_execution.go": "Durable request execution coordinator preserving installation journals and idempotent terminal acknowledgements.",
+  "internal/installation/remote_test.go": "Signed request and root-owned recovery fixtures for lost acknowledgements, scope and interrupted installs.",
+  "internal/installation/testdata/remote-releases.json": "Immutable public signed release fixtures; no private keys or host identities.",
   "internal/installation/uninstall.go": "Managed platform uninstall: root-only installation, update or recovery with preserved agent state.",
   "internal/installation/units.go": "Managed platform units: root-only installation, update or recovery with preserved agent state.",
   "internal/installation/update.go": "Managed platform update: root-only installation, update or recovery with preserved agent state.",
@@ -224,6 +228,7 @@
   "internal/release/release-public-key.txt": "Shared bounded platform release public key: signed identity and auxiliary maintenance protocol.",
   "internal/release/release.go": "Shared bounded platform release: signed identity and auxiliary maintenance protocol.",
   "internal/release/release_test.go": "Shared bounded platform release test: signed identity and auxiliary maintenance protocol.",
+  "internal/release/remote.go": "Closed shared agent update request, response and capability wire definitions.",
   "internal/release/report.go": "Shared bounded platform report: signed identity and auxiliary maintenance protocol.",
   "internal/release/testdata/release-vector.json": "Shared bounded platform release vector: signed identity and auxiliary maintenance protocol.",
   "internal/release/version.go": "Shared bounded platform version: signed identity and auxiliary maintenance protocol.",
@@ -304,6 +309,7 @@
   "sdk/python/tests/test_authoring.py": "Independent source-kit, reproducible archive, static no-import, payload and overwrite-refusal author-tool checks.",
   "sdk/python/tests/test_dashboard.py": "Static dashboard declaration boundary tests for independent and official packages.",
   "sdk/python/tests/test_display.py": "Static closed display admission; catalog/source/unit/widget bounds without package execution.",
+  "sdk/python/tests/test_host_environment.py": "Shared UTC/locale normalization and ambient credential isolation across host command helpers.",
   "sdk/python/tests/test_notifications.py": "Static notification admission bounds, types, independent declarations and formatting rejection.",
   "sdk/python/tests/test_resources.py": "resource compatibility, inventory, selection, event identity or captured fixture acceptance.",
   "sdk/python/tests/test_systemd_services.py": "resource compatibility, inventory, selection, event identity or captured fixture acceptance.",
@@ -311,6 +317,5 @@
   "tests/integration/test_sandbox.py": "test sandbox; generic package integration and verification.",
   "tests/integration/test_security_boundaries.py": "Regression checks for scope review, response budgets, values and killed-admission cleanup.",
   "tests/tooling/test_installer.py": "Exercise bootstrap prerequisite and platform failures without downloads or host changes.",
-  "tests/tooling/test_source_check.py": "Guard regression: root public LLM instructions allowed; nested/private/secret paths rejected.",
-  "sdk/python/tests/test_host_environment.py": "Shared UTC/locale normalization and ambient credential isolation across host command helpers."
+  "tests/tooling/test_source_check.py": "Guard regression: root public LLM instructions allowed; nested/private/secret paths rejected."
 }

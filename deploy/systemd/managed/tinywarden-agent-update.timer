@@ -1,9 +1,11 @@
 [Unit]
-Description=TinyWarden daily agent update check
+Description=TinyWarden update request polling
 
 [Timer]
-OnCalendar=daily
-RandomizedDelaySec=6h
+OnBootSec=2min
+OnUnitInactiveSec=1min
+RandomizedDelaySec=20s
+AccuracySec=5s
 Persistent=true
 Unit=tinywarden-agent-update.service
 

@@ -60,7 +60,12 @@ sudo /opt/tinywarden-agent/current/tinywarden-agent auto-updates on
 ```
 
 For a custom base pass the same `--install-dir` used during installation. Automatic
-updates follow app policy and the local prohibition. Manual updates still verify
+updates follow app policy and the local automatic-update prohibition. The root
+updater polls Fleet Update now requests about once a minute with jitter while
+automatic release checks retain a 20-hour minimum interval. Explicit Admin requests
+are manual and are not disabled by automatic-update settings. Older agents need
+one server-side manual upgrade to enable request polling. Deploy the compatible
+app before installing such a release. Manual updates still verify
 release signatures, compatibility and downgrade rules. Preserve the configuration,
 identity, counters, skills and queued observations during updates.
 

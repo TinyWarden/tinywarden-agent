@@ -7,7 +7,7 @@ RequiresMountsFor="@BASE@"
 [Service]
 Type=oneshot
 User=root
-ExecStart="@BASE@/current/tinywarden-agent" update --config "@BASE@/config.json" --automatic
+ExecStart="@BASE@/current/tinywarden-agent" update --config "@BASE@/config.json" --poll
 UMask=0077
 TimeoutStartSec=5min
 NoNewPrivileges=true

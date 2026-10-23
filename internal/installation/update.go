@@ -24,18 +24,9 @@ func record(base string, t transaction) error {
 	return atomicFile(filepath.Join(base, "updater", "private", "transaction.json"), t, 0600)
 }
 func Update(ctx context.Context, base string, automatic, checkOnly bool) error {
-	if e := Preflight(base, false); e != nil {
-		return e
-	}
-	guard, e := lock(base)
-	if e != nil {
-		return e
-	}
-	defer guard.Close()
-	c, e := config(base)
-	if e != nil {
-		return e
-	}
+	return withUpdater(base, func(c agentconfig.Config) error { return updateLocked(ctx, base, c, automatic, checkOnly, nil) })
+}
+func updateLocked(ctx context.Context, base string, c agentconfig.Config, automatic, checkOnly bool, remote *agentrelease.RemoteUpdate) error {
 	pending, e := pendingTransaction(base)
 	if e != nil {
 		return e
@@ -65,6 +56,11 @@ func Update(ctx context.Context, base string, automatic, checkOnly bool) error {
 	if e != nil {
 		_ = status(base, agentrelease.UpdateStatus{Outcome: "failed", CheckedAt: checked, Error: "app_unreachable"})
 		return e
+	}
+	if remote != nil {
+		if e = remotePolicy(ctx, base, c, remote, &p); e != nil {
+			return e
+		}
 	}
 	if prior.Outcome == "awaiting_confirmation" && prior.Target == installed.Version {
 		if e = confirm(ctx, base, c, installed); e != nil {
@@ -126,6 +122,9 @@ func Update(ctx context.Context, base string, automatic, checkOnly bool) error {
 	}
 	// Recheck direct app policy after downloading. Agent-writable files cannot grant updates.
 	fresh, e := policy(ctx, base, c, installed.Version)
+	if e == nil && remote != nil {
+		e = remotePolicy(ctx, base, c, remote, &fresh)
+	}
 	if e = recheck(p, fresh, c.Updates.Automatic, automatic, e); e != nil {
 		os.RemoveAll(release)
 		return errors.New("update policy changed")

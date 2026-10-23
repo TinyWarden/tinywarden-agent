@@ -68,7 +68,7 @@ func ReadPublic(path string, limit int64) ([]byte, error) {
 }
 
 func Identity(base string, managed bool, automatic bool) (Observation, error) {
-	o := Observation{Version: Version, Managed: managed, LocalAutomatic: automatic, Updater: UpdateStatus{Outcome: "idle"}}
+	o := Observation{Version: Version, Managed: managed, LocalAutomatic: automatic, RemoteUpdates: managed, Updater: UpdateStatus{Outcome: "idle"}}
 	if !managed {
 		return o, nil
 	}
