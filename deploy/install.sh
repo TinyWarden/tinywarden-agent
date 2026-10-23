@@ -6,13 +6,35 @@ if [[ "$(id -u)" != 0 ]]; then
   echo "Run this installer as root." >&2
   exit 1
 fi
+# Reject unsupported hosts before suggesting distribution-specific packages.
+if [[ ! -r /etc/os-release ]]; then
+  echo "Supported platform is Debian 13 x64 (amd64)." >&2
+  exit 1
+fi
+. /etc/os-release
+if [[ "${ID:-}" != debian || "${VERSION_ID:-}" != 13 || "$(uname -m)" != x86_64 ]]; then
+  echo "Supported platform is Debian 13 x64 (amd64)." >&2
+  exit 1
+fi
 missing=()
-for tool in curl openssl python3.13 tar sha256sum; do
-  command -v "$tool" >/dev/null || missing+=("$tool")
+packages=()
+need() {
+  missing+=("$1")
+  local package
+  for package in "${packages[@]}"; do
+    [[ "$package" == "$2" ]] && return
+  done
+  packages+=("$2")
+}
+for requirement in curl:curl openssl:openssl python3.13:python3 tar:tar \
+  sha256sum:coreutils mktemp:coreutils cat:coreutils chmod:coreutils rm:coreutils; do
+  tool=${requirement%%:*}
+  command -v "$tool" >/dev/null || need "$tool" "${requirement#*:}"
 done
+[[ -s /etc/ssl/certs/ca-certificates.crt ]] || need 'CA certificates' ca-certificates
 if (( ${#missing[@]} )); then
   echo "Missing prerequisites: ${missing[*]}" >&2
-  echo "On Debian 13: apt install ca-certificates curl openssl python3.13 tar coreutils bubblewrap libseccomp2 systemd" >&2
+  echo "Install missing packages: apt install ${packages[*]}" >&2
   echo "Install the missing packages yourself, then rerun." >&2
   exit 1
 fi

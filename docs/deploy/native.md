@@ -2,8 +2,13 @@
 
 The supported host platform is Debian 13 on amd64 with systemd and delegated cgroup
 v2 CPU, memory and PID controls. Prepare Python 3.13, bubblewrap, libseccomp2,
-OpenSSL, curl, CA certificates, tar and coreutils. The installer checks prerequisites
-and does not install missing system packages.
+OpenSSL, curl, CA certificates, tar and coreutils. On Debian 13, install Python with
+the `python3` package; it supplies the required Python 3.13 runtime. Older Python
+versions are not supported. The installer checks the platform first, then reports
+missing prerequisites with an `apt install` command containing only their packages.
+It does not install missing system packages. Install the suggested packages and
+rerun the installer. If Debian cannot find `python3`, check that the host is Debian
+13 and its package sources are configured and up to date.
 
 ## Install
 

@@ -307,5 +307,8 @@
   "sdk/python/runtime/host/__init__.py": "Trusted host runtime package initializer included in the asset manifest.",
   "sdk/python/runtime/isolation/__init__.py": "Trusted isolation runtime package initializer included in the asset manifest.",
   "sdk/python/runtime/packages/__init__.py": "Trusted packages runtime package initializer included in the asset manifest.",
-  "sdk/python/runtime/seccomp.py": "Stable seccomp compatibility facade admitted by existing signed-release updaters."
+  "sdk/python/runtime/seccomp.py": "Stable seccomp compatibility facade admitted by existing signed-release updaters.",
+  "internal/installation/prerequisites.go": "Map missing host executables to supported Debian package suggestions.",
+  "internal/installation/prerequisites_test.go": "Verify missing-only Debian package advice for managed installation.",
+  "tests/tooling/test_installer.py": "Exercise bootstrap prerequisite and platform failures without downloads or host changes."
 }

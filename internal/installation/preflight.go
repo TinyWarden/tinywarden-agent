@@ -36,14 +36,11 @@ func Preflight(base string, fresh bool) error {
 	if err != nil || !hasRelease(string(osRelease), "ID", "debian") || !hasRelease(string(osRelease), "VERSION_ID", "13") || runtime.GOARCH != "amd64" {
 		return errors.New("supported platform is Debian 13 x64 (amd64)")
 	}
-	missing := []string{}
-	for _, path := range []string{"/usr/bin/python3.13", "/usr/bin/bwrap", "/usr/bin/openssl", "/usr/bin/systemctl", "/usr/bin/getent", "/usr/sbin/useradd", "/usr/sbin/runuser"} {
-		if _, err := os.Stat(path); err != nil {
-			missing = append(missing, path)
-		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing prerequisites: %s; install the corresponding Debian packages: python3.13 bubblewrap openssl systemd passwd util-linux", strings.Join(missing, ", "))
+	if err := programPrerequisites(func(path string) bool {
+		info, err := os.Stat(path)
+		return err == nil && info.Mode().IsRegular() && info.Mode().Perm()&0111 != 0
+	}); err != nil {
+		return err
 	}
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); err != nil {
 		return errors.New("cgroup v2 is required; enable it before installation")
