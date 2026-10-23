@@ -311,5 +311,6 @@
   "tests/integration/test_sandbox.py": "test sandbox; generic package integration and verification.",
   "tests/integration/test_security_boundaries.py": "Regression checks for scope review, response budgets, values and killed-admission cleanup.",
   "tests/tooling/test_installer.py": "Exercise bootstrap prerequisite and platform failures without downloads or host changes.",
-  "tests/tooling/test_source_check.py": "Guard regression: root public LLM instructions allowed; nested/private/secret paths rejected."
+  "tests/tooling/test_source_check.py": "Guard regression: root public LLM instructions allowed; nested/private/secret paths rejected.",
+  "sdk/python/tests/test_host_environment.py": "Shared UTC/locale normalization and ambient credential isolation across host command helpers."
 }

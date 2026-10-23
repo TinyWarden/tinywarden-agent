@@ -39,6 +39,7 @@ def base(policy, pure):
             "--assert-userns-disabled", "--uid", str(os.getuid()), "--gid", str(os.getgid()),
             "--cap-drop", "ALL", "--new-session", "--die-with-parent", "--clearenv",
             "--setenv", "LANG", "C.UTF-8", "--setenv", "LC_ALL", "C.UTF-8",
+            "--setenv", "TZ", "UTC",
             "--setenv", "PATH", "/usr/bin:/bin", "--proc", "/proc", "--dev", "/dev",
             "--size", str((8 if pure else 4) * 1024 * 1024), "--tmpfs", "/tmp",
             "--seccomp", str(policy)]

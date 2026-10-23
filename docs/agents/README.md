@@ -47,6 +47,8 @@ checks target identity before consuming a replacement code. See
   reuse bounded operations; separate collection from pure interpretation.
   Author fixtures mirror the shared [clock contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/sdk.md#clock-contract).
   Evaluation-time normalization does not replace pre-collection transport deadline checks.
+  Host helpers and isolated guests use a fixed C.UTF-8 locale and UTC timezone;
+  do not inherit host locale/timezone or add package-specific date conversions.
 - [Verification](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/verification.md)
   and [releases](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/releases.md):
   local bundles are not signed managed releases; source edits do not update

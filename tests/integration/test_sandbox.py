@@ -39,6 +39,14 @@ class Isolation(unittest.TestCase):
     def test_normal_execution(self):
         self.assertEqual(self.run_skill()["result"], [])
 
+    def test_guest_uses_utc_and_fixed_locale(self):
+        self.replace_validation("""    import os, time
+    assert os.environ['TZ'] == 'UTC'
+    assert os.environ['LANG'] == os.environ['LC_ALL'] == 'C.UTF-8'
+    assert time.strftime('%Z', time.localtime(1792359896)) == 'UTC'
+    return []""")
+        self.assertEqual(self.run_skill()["result"], [])
+
     def test_skill_names_cannot_shadow_trusted_runtime_imports(self):
         for name in ("contracts", "host", "isolation", "packages"):
             (self.path / (name + ".py")).write_text("raise RuntimeError('shadowed runtime')\n")

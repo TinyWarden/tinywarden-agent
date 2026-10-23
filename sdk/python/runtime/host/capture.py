@@ -9,7 +9,8 @@ from contracts.json_values import decode, encode
 def capture(argv, payload, group, timeout, pass_fds=(), broker=None, channels=None,
             output_limit=1024 * 1024, error_limit=16384):
     process = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               env={}, cwd="/", close_fds=True, pass_fds=pass_fds,
+                               env={"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC"},
+                               cwd="/", close_fds=True, pass_fds=pass_fds,
                                start_new_session=True, preexec_fn=group.enter)
     selector = selectors.DefaultSelector()
     output, errors = bytearray(), bytearray()
