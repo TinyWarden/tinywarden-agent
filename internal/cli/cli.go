@@ -23,19 +23,20 @@ import (
 var english []byte
 
 type catalog struct {
-	Setup               installation.SetupMessages     `json:"setup"`
-	Reconnect           installation.ReconnectMessages `json:"reconnect"`
-	Name                string                         `json:"name"`
-	Usage               string                         `json:"usage"`
-	NotReady            string                         `json:"notReady"`
-	InvalidArguments    string                         `json:"invalidArguments"`
-	Enrolled            string                         `json:"enrolled"`
-	Replaced            string                         `json:"replaced"`
-	Running             string                         `json:"running"`
-	Degraded            string                         `json:"degraded"`
-	Recovered           string                         `json:"recovered"`
-	CommandFailed       string                         `json:"commandFailed"`
-	HeartbeatDiagnostic string                         `json:"heartbeatDiagnostic"`
+	Setup               installation.SetupMessages       `json:"setup"`
+	Maintenance         installation.MaintenanceMessages `json:"maintenance"`
+	Reconnect           installation.ReconnectMessages   `json:"reconnect"`
+	Name                string                           `json:"name"`
+	Usage               string                           `json:"usage"`
+	NotReady            string                           `json:"notReady"`
+	InvalidArguments    string                           `json:"invalidArguments"`
+	Enrolled            string                           `json:"enrolled"`
+	Replaced            string                           `json:"replaced"`
+	Running             string                           `json:"running"`
+	Degraded            string                           `json:"degraded"`
+	Recovered           string                           `json:"recovered"`
+	CommandFailed       string                           `json:"commandFailed"`
+	HeartbeatDiagnostic string                           `json:"heartbeatDiagnostic"`
 }
 
 const Version = agent.Version
@@ -47,6 +48,13 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	if handled, err := installation.DispatchMaintenance(ctx, args, stdout, stderr, text.Maintenance); handled {
+		if err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		return 0
+	}
 	if len(args) == 1 && args[0] == "__remove-legacy" {
 		if installation.RemoveLegacyData() != nil {
 			return 1

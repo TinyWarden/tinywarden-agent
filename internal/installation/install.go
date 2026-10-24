@@ -210,6 +210,9 @@ func Install(ctx context.Context, o InstallOptions) error {
 	if e = system(ctx, "enable", "--now", Timer); e != nil {
 		return e
 	}
+	if e = enableMaintenance(ctx, release); e != nil {
+		return e
+	}
 	if o.Adopt {
 		return retireLegacy(ctx, o.Base)
 	}

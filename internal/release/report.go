@@ -13,15 +13,16 @@ type UpdateStatus struct {
 	Error     string `json:"error,omitempty"`
 }
 type Observation struct {
-	Version          string       `json:"version"`
-	Managed          bool         `json:"managed"`
-	BinarySHA256     string       `json:"binary_sha256"`
-	RuntimeSHA256    string       `json:"runtime_sha256"`
-	DescriptorSHA256 string       `json:"descriptor_sha256"`
-	InstalledVersion string       `json:"installed_version"`
-	LocalAutomatic   bool         `json:"local_automatic"`
-	RemoteUpdates    bool         `json:"remote_updates,omitempty"`
-	Updater          UpdateStatus `json:"updater"`
+	Version          string                `json:"version"`
+	Managed          bool                  `json:"managed"`
+	BinarySHA256     string                `json:"binary_sha256"`
+	RuntimeSHA256    string                `json:"runtime_sha256"`
+	DescriptorSHA256 string                `json:"descriptor_sha256"`
+	InstalledVersion string                `json:"installed_version"`
+	LocalAutomatic   bool                  `json:"local_automatic"`
+	RemoteUpdates    bool                  `json:"remote_updates,omitempty"`
+	Updater          UpdateStatus          `json:"updater"`
+	Maintenance      *MaintenanceReadiness `json:"maintenance,omitempty"`
 }
 type PolicyRequest struct {
 	Schema     int    `json:"schema_version"`

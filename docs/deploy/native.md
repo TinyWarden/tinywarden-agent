@@ -111,3 +111,21 @@ The prompt offers stopping/disabling while retaining files or purging the manage
 installation. Use `--keep-data` or `--purge` for an explicit automated choice.
 Server records and history in the app are managed separately. Keep the installation
 when identity/state is still needed for recovery.
+
+
+## Optional package-maintenance capability
+
+Managed maintenance-capable releases include a separate root polling service/timer
+and worker template. The signed updater bootstraps the complete set; a normal
+agent update leaves the monitoring service enabled and briefly stops/starts it.
+An initialized administrator-disabled maintenance timer is preserved. Active or
+uncertain package work blocks agent replacement and uninstall through a common
+root lock, worker cgroup and durable journal. Never disable a worker to bypass it.
+
+Package actions additionally require `apt-get` and `python3-apt`. They are optional
+for monitoring and signed updates, and are never installed automatically. The
+trusted embedded Debian adapter is independent of the Python monitoring SDK.
+Safe preparation/download phases have boot-clock budgets and unwind their children;
+a native transaction already applying has no timeout kill. Follow the central
+[package-maintenance guide](https://github.com/TinyWarden/tinywarden/blob/main/docs/using/package-maintenance.md)
+and [operator recovery procedure](https://github.com/TinyWarden/tinywarden/blob/main/docs/operating/agents.md#package-maintenance-and-read-only-recovery).

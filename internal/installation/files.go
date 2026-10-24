@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/TinyWarden/tinywarden-agent/internal/hostmutation"
 	agentrelease "github.com/TinyWarden/tinywarden-agent/internal/release"
 )
 
@@ -92,22 +93,26 @@ func syncDirectory(path string) error {
 }
 
 func lock(base string) (*os.File, error) {
-	path := filepath.Join(base, "updater", "private", "lock")
-	fd, err := syscall.Open(path, syscall.O_RDWR|syscall.O_CREAT|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0600)
+	guard, err := hostmutation.Lock(base)
 	if err != nil {
 		return nil, err
 	}
-	f := os.NewFile(uintptr(fd), path)
-	i, e := f.Stat()
-	if e != nil || !i.Mode().IsRegular() || i.Sys().(*syscall.Stat_t).Uid != 0 || i.Mode().Perm() != 0600 {
-		f.Close()
-		return nil, errors.New("unsafe update lock")
+	if err := hostmutation.AssertIdle(base); err != nil {
+		guard.Close()
+		return nil, err
 	}
-	if err := syscall.Flock(fd, syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		f.Close()
-		return nil, errors.New("another installation or update is in progress")
+	if err := assertNoRecoveryDelivery(base); err != nil {
+		guard.Close()
+		return nil, err
 	}
-	return f, nil
+	if active, err := activeMaintenanceWorkers(""); err != nil || active {
+		guard.Close()
+		if err != nil {
+			return nil, err
+		}
+		return nil, hostmutation.ErrBusy
+	}
+	return guard, nil
 }
 
 func status(base string, s agentrelease.UpdateStatus) error {

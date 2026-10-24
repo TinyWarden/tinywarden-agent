@@ -1,0 +1,20 @@
+[Unit]
+Description=TinyWarden maintenance worker %i
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor="@BASE@"
+
+[Service]
+Type=exec
+ExitType=cgroup
+User=root
+ExecStart="@BASE@/current/tinywarden-agent" maintenance --config "@BASE@/config.json" --job "%i"
+UMask=0077
+TimeoutStartSec=infinity
+TimeoutStopSec=infinity
+RuntimeMaxSec=infinity
+KillMode=mixed
+SendSIGKILL=no
+Restart=no
+NoNewPrivileges=true
+PrivateTmp=true

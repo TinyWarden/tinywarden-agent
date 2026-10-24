@@ -78,7 +78,9 @@ with tempfile.TemporaryDirectory(prefix="tinywarden-release-") as temporary:
     members = [(binary, "tinywarden-agent"), (descriptor_path, "platform.json")]
     members += [(ROOT / name, name.removeprefix("sdk/python/")) for name in files if name.startswith("sdk/python/runtime/")]
     members += [(ROOT / "deploy/systemd/managed" / name, "systemd/" + name) for name in
-                ["tinywarden-agent.service", "tinywarden-agent-update.service", "tinywarden-agent-update.timer"]]
+                ["tinywarden-agent.service", "tinywarden-agent-update.service", "tinywarden-agent-update.timer",
+                 "tinywarden-agent-maintenance.service", "tinywarden-agent-maintenance.timer",
+                 "tinywarden-agent-maintenance-worker@.service"]]
     members += [(ROOT / name, name) for name in ["LICENSE", "THIRD_PARTY_NOTICES.md"]]
     with tarfile.open(output / asset, "x:gz") as archive:
         for path, name in sorted(members, key=lambda item: item[1]):

@@ -1,0 +1,84 @@
+{
+  "poll": {
+    "schema_version": 1,
+    "host_id": "22222222-2222-4222-8222-222222222222",
+    "agent_id": "33333333-3333-4333-8333-333333333333",
+    "generation": 1,
+    "job_id": null,
+    "sequence": 0,
+    "kind": "poll",
+    "data": {}
+  },
+  "prepared": {
+    "schema_version": 1,
+    "host_id": "22222222-2222-4222-8222-222222222222",
+    "agent_id": "33333333-3333-4333-8333-333333333333",
+    "generation": 1,
+    "job_id": "11111111-1111-4111-8111-111111111111",
+    "sequence": 2,
+    "kind": "prepared",
+    "data": {
+      "provider_sha256": "2f0aa7e8d7e0a201c8bac26a829f4244f63d60cb62ddf8288b9811737d9df009",
+      "parts": 1,
+      "age_ms": 0
+    }
+  },
+  "chunk": {
+    "schema_version": 1,
+    "host_id": "22222222-2222-4222-8222-222222222222",
+    "agent_id": "33333333-3333-4333-8333-333333333333",
+    "generation": 1,
+    "job_id": "11111111-1111-4111-8111-111111111111",
+    "sequence": 3,
+    "kind": "plan_chunk",
+    "data": {
+      "provider_sha256": "2f0aa7e8d7e0a201c8bac26a829f4244f63d60cb62ddf8288b9811737d9df009",
+      "part": 0,
+      "total": 1,
+      "content": "eyJhY3Rpb24iOiJwYWNrYWdlcy51cGdyYWRlX2NvbnNlcnZhdGl2ZS52MSIsImNvbmZpZ19zaGEyNTYiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwiZG93bmxvYWRfYnl0ZXMiOjEwMCwiaW5kZXhlc19zaGEyNTYiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwia2VwdF9iYWNrIjpbeyJhcmNoaXRlY3R1cmUiOiJhbWQ2NCIsImhlbGQiOnRydWUsIm5hbWUiOiJoZWxkLWV4YW1wbGUifV0sImxvY2FsX3NoYTI1NiI6Ijc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3NzciLCJwYWNrYWdlcyI6W3siYXJjaGl0ZWN0dXJlIjoiYW1kNjQiLCJhcmNoaXZlX2J5dGVzIjoxMDAsImFyY2hpdmVfc2hhMjU2IjoiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImNhbmRpZGF0ZV92ZXJzaW9uIjoiMS4wLTIiLCJpbnN0YWxsZWRfYnl0ZXMiOjIwMCwiaW5zdGFsbGVkX3ZlcnNpb24iOiIxLjAtMSIsIm5hbWUiOiJleGFtcGxlIn1dLCJwb2xpY3lfc2hhMjU2IjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInByb3ZpZGVyX3ZlcnNpb24iOjEsInNjaGVtYV92ZXJzaW9uIjoxLCJzZWxlY3Rpb25fc2hhMjU2IjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInNvdXJjZXNfc2hhMjU2IjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInN0YXRlX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJ1bnBhY2tlZF9ieXRlcyI6MjAwfQ=="
+    }
+  },
+  "ready": {
+    "schema_version": 1,
+    "host_id": "22222222-2222-4222-8222-222222222222",
+    "agent_id": "33333333-3333-4333-8333-333333333333",
+    "generation": 1,
+    "job_id": "11111111-1111-4111-8111-111111111111",
+    "sequence": 5,
+    "kind": "ready",
+    "data": {}
+  },
+  "grant_reply": {
+    "schema_version": 1,
+    "host_id": "22222222-2222-4222-8222-222222222222",
+    "agent_id": "33333333-3333-4333-8333-333333333333",
+    "generation": 1,
+    "capability": "maintenance_jobs.v1",
+    "server_at": "2026-10-24T00:00:00.000Z",
+    "ack_sequence": 5,
+    "job": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "scope": {
+        "host_id": "22222222-2222-4222-8222-222222222222",
+        "agent_id": "33333333-3333-4333-8333-333333333333",
+        "generation": 1
+      },
+      "action": "packages.upgrade_conservative.v1",
+      "provider_version": 1,
+      "phase": "applying",
+      "attention": false,
+      "cancel_requested": false,
+      "expires_at": "2026-10-24T00:30:00.000Z",
+      "plan_id": "44444444-4444-4444-8444-444444444444",
+      "provider_sha256": "2f0aa7e8d7e0a201c8bac26a829f4244f63d60cb62ddf8288b9811737d9df009",
+      "plan_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "approval_id": "55555555-5555-4555-8555-555555555555",
+      "grant": {
+        "attempt_id": "66666666-6666-4666-8666-666666666666",
+        "issued_at": "2026-10-24T00:00:00.000Z",
+        "expires_at": "2026-10-24T00:01:00.000Z"
+      },
+      "result": null
+    }
+  }
+}

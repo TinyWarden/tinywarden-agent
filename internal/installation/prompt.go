@@ -39,9 +39,13 @@ func readSetup(path string, input io.Reader) (string, error) {
 		b, e := io.ReadAll(io.LimitReader(f, 4097))
 		return string(b), e
 	}
+	return readHidden("Paste setup code (hidden): ", "invalid setup code input", "use a terminal or a protected --setup-code-file")
+}
+
+func readHidden(prompt, invalid, unavailable string) (string, error) {
 	f, e := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if e != nil {
-		return "", errors.New("use a terminal or a protected --setup-code-file")
+		return "", errors.New(unavailable)
 	}
 	defer f.Close()
 	var original syscall.Termios
@@ -54,11 +58,11 @@ func readSetup(path string, input io.Reader) (string, error) {
 		return "", errno
 	}
 	defer syscall.Syscall(syscall.SYS_IOCTL, f.Fd(), syscall.TCSETS, uintptr(unsafe.Pointer(&original)))
-	fmt.Fprint(f, "Paste setup code (hidden): ")
+	fmt.Fprint(f, prompt)
 	b, e := bufio.NewReader(io.LimitReader(f, 4097)).ReadString('\n')
 	fmt.Fprintln(f)
 	if e != nil || len(b) > 4096 {
-		return "", errors.New("invalid setup code input")
+		return "", errors.New(invalid)
 	}
 	return b, nil
 }

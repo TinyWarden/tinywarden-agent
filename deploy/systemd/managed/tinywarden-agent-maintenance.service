@@ -1,0 +1,14 @@
+[Unit]
+Description=TinyWarden maintenance request polling
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor="@BASE@"
+
+[Service]
+Type=oneshot
+User=root
+ExecStart="@BASE@/current/tinywarden-agent" maintenance --config "@BASE@/config.json" --poll
+UMask=0077
+TimeoutStartSec=45s
+NoNewPrivileges=true
+PrivateTmp=true

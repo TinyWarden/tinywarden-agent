@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "plan": {
+    "schema_version": 1,
+    "action": "packages.upgrade_conservative.v1",
+    "provider_version": 1,
+    "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sources_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "indexes_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "config_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "packages": [
+      {
+        "name": "example",
+        "architecture": "amd64",
+        "installed_version": "1.0-1",
+        "candidate_version": "1.0-2",
+        "archive_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "archive_bytes": 100,
+        "installed_bytes": 200
+      }
+    ],
+    "kept_back": [
+      {
+        "name": "held-example",
+        "architecture": "amd64",
+        "held": true
+      }
+    ],
+    "download_bytes": 100,
+    "unpacked_bytes": 200,
+    "local_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "provider_sha256": "2f0aa7e8d7e0a201c8bac26a829f4244f63d60cb62ddf8288b9811737d9df009"
+}

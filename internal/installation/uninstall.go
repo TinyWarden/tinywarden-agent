@@ -50,28 +50,42 @@ func Uninstall(ctx context.Context, base, choice string) error {
 		return errors.New("invalid uninstall choice")
 	}
 	// Inspect every registration before stopping or removing anything.
-	for _, name := range []string{Service, UpdateService, Timer} {
+	names := []string{Service, UpdateService, Timer}
+	for _, name := range maintenanceUnits {
+		if _, e := os.Lstat(filepath.Join("/etc/systemd/system", name)); e == nil {
+			names = append(names, name)
+		} else if !os.IsNotExist(e) {
+			return e
+		}
+	}
+	for _, name := range names {
 		path := filepath.Join("/etc/systemd/system", name)
 		target, e := os.Readlink(path)
 		if e != nil || target != filepath.Join(base, "updater", "systemd", name) {
 			return errors.New("unrecognized service registration: " + path)
 		}
 	}
-	if e := system(ctx, "disable", "--now", Timer); e != nil {
+	if len(names) > 3 {
+		if e = stopMaintenancePolling(ctx, names[3:]); e != nil {
+			return e
+		}
+	}
+	if e := stopAndDisableUnit(ctx, Timer); e != nil {
 		return e
 	}
-	if e := system(ctx, "stop", UpdateService); e != nil {
+	if e := stopIdleManagedUnit(ctx, UpdateService); e != nil {
 		return e
 	}
-	if e := system(ctx, "disable", "--now", Service); e != nil {
+	if e := stopAndDisableUnit(ctx, Service); e != nil {
 		return e
 	}
 	if choice == "keep" {
 		fmt.Println("Services stopped and disabled. Installation and enrolled data kept. Server records and history in the app are unchanged.")
 		return nil
 	}
-	for _, name := range []string{Service, UpdateService, Timer} {
-		if e := os.Remove(filepath.Join("/etc/systemd/system", name)); e != nil {
+	for _, name := range names {
+		// Disable may already have removed a linked primary registration.
+		if e := os.Remove(filepath.Join("/etc/systemd/system", name)); e != nil && !os.IsNotExist(e) {
 			return e
 		}
 	}

@@ -29,13 +29,17 @@ func unitQuote(base string) string {
 }
 
 func verifyUnits(ctx context.Context, base, release string) error {
+	names, _, e := templateSet(release)
+	if e != nil {
+		return e
+	}
 	dir, e := os.MkdirTemp(filepath.Join(base, "updater", "private"), "verify-units-")
 	if e != nil {
 		return e
 	}
 	defer os.RemoveAll(dir)
 	args := []string{"verify"}
-	for _, name := range []string{Service, UpdateService, Timer} {
+	for _, name := range names {
 		input, e := os.ReadFile(filepath.Join(release, "systemd", name))
 		if e != nil || len(input) > 16384 {
 			return errors.New("invalid service template")
@@ -52,11 +56,32 @@ func verifyUnits(ctx context.Context, base, release string) error {
 	return command(ctx, "/usr/bin/systemd-analyze", args...)
 }
 func units(ctx context.Context, base, release string) error {
+	names, supported, e := templateSet(release)
+	if e != nil {
+		return e
+	}
+	// Inspect every registration before changing any file or activating a timer.
+	for _, name := range names {
+		link := filepath.Join("/etc/systemd/system", name)
+		if info, err := os.Lstat(link); err == nil {
+			target, _ := os.Readlink(link)
+			if info.Mode()&os.ModeSymlink == 0 || target != filepath.Join(base, "updater", "systemd", name) {
+				return errors.New("conflicting systemd registration: " + link)
+			}
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	if !supported {
+		if e = removeMaintenanceUnits(ctx, base); e != nil {
+			return e
+		}
+	}
 	destination := filepath.Join(base, "updater", "systemd")
 	if e := rootDirectory(destination, 0755); e != nil {
 		return e
 	}
-	for _, name := range []string{Service, UpdateService, Timer} {
+	for _, name := range names {
 		input, e := os.ReadFile(filepath.Join(release, "systemd", name))
 		if e != nil || len(input) > 16384 {
 			return errors.New("invalid service template")
@@ -78,7 +103,22 @@ func units(ctx context.Context, base, release string) error {
 			return e
 		}
 	}
-	return system(ctx, "daemon-reload")
+	if e = system(ctx, "daemon-reload"); e != nil {
+		return e
+	}
+	if supported {
+		if _, e = os.Lstat(filepath.Join(base, "updater", "private", "maintenance-bootstrap.json")); os.IsNotExist(e) {
+			if e = enableMaintenance(ctx, release); e != nil {
+				return e
+			}
+			return atomicFile(filepath.Join(base, "updater", "private", "maintenance-bootstrap.json"), struct {
+				Schema int `json:"schema_version"`
+			}{1}, 0600)
+		} else if e != nil {
+			return e
+		}
+	}
+	return nil
 }
 func switchCurrent(base, version string) error {
 	if !validTarget(version) {

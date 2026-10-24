@@ -1,0 +1,13 @@
+[Unit]
+Description=TinyWarden maintenance request polling
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=30s
+RandomizedDelaySec=5s
+AccuracySec=1s
+Persistent=true
+Unit=tinywarden-agent-maintenance.service
+
+[Install]
+WantedBy=timers.target

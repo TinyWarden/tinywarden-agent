@@ -21,5 +21,18 @@
     "unfinished": "Reconnection is unfinished. The service will resume its saved replacement request.",
     "arguments": "Use reconnect with --install-dir and optionally --setup-code-file.",
     "completed": "Server reconnected. The agent follows its current monitoring policy."
+  },
+  "maintenance": {
+    "root": "Maintenance administration requires root. Monitoring continues without root.",
+    "arguments": "Choose maintenance --poll, --job, --status or --reconcile with the managed --config path. Use one authorization input option only with --reconcile.",
+    "configHelp": "managed config.json path",
+    "pollHelp": "check authenticated maintenance requests and dispatch the managed worker",
+    "jobHelp": "owned maintenance job identifier; managed worker use only",
+    "statusHelp": "display the saved local maintenance receipt without changing packages",
+    "reconcileHelp": "inspect package integrity read-only and reconcile a scoped retained job; never repair or retry installation",
+    "authorizationStdinHelp": "read the one-time recovery authorization from standard input instead of a hidden prompt",
+    "recoveryPrompt": "Paste recovery authorization (hidden): ",
+    "recoveryInput": "Use a hidden terminal prompt or --authorization-stdin with one valid recovery authorization.",
+    "authorizationPromptHelp": "request a replacement recovery authorization through the hidden terminal prompt"
   }
 }

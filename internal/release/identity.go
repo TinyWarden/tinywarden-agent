@@ -110,5 +110,6 @@ func Identity(base string, managed bool, automatic bool) (Observation, error) {
 			}
 		}
 	}
+	o.Maintenance = maintenanceReadiness(base, o.BinarySHA256)
 	return o, nil
 }

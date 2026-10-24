@@ -61,7 +61,35 @@ Load the affected reference and owning tests. Update its human guide under the
 [documentation policy](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/documentation.md).
 Never weaken sandbox/cleanup checks or silently change provenance to fix a prerequisite.
 
+Maintenance foundations live in `internal/maintenance`; Debian adapter source is
+embedded from `internal/maintenance/apt/helper`, outside the Python monitoring SDK.
+The shared `internal/hostmutation` guard preserves the deployed updater lock path.
+Read the [maintenance contracts](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/maintenance-actions.md)
+before adding an action. Native package tests require an explicitly designated
+disposable host; ordinary unit checks cannot establish package-install safety.
+
+Read-only reconciliation has its own scoped authorization and immutable outbox;
+it does not reuse a revoked agent credential or infer original apply success from
+a repaired system. Preserve app acceptance, local locked fence release and final
+receipt ordering. The root poller may deliver an already released receipt, but
+cannot initiate an audit or reset old execution. Pending outboxes block installer
+mutations until acknowledged. The canonical maintenance reference owns the exact
+contract and CLI input rules; keep secrets out of arguments and ordinary reports.
+
+Normal terminal acknowledgement also has a resumable release boundary. Under the
+common root guard and idle worker-cgroup check, discovery may remove only its
+matching durably acknowledged fence. Keep the receipt and refuse foreign/corrupt
+scope, uncertain execution and pending recovery delivery. Recovery closures use
+their own ordered outbox protocol; never reuse normal cleanup to bypass it.
+
 Managed remote requests reuse the installation lock, signed target checks and
 transaction recovery. Preserve the root-only request journal and retry terminal
 acknowledgements without reinstalling. See the canonical
 [update protocol](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/agent-updates.md).
+
+
+Safe preparation/download wrappers in `internal/maintenance/budget.go` use the
+boot clock for whole-phase limits; do not wrap `Apply` in cancellation or a timeout.
+Trusted input hashing checks root ownership through every original/symlink path
+component, including empty/absent inputs. Native proof of input ownership and
+signed HTTP repository provider behavior belongs on the designated disposable host.

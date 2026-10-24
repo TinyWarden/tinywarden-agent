@@ -33,6 +33,9 @@ func withUpdater(base string, run func(agentconfig.Config) error) error {
 	if e != nil {
 		return e
 	}
+	if e = bootstrapMaintenance(context.Background(), base); e != nil {
+		return e
+	}
 	return run(c)
 }
 func remoteActive(state string) bool {

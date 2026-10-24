@@ -14,13 +14,17 @@ var ErrInvalidState = errors.New("invalid baseline state")
 
 // Validate before map/struct decoding can erase duplicates or repair encoding.
 func StrictJSON(data []byte) error {
+	return strictJSONNodes(data, 8192)
+}
+
+func strictJSONNodes(data []byte, maxNodes int) error {
 	if len(data) == 0 || !utf8.Valid(data) {
 		return ErrInvalidState
 	}
 	d := json.NewDecoder(bytes.NewReader(data))
 	d.UseNumber()
 	nodes := 0
-	if baselineTokens(d, 0, &nodes) != nil {
+	if baselineTokens(d, 0, &nodes, maxNodes) != nil {
 		return ErrInvalidState
 	}
 	if _, err := d.Token(); err != io.EOF {
@@ -29,9 +33,9 @@ func StrictJSON(data []byte) error {
 	return nil
 }
 
-func baselineTokens(d *json.Decoder, depth int, nodes *int) error {
+func baselineTokens(d *json.Decoder, depth int, nodes *int, maxNodes int) error {
 	*nodes++
-	if depth > 16 || *nodes > 8192 {
+	if depth > 16 || *nodes > maxNodes {
 		return ErrInvalidState
 	}
 	token, err := d.Token()
@@ -55,13 +59,13 @@ func baselineTokens(d *json.Decoder, depth int, nodes *int) error {
 				return ErrInvalidState
 			}
 			keys[key] = true
-			if baselineTokens(d, depth+1, nodes) != nil {
+			if baselineTokens(d, depth+1, nodes, maxNodes) != nil {
 				return ErrInvalidState
 			}
 		}
 	case '[':
 		for d.More() {
-			if baselineTokens(d, depth+1, nodes) != nil {
+			if baselineTokens(d, depth+1, nodes, maxNodes) != nil {
 				return ErrInvalidState
 			}
 		}
@@ -76,7 +80,21 @@ func baselineTokens(d *json.Decoder, depth int, nodes *int) error {
 }
 
 func Decode(data []byte, target any) error {
-	if StrictJSON(data) != nil || Shape(data, reflect.TypeOf(target).Elem()) != nil {
+	return decodeNodes(data, target, 8192)
+}
+
+// DecodeArtifact keeps exact JSON/shape validation for byte-bounded local artifacts
+// whose many rows exceed a control message's node quota. Callers must bound bytes.
+// It does not relax the ordinary wire decoder or its nesting/duplicate checks.
+func DecodeArtifact(data []byte, target any, maxNodes int) error {
+	if maxNodes < 1 || maxNodes > 200000 {
+		return ErrInvalidState
+	}
+	return decodeNodes(data, target, maxNodes)
+}
+
+func decodeNodes(data []byte, target any, maxNodes int) error {
+	if strictJSONNodes(data, maxNodes) != nil || Shape(data, reflect.TypeOf(target).Elem()) != nil {
 		return ErrInvalidState
 	}
 	d := json.NewDecoder(bytes.NewReader(data))
