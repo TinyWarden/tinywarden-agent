@@ -117,7 +117,9 @@ Server records and history in the app are managed separately. Keep the installat
 when identity/state is still needed for recovery.
 
 
-## Optional package-maintenance capability
+<a id="optional-package-maintenance-capability"></a>
+
+## Optional skill-action capability
 
 Managed maintenance-capable releases include a separate root polling service/timer
 and worker template. The signed updater bootstraps the complete set; a normal
@@ -126,9 +128,16 @@ An initialized administrator-disabled maintenance timer is preserved. Active or
 uncertain package work blocks agent replacement and uninstall through a common
 root lock, worker cgroup and durable journal. Never disable a worker to bypass it.
 
-Package actions additionally require `apt-get` and `python3-apt`. They are optional
-for monitoring and signed updates, and are never installed automatically. The
-trusted embedded Debian adapter is independent of the Python monitoring SDK.
+Use managed agent 0.0.22+ and a compatible app for independently delivered SDK 3
+actions. Each action requires exact package permission in the app and a separate
+local publisher/execution-class policy; follow the
+[policy reference](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#host-publisher-policy).
+The agent supplies generic delivery, supervision and recovery. Domain behavior and
+native adapters belong to the skill package and can be updated independently.
+
+The Updates skill's package actions require `apt-get` and `python3-apt`. They are
+optional for monitoring and signed updates, and are never installed automatically.
+Other actions declare their own prerequisites; the host reports what is missing.
 Safe preparation/download phases have boot-clock budgets and unwind their children;
 a native transaction already applying has no timeout kill. Follow the central
 [package-maintenance guide](https://github.com/TinyWarden/tinywarden/blob/main/docs/using/package-maintenance.md)

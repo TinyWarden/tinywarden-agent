@@ -3,13 +3,15 @@
 The host agent connects to [TinyWarden](https://github.com/TinyWarden/tinywarden)
 over outbound HTTPS, sends heartbeat and observations, and runs compatible Python
 monitoring skills with bounded host access. The application evaluates health.
+SDK 3 skills can also supply separately authorized actions; the agent delivers and
+supervises them while the skill owns the operation and native adapters.
 
 Verified host platform: Debian 13 on amd64. Skills are distributed independently
 through [skill repositories](https://github.com/TinyWarden/tinywarden-skills).
 A skill using supported operations needs no host-agent binary change.
 
 This repository owns the reusable SDK and execution runtime. The separate skills
-repository owns official monitoring packages, tests and independent releases.
+repository owns official skill packages, action code, tests and independent releases.
 Its build tools use an exact SDK pin; the repositories do not need adjacent
 checkouts to build or test.
 
