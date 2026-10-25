@@ -10,6 +10,10 @@ It does not install missing system packages. Install the suggested packages and
 rerun the installer. If Debian cannot find `python3`, check that the host is Debian
 13 and its package sources are configured and up to date.
 
+Managed installations select the runtime from the signed platform's `current/runtime`
+directory. Keep the installed configuration; no `runtime_assets` override is needed.
+Action readiness, execution and recovery use that same verified platform runtime.
+
 ## Install
 
 In TinyWarden choose **Add server**, enter a name and create a setup code. Copy the

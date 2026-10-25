@@ -79,16 +79,11 @@ func maintenanceCoordinator(base string, guard *os.File) (maintenance.Coordinato
 		return nil
 	}
 	client := controlplane.NewClient(c.ControlPlaneOrigin)
-	registry := maintenanceRegistry(base, c.RuntimeAssets, guard, verify, client, s.Credential)
+	registry := maintenanceRegistry(base, guard, verify, client, s.Credential)
 	return maintenance.Coordinator{Base: base, Scope: scope, Registry: registry, Schema: 2, Call: func(ctx context.Context, request maintenance.Request) (maintenance.Reply, error) {
 		if request.Kind == "poll" && request.JobID == nil {
 			status, _ := readMaintenanceStatus(base)
-			request.Data, _ = json.Marshal(struct {
-				Cursor      *string                           `json:"probe_cursor"`
-				WorkerReady bool                              `json:"worker_ready"`
-				Origins     []actioncontract.OriginPermission `json:"origins"`
-				Readiness   []actioncontract.Readiness        `json:"readiness"`
-			}{status.ProbeCursor, status.Report.WorkerReady, status.Origins, status.ActionReadiness})
+			request.Data = maintenancePollData(status)
 		}
 		reply, err := maintenance.Post(ctx, client, s.Credential, request, registry)
 		if err == nil && request.JobID == nil {
@@ -98,6 +93,23 @@ func maintenanceCoordinator(base string, guard *os.File) (maintenance.Coordinato
 		}
 		return reply, err
 	}}, nil
+}
+
+func maintenancePollData(status agentrelease.MaintenanceStatus) json.RawMessage {
+	// The persisted status omits empty lists; the wire contract requires arrays.
+	if status.Origins == nil {
+		status.Origins = []actioncontract.OriginPermission{}
+	}
+	if status.ActionReadiness == nil {
+		status.ActionReadiness = []actioncontract.Readiness{}
+	}
+	raw, _ := json.Marshal(struct {
+		Cursor      *string                           `json:"probe_cursor"`
+		WorkerReady bool                              `json:"worker_ready"`
+		Origins     []actioncontract.OriginPermission `json:"origins"`
+		Readiness   []actioncontract.Readiness        `json:"readiness"`
+	}{status.ProbeCursor, status.Report.WorkerReady, status.Origins, status.ActionReadiness})
+	return raw
 }
 
 func PollMaintenance(ctx context.Context, base string) error {

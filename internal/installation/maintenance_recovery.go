@@ -52,7 +52,7 @@ func maintenanceRecoveryCoordinator(base string, guard *os.File) (maintenance.Re
 		return nil
 	}
 	client := controlplane.NewClient(cfg.ControlPlaneOrigin)
-	return maintenance.RecoveryCoordinator{Base: base, Registry: maintenanceRegistry(base, cfg.RuntimeAssets, guard, verify, client, id.Credential), Call: maintenance.RecoveryPost(client),
+	return maintenance.RecoveryCoordinator{Base: base, Registry: maintenanceRegistry(base, guard, verify, client, id.Credential), Call: maintenance.RecoveryPost(client),
 		Verify: func(scope maintenance.RecoveryScope) error {
 			if scope.HostID != id.HostID || scope.AgentID != id.AgentID || scope.Generation != id.Generation {
 				return errors.New("maintenance_scope_changed")

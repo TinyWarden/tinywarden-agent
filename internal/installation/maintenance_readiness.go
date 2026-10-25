@@ -28,6 +28,12 @@ func actionPolicyPath(base string) string {
 	return filepath.Join(base, "updater", "private", "action-policy.json")
 }
 
+func maintenanceRuntimeAssets(base string) string {
+	// Managed config intentionally omits a runtime override. Root workers bind the
+	// same signed current platform used by the daemon and checked by Verify.
+	return filepath.Join(base, "current", "runtime")
+}
+
 func readMaintenanceStatus(base string) (agentrelease.MaintenanceStatus, error) {
 	raw, err := agentrelease.ReadPublic(filepath.Join(base, "updater", "maintenance.json"), maintenance.MaxDelivery)
 	if err != nil {
@@ -71,8 +77,9 @@ func maintenanceStatus(ctx context.Context, base string, m agentrelease.Manifest
 	if pending, err := pendingTransaction(base); err != nil || pending != nil {
 		report.WorkerReady = false
 	}
-	cfg, err := config(base)
-	if err != nil || !(skillruntime.Client{Assets: cfg.RuntimeAssets}).SupportsSDK3() {
+	assets := maintenanceRuntimeAssets(base)
+	_, err := config(base)
+	if err != nil || !(skillruntime.Client{Assets: assets}).SupportsSDK3() {
 		report.WorkerReady = false
 	}
 	status.Origins = []actioncontract.OriginPermission{}
@@ -85,7 +92,7 @@ func maintenanceStatus(ctx context.Context, base string, m agentrelease.Manifest
 		if status.Probes == nil {
 			raw = []byte(`{"probes":[]}`)
 		}
-		cmd := exec.CommandContext(probeCtx, "/usr/bin/python3", "-I", "-B", filepath.Join(cfg.RuntimeAssets, "actions", "readiness.py"), actionPolicyPath(base))
+		cmd := exec.CommandContext(probeCtx, "/usr/bin/python3", "-I", "-B", filepath.Join(assets, "actions", "readiness.py"), actionPolicyPath(base))
 		cmd.Stdin = bytes.NewReader(raw)
 		cmd.Dir = "/"
 		cmd.Env = []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin", "LANG=C.UTF-8", "LC_ALL=C.UTF-8", "TZ=UTC"}
@@ -109,8 +116,8 @@ func maintenanceStatus(ctx context.Context, base string, m agentrelease.Manifest
 	return atomicFile(filepath.Join(base, "updater", "maintenance.json"), status, 0644)
 }
 
-func maintenanceRegistry(base, assets string, guard *os.File, verify func() error, client *controlplane.Client, credential string) maintenance.Registry {
-	loader := skillactions.Loader{Base: base, Policy: actionPolicyPath(base), Runtime: skillruntime.Client{Assets: assets}, Guard: guard, Verify: verify,
+func maintenanceRegistry(base string, guard *os.File, verify func() error, client *controlplane.Client, credential string) maintenance.Registry {
+	loader := skillactions.Loader{Base: base, Policy: actionPolicyPath(base), Runtime: skillruntime.Client{Assets: maintenanceRuntimeAssets(base)}, Guard: guard, Verify: verify,
 		Download: func(ctx context.Context, intent maintenance.Intent, store string) (string, error) {
 			return client.FetchArtifact(ctx, credential, "/api/v1/agent/maintenance-jobs/"+intent.ID+"/package", intent.Binding.ContentSHA, store, *intent.Archive)
 		}}
