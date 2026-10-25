@@ -16,6 +16,14 @@ class Admission(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.root=package(Path(self.tmp.name)/'skill')
+    def test_alias_metadata_is_not_a_package_identity_extension(self):
+        path=self.root/'skill.json'
+        manifest=json.loads(path.read_text())
+        for alias in ('short-name','example/other',None):
+            path.write_text(json.dumps({**manifest,'alias':alias}))
+            with self.subTest(alias=alias),self.assertRaises(ValueError):
+                load(self.root)
+
     def test_code_is_not_imported_and_digest_binds_all_files(self):
         p=self.root/'skill.py';p.write_text("raise RuntimeError('metadata imported code')\n"+p.read_text())
         admitted=load(self.root)
@@ -62,7 +70,7 @@ class Admission(unittest.TestCase):
         with self.assertRaises(ValueError):inspect_grant({**grant,'executable':helper})
 
     def test_optional_reads_keep_exact_file_and_operation_permissions(self):
-        path='/run/reboot-required.pkgs'
+        path='/run/example/status'
         grant={'operation':'files.read','paths':[path],'roots':[],'max_bytes':16384}
         inspect_grant(grant)
         args={'path':path,'max_bytes':16384,'optional':True}
@@ -73,7 +81,7 @@ class Admission(unittest.TestCase):
         for operation in ('files.stat','files.list'):
             self.assertFalse(permits({**grant,'operation':operation},operation,args))
         with self.assertRaises(ValueError):inspect_grant({**grant,'optional':True})
-        for denied in ('/run','/run/other','/run/reboot-required.pkgs.old','/var/run/reboot-required.pkgs','/run/../run/reboot-required.pkgs'):
+        for denied in ('/run','/run/credentials/app/key','/run/secrets/key','/run/user/1000/token','/run/tinywarden-agent/key','/var/run/example/status','/run/../run/example/status'):
             self.assertFalse(safe_path(denied))
             with self.assertRaises(ValueError):inspect_grant({**grant,'paths':[denied]})
         self.assertFalse(safe_path(path,True))

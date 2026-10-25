@@ -16,7 +16,7 @@ const packageQueueLimit = 8 << 20
 
 var errPackageState = errors.New("package state unavailable")
 var contentDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
-var packageSubject = regexp.MustCompile(`^(disk-local|package-updates|reboot-required|fstrim-status|[a-z][a-z0-9-]{0,63}/[a-z][a-z0-9-]{0,63})$`)
+var packageSubject = regexp.MustCompile(`^([a-z][a-z0-9-]{0,63}/[a-z][a-z0-9-]{0,63})$`)
 
 type packageManualRequest struct {
 	ID        string `json:"id"`

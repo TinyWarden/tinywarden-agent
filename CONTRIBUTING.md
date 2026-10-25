@@ -10,6 +10,8 @@ guides for prerequisites, isolation and check selection.
 
 ```sh
 python3 scripts/checks/source_check.py
+python3 -B scripts/checks/neutrality.py
+python3 -B scripts/checks/public_api.py
 ./scripts/verify.sh --batch
 ```
 

@@ -8,21 +8,18 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "sdk/python/runtime"))
 from contracts.notifications import inspect_notifications
 from packages.admission import load
-from official_fixtures import official_root
+from notification_fixture import metadata
 
 
 class NotificationAdmission(unittest.TestCase):
     def setUp(self):
-        self.official = official_root(self)
-        self.metadata = load(self.official / "disk-local", official=True)
+        self.metadata = metadata()
         self.value = copy.deepcopy(self.metadata["notifications"])
 
     def inspect(self, value):
         return inspect_notifications(json.dumps(value).encode(), self.metadata["catalog"], self.metadata["schemas"]["settings"])
 
-    def test_official_definitions_and_independent_package(self):
-        for p in self.official.iterdir():
-            self.assertEqual(load(p, official=True)["notifications"]["format"], 1)
+    def test_independent_package_definitions(self):
         m = load(ROOT / "examples/skills/memory-pressure")
         m["catalog"]["notify.community"] = {"text": "Local use is {used}%.", "parameters": {"used": "number"}}
         reason = next(iter(m["catalog"]))
@@ -48,7 +45,7 @@ class NotificationAdmission(unittest.TestCase):
         with self.assertRaises(ValueError): self.inspect(self.value)
         del value["plural"]
         for text in ("Visit https://example.test", "javascript:bad", "Read www.example.test", "bad\nline", "bad\u202evalue"):
-            self.metadata["catalog"]["notify.disk.warning"]["text"] = text
+            self.metadata["catalog"]["notify.sample.warning"]["text"] = text
             with self.assertRaises(ValueError): self.inspect(self.value)
 
     def test_payload_bounds_and_duplicate_json(self):

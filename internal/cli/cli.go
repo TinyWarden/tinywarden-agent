@@ -16,7 +16,6 @@ import (
 	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
 	"github.com/TinyWarden/tinywarden-agent/internal/host/filesystems"
 	"github.com/TinyWarden/tinywarden-agent/internal/installation"
-	"github.com/TinyWarden/tinywarden-agent/internal/legacy/runner"
 )
 
 //go:embed en.json
@@ -74,12 +73,9 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		}
 		return 0
 	}
-	if os.Geteuid() == 0 && len(args) > 0 && (args[0] == "run" || args[0] == "enroll" || args[0] == "resume-enrollment" || args[0] == "replace" || args[0] == runner.SupervisorArgument || args[0] == "__collect-disk-v1") {
+	if os.Geteuid() == 0 && len(args) > 0 && (args[0] == "run" || args[0] == "enroll" || args[0] == "resume-enrollment" || args[0] == "replace" || args[0] == "__collect-disk-v1") {
 		fmt.Fprintln(stderr, "Monitoring and skills must run as the dedicated non-root service account.")
 		return 1
-	}
-	if len(args) == 1 && args[0] == runner.SupervisorArgument {
-		return runner.Supervise()
 	}
 	if len(args) == 1 && args[0] == "__collect-disk-v1" {
 		if err := filesystems.CollectDisk(stdout); err != nil {

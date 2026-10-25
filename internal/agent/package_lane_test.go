@@ -188,3 +188,22 @@ func TestPackageCleanupFailurePausesDurablyButReceivesAuthority(t *testing.T) {
 		t.Fatal("authority refresh silently resumed", err)
 	}
 }
+
+func TestAssignmentsRequireCanonicalPackageSubjects(t *testing.T) {
+	server := httptest.NewServer(nil)
+	defer server.Close()
+	lane := packageFixture(t, server)
+	response := *lane.ledger.Cache
+	for _, subject := range []string{"acme/metric", "unfamiliar/observer-v2", "another-publisher/new-check"} {
+		response.Assignments[0].Subject = subject
+		if !validPackageResponse(lane.ledger.Scope, response) {
+			t.Fatalf("rejected independently named canonical package %q", subject)
+		}
+	}
+	for _, subject := range []string{"short-name", "publisher", "publisher/check/extra", "Publisher/Check"} {
+		response.Assignments[0].Subject = subject
+		if validPackageResponse(lane.ledger.Scope, response) {
+			t.Fatalf("accepted noncanonical package subject %q", subject)
+		}
+	}
+}

@@ -9,12 +9,10 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "sdk/python/runtime"))
 from contracts.display import inspect_display
 from packages.admission import load
-from official_fixtures import official_root
 
 
 class DisplayAdmission(unittest.TestCase):
     def setUp(self):
-        self.official = official_root(self)
         self.metadata = load(ROOT / "examples/skills/memory-pressure")
         self.display = copy.deepcopy(self.metadata["display"])
         self.display["format"] = 1
@@ -26,9 +24,7 @@ class DisplayAdmission(unittest.TestCase):
     def inspect(self, value):
         return inspect_display(json.dumps(value).encode(), self.metadata["catalog"], self.metadata["schemas"]["settings"])
 
-    def test_all_five_packages_are_static_and_valid(self):
-        for directory in self.official.iterdir():
-            self.assertIn(load(directory, official=True)["display"]["format"], (1, 2))
+    def test_independent_package_has_static_valid_display(self):
         self.assertEqual(self.inspect(self.display), self.display)
 
     def test_unknown_root_type_and_markup_rejected(self):

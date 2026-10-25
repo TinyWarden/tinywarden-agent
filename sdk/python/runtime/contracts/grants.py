@@ -4,7 +4,8 @@ import re
 PSEUDO = {"/proc/meminfo", "/proc/loadavg", "/proc/stat", "/proc/uptime", "/proc/sys/kernel/random/boot_id"}
 DENIED = ("/home", "/root", "/sys", "/dev", "/etc/shadow", "/etc/gshadow", "/etc/ssh",
           "/etc/ssl/private", "/etc/apt/auth.conf", "/etc/apt/auth.conf.d",
-          "/var/lib/tinywarden", "/var/lib/tinywarden-agent", "/var/run", "/tmp")
+          "/run/credentials", "/run/secrets", "/run/user", "/run/sudo",
+          "/run/tinywarden", "/run/tinywarden-agent", "/var/lib/tinywarden", "/var/lib/tinywarden-agent", "/var/run", "/tmp")
 PROPERTIES = set("Id LoadState ActiveState UnitFileState LastTriggerUSec NextElapseUSecRealtime "
                  "ConditionResult ConditionTimestamp Result ExecMainCode ExecMainStatus "
                  "ExecMainStartTimestamp ExecMainExitTimestamp SubState Description".split())
@@ -32,7 +33,7 @@ def safe_path(path, root=False):
     if path.startswith("/proc/"):
         return not root and path in PSEUDO
     if path.startswith("/run/"):
-        return not root and path in {"/run/reboot-required", "/run/reboot-required.pkgs"}
+        return not root
     return True
 
 

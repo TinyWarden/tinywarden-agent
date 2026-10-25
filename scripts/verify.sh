@@ -9,6 +9,8 @@ case "$scope" in --all|--skills-author|--sandbox) ;; *) printf 'Unknown verifica
 export GOTOOLCHAIN=local
 export PATH="$HOME/.local/bin:$PATH"
 python3 scripts/checks/source_check.py
+python3 -B scripts/checks/neutrality.py
+python3 -B scripts/checks/public_api.py
 python3.13 -B -m unittest discover -s tests/tooling -p 'test_*.py'
 python3 -B scripts/checks/runtime_assets.py --check
 python3.13 -B -m unittest discover -s sdk/python/tests -p 'test_*.py'

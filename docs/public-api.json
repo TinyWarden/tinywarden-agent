@@ -1,0 +1,71 @@
+{
+  "format": 1,
+  "runtime_artifact_sha256": "fa6ebd6153acce009cf9d31d32d1ba914801cfef7b56226e987304342be2e767",
+  "agent_http_paths": [
+    "/api/v1/agent/enroll",
+    "/api/v1/agent/heartbeat",
+    "/api/v1/agent/maintenance-jobs",
+    "/api/v1/agent/maintenance-jobs/{id}/package",
+    "/api/v1/agent/monitoring-control",
+    "/api/v1/agent/platform-status",
+    "/api/v1/agent/reconnect-intent",
+    "/api/v1/agent/setup",
+    "/api/v1/agent/update-policy",
+    "/api/v1/agent/update-requests",
+    "/api/v1/maintenance-recovery/accept",
+    "/api/v1/maintenance-recovery/describe",
+    "/api/v1/maintenance-recovery/finalize",
+    "/api/v2/agent/skill-assignments",
+    "/api/v2/agent/skill-packages/{assignment_id}",
+    "/api/v2/agent/skill-run-starts",
+    "/api/v2/agent/skill-runs"
+  ],
+  "host_operations": [
+    "command.capture",
+    "files.list",
+    "files.read",
+    "files.stat",
+    "filesystems.snapshot",
+    "systemd.properties",
+    "systemd.services.list",
+    "systemd.services.read"
+  ],
+  "monitor_functions": [
+    "collect",
+    "evaluate",
+    "reduce",
+    "validate_settings"
+  ],
+  "action_functions": [
+    "apply",
+    "fetch",
+    "inspect",
+    "prepare",
+    "verify"
+  ],
+  "action_context_methods": [
+    "check_start",
+    "commit",
+    "read_package"
+  ],
+  "action_exception": "ActionFailure",
+  "author_commands": [
+    "collect",
+    "init",
+    "pack",
+    "test",
+    "validate"
+  ],
+  "author_flags": [
+    "--action-cases",
+    "--approve-declared-grants",
+    "--cases",
+    "--filesystem-helper",
+    "--id",
+    "--output",
+    "--publisher",
+    "--runtime",
+    "--settings",
+    "--with-actions"
+  ]
+}

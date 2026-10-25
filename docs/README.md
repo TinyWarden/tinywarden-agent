@@ -7,6 +7,7 @@ is the starting point for product workflows and cross-repository contracts.
 - [Build a skill](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/README.md)
 - [Add actions and use the action API](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md)
 - [Agent operations](https://github.com/TinyWarden/tinywarden/blob/main/docs/operating/agents.md)
+- [Every agent HTTP endpoint](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/agent-endpoints.md)
 - [Contribute to the agent and SDK](../CONTRIBUTING.md)
 - [LLM assistant instructions](../AGENTS.md)
 

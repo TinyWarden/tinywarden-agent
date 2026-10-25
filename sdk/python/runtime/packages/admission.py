@@ -14,10 +14,9 @@ from contracts.notifications import inspect_notifications
 
 MANIFEST_KEYS = {"format", "id", "version", "runtime", "sdk", "state_version", "license",
                  "publisher", "name_key", "description_key", "category", "compatibility",
-                 "defaults", "schedule", "capabilities", "limits", "fields", "alias", "resource_collections", "actions"}
+                 "defaults", "schedule", "capabilities", "limits", "fields", "resource_collections", "actions"}
 REQUIRED = {"skill.json", "skill.py", "settings.schema.json", "observation.schema.json",
             "state.schema.json", "messages/en.json", "README.md", "LICENSE"}
-ALIASES = {"disk-local", "package-updates", "reboot-required", "fstrim-status"}
 OPERATIONS = {"files.read", "files.stat", "files.list", "filesystems.snapshot",
               "systemd.properties", "command.capture", "systemd.services.list", "systemd.services.read"}
 
@@ -53,7 +52,7 @@ def load(root, expected=None, official=False):
     if expected is not None and expected != digest:
         raise ValueError("package_digest")
     manifest = decode(files["skill.json"], 65536)
-    if not isinstance(manifest, dict) or set(manifest) - MANIFEST_KEYS or MANIFEST_KEYS - {"alias", "resource_collections", "actions"} - manifest.keys():
+    if not isinstance(manifest, dict) or set(manifest) - MANIFEST_KEYS or MANIFEST_KEYS - {"resource_collections", "actions"} - manifest.keys():
         raise ValueError("package_manifest")
     if type(manifest["format"]) is not int or type(manifest["sdk"]) is not int or (manifest["format"], manifest["sdk"]) not in {(1, 1), (2, 2), (3, 3)} or manifest["runtime"] != "python-3.13-v1":
         raise ValueError("package_runtime")
@@ -65,8 +64,6 @@ def load(root, expected=None, official=False):
         raise ValueError("package_id")
     if manifest["id"].startswith("tinywarden/") and not official:
         raise ValueError("package_reserved")
-    if manifest.get("alias") is not None and (not official or manifest["alias"] not in ALIASES):
-        raise ValueError("package_alias")
     if not isinstance(manifest["version"], str) or len(manifest["version"]) > 64 or not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", manifest["version"]):
         raise ValueError("package_version")
     if type(manifest["state_version"]) is not int or not 1 <= manifest["state_version"] <= 65535:

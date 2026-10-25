@@ -9,7 +9,6 @@ The [file map](codebase-map.md) lists exact ownership. Read root
 | Transport and durable identity | `internal/controlplane/`, `internal/config/`, `internal/state/` | Bounded responses, exact retries, locking and recovery |
 | Installation and release trust | `internal/installation/`, `internal/release/`, `deploy/`, `scripts/release/` | Signature vectors, installer/update recovery and complete bundles |
 | Host observation and runtime bridge | `internal/host/`, `internal/skillruntime/` | Filesystem helper, runtime verification and shared execution capacity |
-| Compiled compatibility | `internal/legacy/` | Retained assignments, queues, fixed recipes and pause/resume |
 | Python contracts, host access, isolation and admission | `sdk/python/runtime/{contracts,host,isolation,packages}/` | SDK unit tests in `sdk/python/tests/`; process boundaries in `tests/integration/` |
 | Skill authoring | `sdk/python/skill_tool.py`, `sdk/python/authoring/`, `examples/skills/` | Independent init/validate/test/collect/pack and native sandbox cases |
 | Source and documentation tooling | `scripts/checks/source_check.py`, map roles | Guard tests, generated map and links |
@@ -108,3 +107,25 @@ boot clock for whole-phase limits; do not wrap `Apply` in cancellation or a time
 Trusted input hashing checks root ownership through every original/symlink path
 component, including empty/absent inputs. Native proof of input ownership and
 signed HTTP repository provider behavior belongs on the designated disposable host.
+
+## Enforce platform neutrality
+
+All monitoring uses packages with canonical IDs. Keep domain code/data and real
+skill payloads in skill repositories. Generic tests use synthetic packages;
+independent author examples demonstrate supported APIs. There is no compiled
+observation fallback or skill alias table.
+
+`python3 -B scripts/checks/neutrality.py` checks Linux amd64 and arm64 dependency graphs, actual
+production dependencies and build input files (including native/embedded inputs),
+and every runtime asset. The same check runs
+in Go tests, normal verification and automatic CI. Changes to the reviewed package
+or production/runtime-file inventory require an architectural ownership review; never widen
+it solely to make a check pass. Existing files are also checked for known skill
+identities and recipes; changes inside existing files still need semantic review.
+Preserve generic security deny rules and capability
+intersection when extending host access.
+
+`python3 -B scripts/checks/public_api.py` verifies the source-derived call inventory
+in `docs/public-api.json`. API changes update this inventory and the central human
+reference together. The app checks its pinned copy against actual routes,
+documentation and runtime hashes without a sibling repository dependency.
