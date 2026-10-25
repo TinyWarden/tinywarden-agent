@@ -93,7 +93,7 @@ func (lane *packageLane) tick(context.Context) error {
 		paused := lane.ledger.Paused
 		controlEpoch := lane.monitoring.Epoch()
 		go func() {
-			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx), !paused && lane.runtime.ResourcesReady(lane.ctx))
+			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx), !paused && lane.runtime.ResourcesReady(lane.ctx), lane.runtime.SupportsSDK3())
 			lane.fetch <- packageFetched{controlEpoch: controlEpoch, response: r, err: e}
 		}()
 	}

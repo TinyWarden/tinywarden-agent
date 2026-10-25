@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/TinyWarden/tinywarden-agent/internal/actioncontract"
 	"github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 )
 
@@ -15,6 +16,7 @@ type Coordinator struct {
 	Scope    Scope
 	Registry Registry
 	Call     Transport
+	Schema   int
 }
 
 func instant() (*BootInstant, error) {
@@ -29,7 +31,14 @@ func (c Coordinator) request(j *Journal, kind string, data any) (Request, error)
 	if e != nil {
 		return Request{}, e
 	}
-	return Request{1, c.Scope.HostID, c.Scope.AgentID, c.Scope.Generation, &j.Intent.ID, j.Sequence + 1, kind, raw}, nil
+	return Request{Schema: c.schema(), HostID: c.Scope.HostID, AgentID: c.Scope.AgentID, Generation: c.Scope.Generation, JobID: &j.Intent.ID, Sequence: j.Sequence + 1, Kind: kind, Data: raw, Binding: j.Intent.Binding}, nil
+}
+
+func (c Coordinator) schema() int {
+	if c.Schema == 2 {
+		return 2
+	}
+	return 1
 }
 func (c Coordinator) queue(j *Journal, kind string, data any) error {
 	if len(j.Pending) > 0 || j.Sequence >= MaxEvents {
@@ -51,9 +60,10 @@ func (c Coordinator) queue(j *Journal, kind string, data any) error {
 	return Save(c.Base, *j)
 }
 func (c Coordinator) poll(ctx context.Context, j *Journal) (Reply, error) {
-	request := Request{Schema: 1, HostID: c.Scope.HostID, AgentID: c.Scope.AgentID, Generation: c.Scope.Generation, Kind: "poll", Data: json.RawMessage(`{}`)}
+	request := Request{Schema: c.schema(), HostID: c.Scope.HostID, AgentID: c.Scope.AgentID, Generation: c.Scope.Generation, Kind: "poll", Data: json.RawMessage(`{}`)}
 	if j != nil {
 		request.JobID = &j.Intent.ID
+		request.Binding = j.Intent.Binding
 	}
 	reply, e := c.Call(ctx, request)
 	if e != nil {
@@ -85,7 +95,7 @@ func (c Coordinator) Discover(ctx context.Context) (*Journal, error) {
 	if d.Phase != "preparing" || d.Grant != nil || d.Attention || d.CancelRequested {
 		return nil, errors.New("maintenance_reconciliation_required")
 	}
-	return Begin(c.Base, Intent{d.ID, d.Scope, d.Action, d.ProviderVersion, d.ExpiresAt})
+	return Begin(c.Base, d.Intent())
 }
 
 // exchange acknowledges and consumes a start grant in ONE atomic journal write.
@@ -136,7 +146,14 @@ func (c Coordinator) exchange(ctx context.Context, j *Journal) (Reply, error) {
 				reason := "maintenance_start_expired"
 				j.Phase = "terminal"
 				j.Unsent = "start_declined"
-				j.Result = &Result{Effect: "indexes_changed", Reason: &reason, Facts: json.RawMessage(`{}`)}
+				effect := "indexes_changed"
+				if j.Intent.Binding != nil {
+					effect = "unknown"
+					if definition, err := c.Registry.ResolveIntent(j.Intent); err == nil {
+						effect = definition.PrepareEffect
+					}
+				}
+				j.Result = &Result{Effect: effect, Reason: &reason, Facts: json.RawMessage(`{}`)}
 				if e = Save(c.Base, *j); e != nil {
 					return Reply{}, e
 				}
@@ -171,7 +188,7 @@ func (c Coordinator) exchange(ctx context.Context, j *Journal) (Reply, error) {
 	return reply, nil
 }
 func (c Coordinator) bind(j *Journal, d Delivery) error {
-	if d.ID != j.Intent.ID || d.Scope != j.Intent.Scope || d.Action != j.Intent.Action || d.ProviderVersion != j.Intent.ProviderVersion {
+	if d.ID != j.Intent.ID || d.Scope != j.Intent.Scope || d.Action != j.Intent.Action || d.ProviderVersion != j.Intent.ProviderVersion || d.ExpiresAt != j.Intent.ExpiresAt || !actioncontract.Equal(d.Binding, j.Intent.Binding) || !actioncontract.SameArchive(d.Archive, j.Intent.Archive) || d.InputJSON != j.Intent.InputJSON || d.SettingsJSON != j.Intent.SettingsJSON {
 		return errors.New("maintenance_scope_changed")
 	}
 	if j.PlanSHA != nil && d.ProviderSHA != nil && *j.PlanSHA != *d.ProviderSHA {

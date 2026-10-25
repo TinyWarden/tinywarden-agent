@@ -12,3 +12,5 @@ UMask=0077
 TimeoutStartSec=45s
 NoNewPrivileges=true
 PrivateTmp=true
+Delegate=cpu memory pids
+DelegateSubgroup=supervisor

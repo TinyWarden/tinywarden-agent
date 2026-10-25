@@ -29,6 +29,29 @@ class Workspace(unittest.TestCase):
 
 
 class Authoring(Workspace):
+    def test_action_starter_is_static_and_independently_packaged(self):
+        kit = self.directory / "action-kit"
+        shutil.copytree(ROOT / "sdk/python", kit / "sdk/python", ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(ROOT / "examples/skills/memory-pressure", kit / "examples/skills/memory-pressure")
+        tool = kit / "sdk/python/skill_tool.py"
+        directory = self.directory / "action-skill"
+        code, created = call(tool, "init", directory, "--id", "acme/action-probe",
+                             "--publisher", "Acme", "--with-actions", cwd=self.directory)
+        self.assertEqual(code, 0, created)
+        self.assertEqual(created["sdk"], 3)
+        self.assertEqual(created["actions"][0]["execution_class"], "unprivileged")
+        for name in ("one.zip", "two.zip"):
+            code, packed = call(tool, "pack", directory, "--output", self.directory / name, cwd=self.directory)
+            self.assertEqual(code, 0, packed)
+            self.assertEqual(packed["content_sha256"], created["content_sha256"])
+        self.assertEqual((self.directory / "one.zip").read_bytes(), (self.directory / "two.zip").read_bytes())
+        marker = self.directory / "action-code-ran"
+        source = directory / "actions/entry.py"
+        source.write_text("open(" + repr(str(marker)) + ", 'w').write('imported')\n" + source.read_text())
+        code, admitted = call(tool, "validate", directory, cwd=self.directory)
+        self.assertEqual(code, 0, admitted)
+        self.assertFalse(marker.exists())
+
     def test_independent_kit_and_deterministic_zip(self):
         kit = self.directory / "kit"
         shutil.copytree(ROOT / "sdk/python", kit / "sdk/python", ignore=shutil.ignore_patterns("__pycache__"))

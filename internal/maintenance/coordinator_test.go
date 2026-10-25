@@ -54,7 +54,7 @@ func (s *wireServer) call(_ context.Context, r Request) (Reply, error) {
 	delivery := func() *Delivery {
 		return &Delivery{ID: s.intent.ID, Scope: s.intent.Scope, Action: s.intent.Action, ProviderVersion: 1, Phase: s.phase, ExpiresAt: s.intent.ExpiresAt, Result: s.result, Attention: s.attention, ProviderSHA: &digest, PlanSHA: &envelope, PlanID: &plan, ApprovalID: &approval}
 	}
-	reply := Reply{1, r.HostID, r.AgentID, r.Generation, Capability, now.Format(time.RFC3339Nano), r.Sequence, nil}
+	reply := Reply{Schema: 1, HostID: r.HostID, AgentID: r.AgentID, Generation: r.Generation, Capability: Capability, ServerAt: now.Format(time.RFC3339Nano), AckSequence: r.Sequence}
 	if r.Kind != "poll" {
 		raw, _ := json.Marshal(r)
 		if previous, ok := s.replies[r.Sequence]; ok {
@@ -130,7 +130,7 @@ func coordinatorFixture(t *testing.T) (Coordinator, *Journal, *countingProvider,
 	}
 	p := &countingProvider{}
 	server := &wireServer{intent: intent, phase: "preparing", replies: map[uint64]Reply{}, bodies: map[uint64]string{}}
-	return Coordinator{base, intent.Scope, Registry{{ID: intent.Action, Version: 1, Approval: true, New: func() Provider { return p }}}, server.call}, j, p, server
+	return Coordinator{Base: base, Scope: intent.Scope, Registry: Registry{{ID: intent.Action, Version: 1, Approval: true, New: func() Provider { return p }}}, Call: server.call}, j, p, server
 }
 func TestCoordinatorLostGrantReplyAppliesOnlyOnce(t *testing.T) {
 	c, j, p, s := coordinatorFixture(t)

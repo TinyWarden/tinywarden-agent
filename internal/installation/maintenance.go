@@ -1,21 +1,19 @@
 package installation
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/TinyWarden/tinywarden-agent/internal/actioncontract"
 	"github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 	"github.com/TinyWarden/tinywarden-agent/internal/hostmutation"
 	"github.com/TinyWarden/tinywarden-agent/internal/maintenance"
-	aptmaintenance "github.com/TinyWarden/tinywarden-agent/internal/maintenance/apt"
 	agentrelease "github.com/TinyWarden/tinywarden-agent/internal/release"
 )
 
@@ -47,35 +45,6 @@ func runningDigest() (string, error) {
 		return "", errors.New("maintenance_running_identity_unverified")
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
-}
-func maintenanceStatus(ctx context.Context, base string, m agentrelease.Manifest) error {
-	report := agentrelease.MaintenanceReadiness{Capability: maintenance.Capability, WorkerReady: true, Actions: []agentrelease.MaintenanceActionReadiness{}}
-	for _, name := range maintenanceUnits {
-		if ownedRegistration(base, name) != nil {
-			report.WorkerReady = false
-			continue
-		}
-		template, e := os.ReadFile(filepath.Join(base, "current", "systemd", name))
-		if e != nil {
-			report.WorkerReady = false
-			continue
-		}
-		installed, e := agentrelease.ReadPublic(filepath.Join(base, "updater", "systemd", name), 16384)
-		if e != nil || !bytes.Equal(installed, []byte(strings.ReplaceAll(string(template), "@BASE@", unitQuote(base)))) {
-			report.WorkerReady = false
-		}
-	}
-	if system(ctx, "is-enabled", "--quiet", MaintenanceTimer) != nil || system(ctx, "is-active", "--quiet", MaintenanceTimer) != nil {
-		report.WorkerReady = false
-	}
-	if pending, e := pendingTransaction(base); e != nil || pending != nil {
-		report.WorkerReady = false
-	}
-	missing := aptmaintenance.Prerequisites()
-	for _, id := range []string{"packages.refresh.v1", "packages.upgrade_conservative.v1"} {
-		report.Actions = append(report.Actions, agentrelease.MaintenanceActionReadiness{ID: id, Ready: len(missing) == 0, Missing: missing})
-	}
-	return atomicFile(filepath.Join(base, "updater", "maintenance.json"), agentrelease.MaintenanceStatus{Schema: 1, BinarySHA: m.BinarySHA256, CheckedAt: time.Now().UTC().Format(time.RFC3339Nano), Report: report}, 0644)
 }
 func maintenanceCoordinator(base string, guard *os.File) (maintenance.Coordinator, error) {
 	c, e := config(base)
@@ -109,10 +78,25 @@ func maintenanceCoordinator(base string, guard *os.File) (maintenance.Coordinato
 		}
 		return nil
 	}
-	registry := aptmaintenance.Registry(base, guard, verify)
 	client := controlplane.NewClient(c.ControlPlaneOrigin)
-	return maintenance.Coordinator{Base: base, Scope: scope, Registry: registry, Call: func(ctx context.Context, request maintenance.Request) (maintenance.Reply, error) {
-		return maintenance.Post(ctx, client, s.Credential, request, registry)
+	registry := maintenanceRegistry(base, c.RuntimeAssets, guard, verify, client, s.Credential)
+	return maintenance.Coordinator{Base: base, Scope: scope, Registry: registry, Schema: 2, Call: func(ctx context.Context, request maintenance.Request) (maintenance.Reply, error) {
+		if request.Kind == "poll" && request.JobID == nil {
+			status, _ := readMaintenanceStatus(base)
+			request.Data, _ = json.Marshal(struct {
+				Cursor      *string                           `json:"probe_cursor"`
+				WorkerReady bool                              `json:"worker_ready"`
+				Origins     []actioncontract.OriginPermission `json:"origins"`
+				Readiness   []actioncontract.Readiness        `json:"readiness"`
+			}{status.ProbeCursor, status.Report.WorkerReady, status.Origins, status.ActionReadiness})
+		}
+		reply, err := maintenance.Post(ctx, client, s.Credential, request, registry)
+		if err == nil && request.JobID == nil {
+			if e := maintenanceStatus(ctx, base, m, maintenanceProbeUpdate{reply.Probes, reply.NextProbeCursor}); e != nil {
+				return maintenance.Reply{}, e
+			}
+		}
+		return reply, err
 	}}, nil
 }
 
@@ -162,6 +146,19 @@ func PollMaintenance(ctx context.Context, base string) error {
 		return e
 	}
 	j, e := c.Discover(ctx)
+	// Drain a bounded set of readiness pages while idle. Cursor progress is durable
+	// across polls; no action is invoked by these declarative prerequisite probes.
+	for page := 0; e == nil && j == nil && page < 7; page++ {
+		before, err := readMaintenanceStatus(base)
+		if err != nil || before.ProbeCursor == nil {
+			break
+		}
+		j, e = c.Discover(ctx)
+		after, err := readMaintenanceStatus(base)
+		if err != nil || after.ProbeCursor == nil || *after.ProbeCursor == *before.ProbeCursor {
+			break
+		}
+	}
 	guard.Close()
 	if e != nil || j == nil {
 		return e
@@ -176,7 +173,8 @@ func WorkMaintenance(ctx context.Context, base, job string) error {
 		return e
 	}
 	raw, e := os.ReadFile("/proc/self/cgroup")
-	if e != nil || len(raw) > 4096 || !strings.Contains(string(raw), "/tinywarden-agent-maintenance-worker@"+job+".service\n") {
+	unit := "/tinywarden-agent-maintenance-worker@" + job + ".service"
+	if e != nil || len(raw) > 4096 || !(strings.Contains(string(raw), unit+"\n") || strings.Contains(string(raw), unit+"/supervisor\n")) {
 		return errors.New("maintenance_worker_unit_required")
 	}
 	guard, e := hostmutation.Lock(base)

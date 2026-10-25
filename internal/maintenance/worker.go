@@ -29,9 +29,15 @@ func failure(e error, effect string) Result {
 	reason := "maintenance_worker_interrupted"
 	return Result{Effect: effect, Reason: &reason, Facts: json.RawMessage(`{}`)}
 }
-func (c Coordinator) failed(j *Journal, result Result) error {
+func (c Coordinator) failed(j *Journal, result Result, prepareEffect string) error {
+	// A later phase's no-change refusal cannot erase completed preparation.
+	// Use the definition already bound by Work, even if a later probe is refused.
+	// Keep unknown effects unknown, and pre-preparation refusals unchanged.
+	if j.PreparedAt != nil && prepareEffect == "changed" && result.Effect == "none" {
+		result.Effect = "changed"
+	}
 	if len(result.Facts) == 0 || string(result.Facts) == "{}" {
-		if d, e := c.Registry.Resolve(j.Intent.Action, j.Intent.ProviderVersion); e == nil && len(d.ErrorFacts) > 0 {
+		if d, e := c.Registry.ResolveIntent(j.Intent); e == nil && len(d.ErrorFacts) > 0 {
 			result.Facts = d.ErrorFacts
 		}
 	}
@@ -44,7 +50,7 @@ func (c Coordinator) failed(j *Journal, result Result) error {
 	}
 	return c.queue(j, "failed", map[string]any{"result": result})
 }
-func (c Coordinator) serverState(j *Journal, d Delivery) (bool, error) {
+func (c Coordinator) serverState(j *Journal, d Delivery, prepareEffect string) (bool, error) {
 	if e := c.bind(j, d); e != nil {
 		return false, e
 	}
@@ -73,7 +79,7 @@ func (c Coordinator) serverState(j *Journal, d Delivery) (bool, error) {
 		reason := "maintenance_cancelled"
 		effect := "none"
 		if j.PreparedAt != nil || j.Phase == "preparing" {
-			effect = "indexes_changed"
+			effect = prepareEffect
 		}
 		j.Phase = "terminal"
 		j.Unsent = "cancelled"
@@ -92,11 +98,15 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 	if j.Intent.Scope != c.Scope || j.Acknowledged {
 		return errors.New("maintenance_scope_changed")
 	}
-	definition, e := c.Registry.Resolve(j.Intent.Action, j.Intent.ProviderVersion)
+	definition, e := c.Registry.ResolveIntent(j.Intent)
 	if e != nil {
 		return e
 	}
 	provider := definition.New()
+	prepareEffect := definition.PrepareEffect
+	if prepareEffect == "" {
+		prepareEffect = "indexes_changed"
+	} // Legacy journal fixtures only.
 	// Resuming an applying journal is receipt recovery ONLY. Never call Apply again.
 	if j.Phase == "applying" {
 		if j.PlanSHA == nil || j.Start == nil {
@@ -104,7 +114,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 		}
 		result, e := provider.Recover(*j.PlanSHA, *j.Start)
 		if e != nil {
-			if e = c.failed(j, failure(e, "unknown")); e != nil {
+			if e = c.failed(j, failure(e, "unknown"), prepareEffect); e != nil {
 				return e
 			}
 		} else {
@@ -122,7 +132,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 			}
 		}
 	} else if j.Phase == "preparing" || j.Phase == "downloading" && j.FetchStarted && !j.Downloaded {
-		if e = c.failed(j, failure(errors.New("interrupted"), "indexes_changed")); e != nil {
+		if e = c.failed(j, failure(errors.New("interrupted"), prepareEffect), prepareEffect); e != nil {
 			return e
 		}
 	}
@@ -148,7 +158,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 		if reply.Job == nil {
 			return nil
 		}
-		stop, e := c.serverState(j, *reply.Job)
+		stop, e := c.serverState(j, *reply.Job, prepareEffect)
 		if e != nil || stop {
 			return e
 		}
@@ -166,7 +176,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 			}
 			prepared, e := safePhase(ctx, provider.Prepare)
 			if e != nil {
-				if e = c.failed(j, failure(e, "indexes_changed")); e != nil {
+				if e = c.failed(j, failure(e, prepareEffect), prepareEffect); e != nil {
 					return e
 				}
 				continue
@@ -195,7 +205,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 			}
 		case "awaiting_approval":
 			if e = planFresh(j); e != nil {
-				if e = c.failed(j, failure(e, "indexes_changed")); e != nil {
+				if e = c.failed(j, failure(e, prepareEffect), prepareEffect); e != nil {
 					return e
 				}
 				continue
@@ -240,7 +250,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 			}
 		case "downloading":
 			if e = planFresh(j); e != nil {
-				if e = c.failed(j, failure(e, "indexes_changed")); e != nil {
+				if e = c.failed(j, failure(e, prepareEffect), prepareEffect); e != nil {
 					return e
 				}
 				continue
@@ -251,7 +261,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 					return e
 				}
 				if _, e = safePhase(ctx, func(ctx context.Context) (struct{}, error) { return struct{}{}, provider.Fetch(ctx, *j.PlanSHA) }); e != nil {
-					if e = c.failed(j, failure(e, "indexes_changed")); e != nil {
+					if e = c.failed(j, failure(e, prepareEffect), prepareEffect); e != nil {
 						return e
 					}
 					continue
@@ -268,7 +278,7 @@ func (c Coordinator) Work(ctx context.Context, j *Journal) error {
 			// Only reachable after the atomic StartApply in THIS invocation's exchange.
 			result, e := provider.Apply(*j.PlanSHA, *j.Start)
 			if e != nil {
-				if e = c.failed(j, failure(e, "unknown")); e != nil {
+				if e = c.failed(j, failure(e, "unknown"), prepareEffect); e != nil {
 					return e
 				}
 				continue

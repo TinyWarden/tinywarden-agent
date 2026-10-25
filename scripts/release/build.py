@@ -95,7 +95,8 @@ with tempfile.TemporaryDirectory(prefix="tinywarden-release-") as temporary:
                 "version": version, "source_commit": args.source_commit, "channel": "stable",
                 "os": "debian", "os_version": "13", "architecture": "amd64",
                 "source_min": args.source_min, "source_max": args.source_max, "automatic": True,
-                "required_app_capabilities": ["agent_updates.v1", "agent_update_requests.v1"],
+                "required_app_capabilities": ["agent_updates.v1", "agent_update_requests.v1",
+                                              "skill_actions.v1", "skill_packages.sdk3.v1"],
                 "binary_sha256": descriptor["binary_sha256"], "runtime_sha256": descriptor["runtime_sha256"],
                 "descriptor_sha256": digest(descriptor_path),
                 "asset": {"name": asset, "size": (output / asset).stat().st_size, "sha256": digest(output / asset)}}

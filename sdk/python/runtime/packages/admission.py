@@ -14,7 +14,7 @@ from contracts.notifications import inspect_notifications
 
 MANIFEST_KEYS = {"format", "id", "version", "runtime", "sdk", "state_version", "license",
                  "publisher", "name_key", "description_key", "category", "compatibility",
-                 "defaults", "schedule", "capabilities", "limits", "fields", "alias", "resource_collections"}
+                 "defaults", "schedule", "capabilities", "limits", "fields", "alias", "resource_collections", "actions"}
 REQUIRED = {"skill.json", "skill.py", "settings.schema.json", "observation.schema.json",
             "state.schema.json", "messages/en.json", "README.md", "LICENSE"}
 ALIASES = {"disk-local", "package-updates", "reboot-required", "fstrim-status"}
@@ -53,11 +53,13 @@ def load(root, expected=None, official=False):
     if expected is not None and expected != digest:
         raise ValueError("package_digest")
     manifest = decode(files["skill.json"], 65536)
-    if not isinstance(manifest, dict) or set(manifest) - MANIFEST_KEYS or MANIFEST_KEYS - {"alias", "resource_collections"} - manifest.keys():
+    if not isinstance(manifest, dict) or set(manifest) - MANIFEST_KEYS or MANIFEST_KEYS - {"alias", "resource_collections", "actions"} - manifest.keys():
         raise ValueError("package_manifest")
-    if type(manifest["format"]) is not int or type(manifest["sdk"]) is not int or (manifest["format"], manifest["sdk"]) not in {(1, 1), (2, 2)} or manifest["runtime"] != "python-3.13-v1":
+    if type(manifest["format"]) is not int or type(manifest["sdk"]) is not int or (manifest["format"], manifest["sdk"]) not in {(1, 1), (2, 2), (3, 3)} or manifest["runtime"] != "python-3.13-v1":
         raise ValueError("package_runtime")
     if manifest["sdk"] == 1 and "resource_collections" in manifest:
+        raise ValueError("package_manifest")
+    if manifest["sdk"] < 3 and "actions" in manifest:
         raise ValueError("package_manifest")
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}/[a-z][a-z0-9-]{0,63}", manifest["id"]):
         raise ValueError("package_id")
@@ -123,7 +125,7 @@ def load(root, expected=None, official=False):
         refs += [field["label_key"], field["help_key"]]
     if any(key not in catalog or catalog[key]["parameters"] for key in refs):
         raise ValueError("package_catalog")
-    if manifest["sdk"] == 2:
+    if manifest["sdk"] == 2 or "resource_collections" in manifest:
         from contracts.resources import inspect_resources
         inspect_resources(manifest, schemas, catalog)
     # Names reach shared history even when a package is disabled.
@@ -137,6 +139,9 @@ def load(root, expected=None, official=False):
     encode(manifest)
     metadata = {"manifest": manifest, "schemas": schemas, "catalog": catalog,
                 "content_sha256": digest, "size": size}
+    if "actions" in manifest:
+        from actions.descriptor import admit
+        metadata["actions"] = admit(manifest["actions"], files, catalog)
     if "display.json" in files:
         metadata["display"] = inspect_display(files["display.json"], catalog, schemas["settings"])
     if "notifications.json" in files:

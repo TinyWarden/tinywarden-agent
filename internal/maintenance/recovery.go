@@ -2,6 +2,7 @@ package maintenance
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -18,16 +19,12 @@ type RecoveryCoordinator struct {
 	Verify func(RecoveryScope) error
 }
 
-func (c RecoveryCoordinator) inspector(s RecoveryScope) (Inspector, error) {
-	definition, e := c.Registry.Resolve(s.Action, s.ProviderVersion)
+func (c RecoveryCoordinator) inspector(s RecoveryScope) (Provider, error) {
+	definition, e := c.Registry.ResolveIntent(s.Intent())
 	if e != nil {
 		return nil, e
 	}
-	provider, ok := definition.New().(Inspector)
-	if !ok {
-		return nil, errors.New("maintenance_recovery_unsupported")
-	}
-	return provider, nil
+	return definition.New(), nil
 }
 func (c RecoveryCoordinator) inspect(ctx context.Context, s RecoveryScope, commit func(RecoveryAudit) error) error {
 	if c.Verify == nil {
@@ -40,7 +37,7 @@ func (c RecoveryCoordinator) inspect(ctx context.Context, s RecoveryScope, commi
 	if e != nil {
 		return e
 	}
-	return provider.Inspect(ctx, func(facts map[string]string) error {
+	commitFacts := func(facts any) error {
 		if e := c.Verify(s); e != nil {
 			return e
 		}
@@ -49,11 +46,29 @@ func (c RecoveryCoordinator) inspect(ctx context.Context, s RecoveryScope, commi
 			return e
 		}
 		audit := RecoveryAudit{boot, "clean", false, facts}
-		if e = audit.Validate(); e != nil {
+		if e = audit.ValidateForBinding(s.Binding); e != nil {
 			return e
 		}
 		return commit(audit)
-	})
+	}
+	if s.Binding != nil {
+		inspector, ok := provider.(ActionInspector)
+		if !ok {
+			return errors.New("maintenance_recovery_unsupported")
+		}
+		return inspector.InspectAction(ctx, func(raw json.RawMessage) error {
+			facts, err := NewActionAuditFacts(raw)
+			if err != nil {
+				return err
+			}
+			return commitFacts(facts)
+		})
+	}
+	inspector, ok := provider.(Inspector)
+	if !ok {
+		return errors.New("maintenance_recovery_unsupported")
+	}
+	return inspector.Inspect(ctx, func(facts map[string]string) error { return commitFacts(facts) })
 }
 func (c RecoveryCoordinator) localScope(s RecoveryScope) (string, *string, error) {
 	if s.Validate() != nil {
@@ -63,7 +78,7 @@ func (c RecoveryCoordinator) localScope(s RecoveryScope) (string, *string, error
 	if e != nil {
 		return "", nil, e
 	}
-	expected := (Intent{s.JobID, s.ScopeValue(), s.Action, s.ProviderVersion, s.ExpiresAt}).Fence()
+	expected := s.Intent().Fence()
 	if fence == nil || *fence != expected {
 		return "", nil, errors.New("maintenance_scope_changed")
 	}
@@ -88,7 +103,7 @@ func (c RecoveryCoordinator) prepare(ctx context.Context, token string) (*Recove
 	}
 	reply, e := c.Call(ctx, token, "describe", struct {
 		Schema int `json:"schema_version"`
-	}{1})
+	}{2})
 	if e != nil {
 		return nil, e
 	}
@@ -103,7 +118,7 @@ func (c RecoveryCoordinator) prepare(ctx context.Context, token string) (*Recove
 	if e != nil {
 		return nil, e
 	}
-	r := &RecoveryRecord{Schema: 1, Token: token, State: "prepared", Acceptance: RecoveryAcceptance{Schema: 1, Scope: reply.Scope, LocalAttempt: attempt, JournalState: kind}}
+	r := &RecoveryRecord{Schema: reply.Scope.Schema(), Token: token, State: "prepared", Acceptance: RecoveryAcceptance{Schema: reply.Scope.Schema(), Scope: reply.Scope, LocalAttempt: attempt, JournalState: kind}}
 	e = c.inspect(ctx, reply.Scope, func(a RecoveryAudit) error { r.Acceptance.Audit = a; return SaveRecovery(c.Base, *r) })
 	return r, e
 }
@@ -174,12 +189,12 @@ func (c RecoveryCoordinator) release(ctx context.Context, r *RecoveryRecord) err
 		r.State = "released"
 		return SaveRecovery(c.Base, *r)
 	}
-	expected := (Intent{r.Acceptance.Scope.JobID, r.Acceptance.Scope.ScopeValue(), r.Acceptance.Scope.Action, r.Acceptance.Scope.ProviderVersion, r.Acceptance.Scope.ExpiresAt}).Fence()
+	expected := r.Acceptance.Scope.Intent().Fence()
 	if *fence != expected {
 		return errors.New("maintenance_scope_changed")
 	}
 	return c.inspect(ctx, r.Acceptance.Scope, func(audit RecoveryAudit) error {
-		r.Finalization = &RecoveryFinalization{1, r.Acceptance.Scope.RecoveryID, *r.Accepted.AcceptanceSHA, LocalRelease{r.Acceptance.Scope.JobID, r.Acceptance.LocalAttempt, true, audit}}
+		r.Finalization = &RecoveryFinalization{r.Acceptance.Scope.Schema(), r.Acceptance.Scope.RecoveryID, *r.Accepted.AcceptanceSHA, LocalRelease{r.Acceptance.Scope.JobID, r.Acceptance.LocalAttempt, true, audit}}
 		r.State = "release_intent"
 		if e := SaveRecovery(c.Base, *r); e != nil {
 			return e
@@ -236,7 +251,7 @@ func (c RecoveryCoordinator) archive(r RecoveryRecord) error {
 	if e := os.Mkdir(dir, 0700); e != nil && !os.IsExist(e) {
 		return e
 	}
-	raw, e := readPrivate(recoveryPath(c.Base), MaxControl)
+	raw, e := readPrivate(recoveryPath(c.Base), MaxRecoveryRecord)
 	if e != nil {
 		return e
 	}

@@ -16,7 +16,7 @@ class Broker:
         self.group = group
         self.filesystem_helper = filesystem_helper
         self.protected_paths = protected_paths or []
-        self.raw_limit = (512 if sdk == 2 else 256) * 1024
+        self.raw_limit = (512 if sdk >= 2 else 256) * 1024
         self.calls, self.raw, self.sequence = 0, 0, 0
 
     def handle(self, request, remaining):

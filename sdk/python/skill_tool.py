@@ -25,6 +25,7 @@ def parser():
     starter.add_argument("directory", help=COPY["new_directory"])
     starter.add_argument("--id", required=True, help=COPY["id"])
     starter.add_argument("--publisher", required=True, help=COPY["publisher"])
+    starter.add_argument("--with-actions", action="store_true", help=COPY["with_actions"])
     for name in ("validate", "pack", "test", "collect"):
         command = commands.add_parser(name, help=COPY[name])
         command.add_argument("source", help=COPY["source"])
@@ -34,6 +35,7 @@ def parser():
             command.add_argument("--runtime", default=str(ASSETS), help=COPY["runtime"])
         if name == "test":
             command.add_argument("--cases", help=COPY["cases"])
+            command.add_argument("--action-cases", help=COPY["action_cases"])
         if name == "collect":
             command.add_argument("--approve-declared-grants", action="store_true", required=True, help=COPY["approval"])
             command.add_argument("--settings", help=COPY["settings"])
@@ -44,7 +46,7 @@ def parser():
 
 def execute(args):
     if args.command == "init":
-        return summary(initialize(args.directory, args.id, args.publisher)), 0
+        return summary(initialize(args.directory, args.id, args.publisher, args.with_actions)), 0
     source = Path(args.source).absolute()
     if args.command == "pack":
         output = Path(args.output).resolve()
@@ -63,6 +65,11 @@ def execute(args):
         if args.command == "test":
             cases = Path(args.cases).absolute() if args.cases else directory / "tests.json"
             results = run_cases(runtime, directory, metadata, cases)
+            action_cases = Path(args.action_cases).absolute() if args.action_cases else directory / "action-tests.json"
+            if args.action_cases or action_cases.is_file():
+                from authoring.actions import run_action_cases
+                results["actions"] = run_action_cases(metadata, action_cases)
+                results["passed"] = results["passed"] and results["actions"]["passed"]
             return results, 0 if results["passed"] else 1
         settings = metadata["manifest"]["defaults"]
         if args.settings:

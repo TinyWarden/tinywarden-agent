@@ -19,7 +19,7 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
-def initialize(destination, identity, publisher):
+def initialize(destination, identity, publisher, with_actions=False):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}/[a-z][a-z0-9-]{0,63}", identity) or identity.startswith("tinywarden/"):
         raise ValueError("author_id")
     if not isinstance(publisher, str) or not 1 <= len(publisher) <= 200:
@@ -37,6 +37,9 @@ def initialize(destination, identity, publisher):
         manifest.update(id=identity, publisher=publisher)
         write_json(destination / "skill.json", manifest)
         shutil.copyfile(ROOT / "sdk/python/authoring/starter-cases.json", destination / "tests.json")
+        if with_actions:
+            from authoring.actions import initialize_actions
+            initialize_actions(destination)
         return load(destination)
     except BaseException:
         shutil.rmtree(destination)
@@ -63,10 +66,15 @@ def snapshot(source):
 
 def summary(metadata):
     manifest = metadata["manifest"]
-    return {"id": manifest["id"], "version": manifest["version"],
+    result = {"id": manifest["id"], "version": manifest["version"],
             "runtime": manifest["runtime"], "sdk": manifest["sdk"],
             "content_sha256": metadata["content_sha256"], "unpacked_bytes": metadata["size"],
             "capabilities": manifest["capabilities"], "compatibility": manifest["compatibility"]}
+    if "actions" in metadata:
+        result["actions"] = [{"id": a["descriptor"]["id"],
+            "execution_class": a["descriptor"]["execution_class"],
+            "descriptor_sha256": a["descriptor_sha256"]} for a in metadata["actions"]]
+    return result
 
 
 def create_zip(directory, metadata, destination):

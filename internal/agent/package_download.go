@@ -2,69 +2,23 @@ package agent
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
-	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
+	"github.com/TinyWarden/tinywarden-agent/internal/actioncontract"
 	skillruntime "github.com/TinyWarden/tinywarden-agent/internal/skillruntime"
 	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
 )
 
 // Download into a private temporary file; credentials never reach the Python child.
 func (client *Client) downloadPackage(ctx context.Context, credential string, entry packageAssignment, directory string) (string, error) {
-	if !agentstate.ValidID(entry.ID) || !contentDigest.MatchString(entry.ArchiveDigest) || entry.ArchiveBytes < 1 || entry.ArchiveBytes > 10<<20 {
+	if !agentstate.ValidID(entry.ID) {
 		return "", errPackageState
 	}
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, client.Origin+"/api/v2/agent/skill-packages/"+entry.ID, nil)
-	if err != nil {
-		return "", err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential)
-	request.Header.Set("Accept", "application/zip")
-	response, err := client.HTTP.Do(request)
-	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-	if response.StatusCode != 200 {
-		return "", &controlplane.ResponseError{Status: response.StatusCode, Code: "package_download_rejected", RetryAfter: controlplane.RetryAfter(response.Header.Get("Retry-After"))}
-	}
-	if response.Header.Get("Content-Type") != "application/zip" || response.Header.Get("Content-Encoding") != "" ||
-		response.Header.Get("X-TinyWarden-Archive-SHA256") != entry.ArchiveDigest || response.Header.Get("X-TinyWarden-Content-SHA256") != entry.Digest ||
-		response.ContentLength != -1 && response.ContentLength != entry.ArchiveBytes {
-		return "", errPackageState
-	}
-	file, err := os.CreateTemp(directory, ".download-*.zip")
-	if err != nil {
-		return "", err
-	}
-	name := file.Name()
-	success := false
-	defer func() {
-		file.Close()
-		if !success {
-			os.Remove(name)
-		}
-	}()
-	hash := sha256.New()
-	size, err := io.Copy(io.MultiWriter(file, hash), io.LimitReader(response.Body, entry.ArchiveBytes+1))
-	if err != nil || size != entry.ArchiveBytes || hex.EncodeToString(hash.Sum(nil)) != entry.ArchiveDigest {
-		return "", errPackageState
-	}
-	if file.Sync() != nil {
-		return "", errPackageState
-	}
-	success = true
-	return name, nil
+	return client.FetchArtifact(ctx, credential, "/api/v2/agent/skill-packages/"+entry.ID, entry.Digest, directory,
+		actioncontract.Archive{SHA256: entry.ArchiveDigest, Size: entry.ArchiveBytes})
 }
 
 func (lane *packageLane) ensurePackage(ctx context.Context, entry packageAssignment) (string, error) {

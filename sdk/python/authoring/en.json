@@ -15,5 +15,7 @@
   "approval": "Explicitly approve all manifest capabilities for collection on this machine.",
   "settings": "Effective scalar settings JSON; defaults to the manifest defaults.",
   "filesystem_helper": "Existing trusted agent binary for filesystems.snapshot; no rebuild is needed.",
-  "observation_output": "Optionally write observation JSON to a new file outside the package."
+  "observation_output": "Optionally write observation JSON to a new file outside the package.",
+  "with_actions": "Include an inert SDK3 action example and captured-value fixtures; grants no host execution permission.",
+  "action_cases": "Validate captured action inputs/plans/results/recovery values; executes no action code. Defaults to action-tests.json when present."
 }

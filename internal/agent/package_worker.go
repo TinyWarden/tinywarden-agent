@@ -23,7 +23,7 @@ func (lane *packageLane) allocate(entry packageAssignment, now time.Time) (packa
 	}
 	next := lane.ledger.Sequences[entry.InstallationID] + 1
 	active := packageActive{entry, packageRun{SchemaVersion: 1, ID: id, Sequence: next, AssignmentID: entry.ID, StartedAt: controlplane.Timestamp(now), FinishedAt: controlplane.Timestamp(now), Outcome: "execution_failed", Observation: json.RawMessage("null")}}
-	if entry.Format == 2 {
+	if entry.resources() {
 		active.Run.SchemaVersion = 2
 	}
 	if lane.manualReady(entry, now) {
@@ -116,7 +116,7 @@ func (lane *packageLane) collect(ctx context.Context, active packageActive) pack
 	}
 	if err == nil {
 		run.Outcome = "observed"
-		if active.Entry.Format == 2 {
+		if active.Entry.resources() {
 			var envelope struct {
 				Observation json.RawMessage `json:"observation"`
 				Resources   json.RawMessage `json:"resources"`

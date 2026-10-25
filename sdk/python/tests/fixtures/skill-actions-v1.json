@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "capability": "skill_actions.v1",
+  "invocation": {
+    "schema_version": 1,
+    "binding": {
+      "installation_id": "00000001-1111-4111-8111-111111111111",
+      "skill_id": "example/service-check",
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action_id": "service.check.v1",
+      "action_version": 1,
+      "descriptor_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "permission_revision": "1",
+      "settings_revision": "1",
+      "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "input_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "origin": {
+        "github_id": "12345",
+        "owner_id": "67890"
+      }
+    },
+    "scope": {
+      "host_id": "00000002-1111-4111-8111-111111111111",
+      "agent_id": "00000003-1111-4111-8111-111111111111",
+      "generation": 1
+    },
+    "job_id": "00000004-1111-4111-8111-111111111111",
+    "phase": "prepare",
+    "input_json": "{}",
+    "settings_json": "{}",
+    "plan_json": null,
+    "plan_sha256": null,
+    "receipt_json": null,
+    "start": null
+  },
+  "wire": {
+    "request_schema": 2,
+    "endpoint": "/api/v1/agent/maintenance-jobs",
+    "package_endpoint": "/api/v1/agent/maintenance-jobs/:job/package",
+    "legacy_new_work": false,
+    "recovery_scope_schema": 2
+  }
+}

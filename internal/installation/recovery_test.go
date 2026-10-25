@@ -60,6 +60,23 @@ func TestPolicyDecisionAndRecheck(t *testing.T) {
 	}
 }
 
+func TestActionReleaseRequiresCompatibleAppBeforeAnyUpdate(t *testing.T) {
+	m := agentrelease.Manifest{Version: "0.0.21", SourceMin: "0.0.8", SourceMax: "0.0.21", Automatic: true,
+		Capabilities: []string{"agent_updates.v1", "agent_update_requests.v1", "skill_actions.v1", "skill_packages.sdk3.v1"}}
+	p := agentrelease.Policy{Allowed: true, Candidate: &agentrelease.Candidate{Manifest: "exact signed bytes", Signature: "signature"},
+		Capabilities: []string{"agent_updates.v1", "agent_update_requests.v1"}}
+	for _, automatic := range []bool{false, true} {
+		if got, _ := updateDecision(m, "0.0.20", p, true, automatic); got != "app_required" {
+			t.Fatal("older app admitted an incompatible agent", automatic, got)
+		}
+		ready := p
+		ready.Capabilities = append(append([]string{}, p.Capabilities...), "skill_actions.v1", "skill_packages.sdk3.v1")
+		if got, err := updateDecision(m, "0.0.20", ready, true, automatic); err != nil || got != "available" {
+			t.Fatal("compatible app refused the action release", automatic, got, err)
+		}
+	}
+}
+
 func TestForwardRepairNeverDowngrades(t *testing.T) {
 	d := t.TempDir()
 	if e := os.Symlink("releases/0.0.10", filepath.Join(d, "current")); e != nil {

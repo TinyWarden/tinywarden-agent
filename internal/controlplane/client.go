@@ -19,6 +19,10 @@ import (
 
 const MaxBody = 16 * 1024
 
+// SkillActionsFeatureContext permits schema2 on the explicitly versioned action
+// lane only. The lane still validates the complete reply against its request.
+type SkillActionsFeatureContext struct{}
+
 type Client struct {
 	Origin string
 	HTTP   *http.Client
@@ -98,8 +102,15 @@ func (client *Client) Post(ctx context.Context, path, credential string, input a
 	request.Header.Set("Accept", "application/json")
 	if path == "/api/v2/agent/skill-assignments" {
 		request.Header.Set("X-TinyWarden-Capabilities", "skill_runs.manual.v1")
+		features := []string{}
 		if supports, _ := ctx.Value(ResourceFeatureContext{}).(bool); supports {
-			request.Header.Set("X-TinyWarden-Package-Features", "skill_resources.python313.v1")
+			features = append(features, "skill_resources.python313.v1")
+		}
+		if supports, _ := ctx.Value(SDK3FeatureContext{}).(bool); supports {
+			features = append(features, "skill_packages.sdk3.v1")
+		}
+		if len(features) > 0 {
+			request.Header.Set("X-TinyWarden-Package-Features", strings.Join(features, ","))
 		}
 	}
 	response, err := client.HTTP.Do(request)
@@ -150,7 +161,10 @@ func (client *Client) Post(ctx context.Context, path, credential string, input a
 		return nil, errors.New("invalid response")
 	}
 	resources, _ := ctx.Value(ResourceFeatureContext{}).(bool)
-	if Number(wire, "schema_version") != 1 && !(Number(wire, "schema_version") == 2 && path == "/api/v2/agent/skill-assignments" && resources) {
+	sdk3, _ := ctx.Value(SDK3FeatureContext{}).(bool)
+	actions, _ := ctx.Value(SkillActionsFeatureContext{}).(bool)
+	v2 := path == "/api/v2/agent/skill-assignments" && (resources || sdk3) || actions && (path == "/api/v1/agent/maintenance-jobs" || path == "/api/v1/maintenance-recovery/describe" || path == "/api/v1/maintenance-recovery/accept" || path == "/api/v1/maintenance-recovery/finalize")
+	if Number(wire, "schema_version") != 1 && !(Number(wire, "schema_version") == 2 && v2) {
 		return nil, errors.New("unsupported response version")
 	}
 	return wire, nil
@@ -258,6 +272,7 @@ func (client *Client) Heartbeat(ctx context.Context, credential string, pending 
 
 // ResourceFeatureContext scopes resource protocol negotiation to one request.
 type ResourceFeatureContext struct{}
+type SDK3FeatureContext struct{}
 
 // Request applies strict JSON validation for worker protocols with explicit limits.
 func (client *Client) Request(ctx context.Context, path, credential string, input any, allowCreated bool,

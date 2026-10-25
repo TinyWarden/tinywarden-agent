@@ -31,14 +31,14 @@ Worker ledgers stay with their worker; shared persistence must retain one lock.
 Preserve immutable published releases, signing key ownership and pinned asset
 identity. Check actual formats and supported releases before describing capability.
 
-Maintenance mirror handling follows the central
-[maintenance contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/maintenance-actions.md).
-Validate declared local mirror lists, pin original bytes and protect auxiliary
-cache entries during native use, preserving the existing directory group and mode
-and restoring its original ownership. Mirror-list items never count as package archives.
-`internal/maintenance/apt/helper/00_support.py` keeps anchored input traversal and
-source-tree hashing together so aliases cannot be validated one way and hashed
-another. Mirror transport and cache ownership stay in `helper/15_archives.py`.
+Package maintenance behavior belongs to independently delivered skill code. The
+production agent and generic SDK must not import or embed a domain executor.
+Dependency/runtime boundary tests enforce this. Retired pre-SDK3 work must settle
+using its retained signed old agent before replacement; pending mutation/recovery
+fences block upgrade and purge. Current package-bound work retains its exact code
+through settlement. Once an acknowledged journal is archived, generic cleanup
+releases staging/cache and safe-phase artifacts while retaining replay receipts.
+See the central [action contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md).
 
 Fleet control changes must preserve durable negotiated epochs across every lane,
 quiescent pause acknowledgements and heartbeat independence. Managed reconnection
@@ -70,12 +70,18 @@ Load the affected reference and owning tests. Update its human guide under the
 [documentation policy](https://github.com/TinyWarden/tinywarden/blob/main/docs/contributing/documentation.md).
 Never weaken sandbox/cleanup checks or silently change provenance to fix a prerequisite.
 
-Maintenance foundations live in `internal/maintenance`; Debian adapter source is
-embedded from `internal/maintenance/apt/helper`, outside the Python monitoring SDK.
+Maintenance foundations live in `internal/maintenance`; package delivery and action
+execution live in `internal/skillactions` and the generic SDK action runtime.
+APT resolution, native adapters and transaction policy belong to the Updates skill.
+Historical maintenance formats remain for retained signed-agent recovery; do not
+restore a compiled provider or infer new execution authority from historical jobs.
 The shared `internal/hostmutation` guard preserves the deployed updater lock path.
 Read the [maintenance contracts](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/maintenance-actions.md)
 before adding an action. Native package tests require an explicitly designated
 disposable host; ordinary unit checks cannot establish package-install safety.
+The [action contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md)
+defines retained preparation effects after later failures and required nonnullable
+review-table sources/rows. Keep SDK admission and app-vendored runtime hashes equal.
 
 Read-only reconciliation has its own scoped authorization and immutable outbox;
 it does not reuse a revoked agent credential or infer original apply success from

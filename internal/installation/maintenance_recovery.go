@@ -10,7 +10,6 @@ import (
 	"github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 	"github.com/TinyWarden/tinywarden-agent/internal/hostmutation"
 	"github.com/TinyWarden/tinywarden-agent/internal/maintenance"
-	aptmaintenance "github.com/TinyWarden/tinywarden-agent/internal/maintenance/apt"
 )
 
 func maintenanceRecoveryCoordinator(base string, guard *os.File) (maintenance.RecoveryCoordinator, error) {
@@ -52,7 +51,8 @@ func maintenanceRecoveryCoordinator(base string, guard *os.File) (maintenance.Re
 		}
 		return nil
 	}
-	return maintenance.RecoveryCoordinator{Base: base, Registry: aptmaintenance.Registry(base, guard, verify), Call: maintenance.RecoveryPost(controlplane.NewClient(cfg.ControlPlaneOrigin)),
+	client := controlplane.NewClient(cfg.ControlPlaneOrigin)
+	return maintenance.RecoveryCoordinator{Base: base, Registry: maintenanceRegistry(base, cfg.RuntimeAssets, guard, verify, client, id.Credential), Call: maintenance.RecoveryPost(client),
 		Verify: func(scope maintenance.RecoveryScope) error {
 			if scope.HostID != id.HostID || scope.AgentID != id.AgentID || scope.Generation != id.Generation {
 				return errors.New("maintenance_scope_changed")

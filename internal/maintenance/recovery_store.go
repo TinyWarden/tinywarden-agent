@@ -32,7 +32,7 @@ func RecoveryTokenValid(token string) bool { return recoveryTokenPattern.MatchSt
 func (r RecoveryRecord) Validate() error {
 	bad := errors.New("maintenance_recovery_invalid")
 	a := r.Acceptance
-	if r.Schema != 1 || a.Schema != 1 || a.Scope.Validate() != nil || a.Audit.Validate() != nil || (a.JournalState != "present" && a.JournalState != "orphan_fence") {
+	if r.Schema != a.Scope.Schema() || a.Schema != a.Scope.Schema() || a.Scope.Validate() != nil || a.Audit.ValidateForBinding(a.Scope.Binding) != nil || (a.JournalState != "present" && a.JournalState != "orphan_fence") {
 		return bad
 	}
 	if a.LocalAttempt != nil && !sameValue(a.LocalAttempt, a.Scope.ApplyAttempt) || a.JournalState == "orphan_fence" && a.LocalAttempt != nil {
@@ -64,7 +64,7 @@ func (r RecoveryRecord) Validate() error {
 	}
 	if r.Finalization != nil {
 		f := r.Finalization
-		if f.Schema != 1 || f.RecoveryID != a.Scope.RecoveryID || r.Accepted == nil || f.AcceptanceSHA != *r.Accepted.AcceptanceSHA || f.LocalRelease.JobID != a.Scope.JobID || !f.LocalRelease.Released || !sameValue(f.LocalRelease.LocalAttempt, a.LocalAttempt) || f.LocalRelease.Audit.Validate() != nil {
+		if f.Schema != a.Scope.Schema() || f.RecoveryID != a.Scope.RecoveryID || r.Accepted == nil || f.AcceptanceSHA != *r.Accepted.AcceptanceSHA || f.LocalRelease.JobID != a.Scope.JobID || !f.LocalRelease.Released || !sameValue(f.LocalRelease.LocalAttempt, a.LocalAttempt) || f.LocalRelease.Audit.ValidateForBinding(a.Scope.Binding) != nil {
 			return bad
 		}
 	}
@@ -83,12 +83,15 @@ func recoveryPath(base string) string {
 	return filepath.Join(base, "updater", "private", "maintenance-recovery.json")
 }
 func LoadRecovery(base string) (*RecoveryRecord, error) {
-	raw, e := readPrivate(recoveryPath(base), MaxControl)
+	raw, e := readPrivate(recoveryPath(base), MaxRecoveryRecord)
 	if e != nil {
 		return nil, e
 	}
 	var r RecoveryRecord
 	if controlplane.Decode(raw, &r) != nil || r.Validate() != nil {
+		return nil, errors.New("maintenance_recovery_invalid")
+	}
+	if r.Schema == 1 && len(raw) > MaxControl {
 		return nil, errors.New("maintenance_recovery_invalid")
 	}
 	return &r, nil
@@ -98,7 +101,7 @@ func SaveRecovery(base string, r RecoveryRecord) error {
 		return errors.New("maintenance_recovery_invalid")
 	}
 	raw, e := json.Marshal(r)
-	if e != nil || len(raw) > MaxControl {
+	if e != nil || len(raw) > MaxRecoveryRecord || r.Schema == 1 && len(raw) > MaxControl {
 		return errors.New("maintenance_recovery_invalid")
 	}
 	return hostmutation.PrivateWrite(recoveryPath(base), raw)
@@ -128,7 +131,7 @@ func closeRecoveredJournal(base string, r *RecoveryRecord) error {
 	if os.IsNotExist(e) && r.Acceptance.JournalState == "orphan_fence" {
 		s := r.Acceptance.Scope
 		reason := "maintenance_reconciled_unknown"
-		j = &Journal{Version: 1, Intent: Intent{s.JobID, s.ScopeValue(), s.Action, s.ProviderVersion, s.ExpiresAt}, Result: &Result{Effect: "unknown", Reason: &reason, Facts: json.RawMessage(`{}`)}}
+		j = &Journal{Version: s.Schema(), Intent: s.Intent(), Result: &Result{Effect: "unknown", Reason: &reason, Facts: json.RawMessage(`{}`)}}
 	} else if e != nil {
 		return e
 	}
@@ -164,6 +167,9 @@ func releasedJournal(base string, r *RecoveryRecord) error {
 }
 func matchRecoveryJournal(j Journal, s RecoveryScope) error {
 	if j.Intent.ID != s.JobID || j.Intent.Scope != s.ScopeValue() || j.Intent.Action != s.Action || j.Intent.ProviderVersion != s.ProviderVersion {
+		return errors.New("maintenance_scope_changed")
+	}
+	if (j.Intent.Binding != nil || s.Binding != nil) && !sameValue(j.Intent, s.Intent()) {
 		return errors.New("maintenance_scope_changed")
 	}
 	for _, pair := range [][2]*string{{j.PlanSHA, s.ProviderSHA}, {j.EnvelopeSHA, s.PlanSHA}, {j.PlanID, s.PlanID}, {j.ApprovalID, s.ApprovalID}, {j.ApplyAttempt, s.ApplyAttempt}} {

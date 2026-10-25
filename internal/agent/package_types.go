@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
 
@@ -23,6 +24,7 @@ type packageManualRequest struct {
 }
 type packageAssignment struct {
 	Format         int                   `json:"package_format,omitempty"`
+	ResourceMode   bool                  `json:"resource_mode,omitempty"`
 	Manual         *packageManualRequest `json:"manual_request,omitempty"`
 	InstallationID string                `json:"installation_id"`
 	ID             string                `json:"assignment_id,omitempty"`
@@ -83,6 +85,13 @@ func validPackageResponse(scope agentstate.Scope, response packageResponse) bool
 		response.Assignments == nil || !agentstate.ValidInstant(response.IssuedAt) || !agentstate.ValidInstant(response.ValidUntil) {
 		return false
 	}
+	seenFeatures := map[string]bool{}
+	for _, feature := range response.Features {
+		if response.SchemaVersion != 2 || seenFeatures[feature] || feature != "skill_resources.python313.v1" && feature != "skill_packages.sdk3.v1" {
+			return false
+		}
+		seenFeatures[feature] = true
+	}
 	issued, _ := time.Parse(time.RFC3339Nano, response.IssuedAt)
 	expires, _ := time.Parse(time.RFC3339Nano, response.ValidUntil)
 	if !expires.After(issued) || expires.Sub(issued) > 5*time.Minute {
@@ -94,10 +103,13 @@ func validPackageResponse(scope agentstate.Scope, response packageResponse) bool
 			return false
 		}
 		ids[entry.InstallationID] = true
-		if entry.Format != 0 && entry.Format != 1 && entry.Format != 2 {
+		if entry.Format < 0 || entry.Format > 3 || entry.ResourceMode && entry.Format != 3 {
 			return false
 		}
-		if entry.Format == 2 && (response.SchemaVersion != 2 || len(response.Features) != 1 || response.Features[0] != "skill_resources.python313.v1") {
+		if entry.resources() && (response.SchemaVersion != 2 || !slices.Contains(response.Features, "skill_resources.python313.v1")) {
+			return false
+		}
+		if entry.Format == 3 && (response.SchemaVersion != 2 || !slices.Contains(response.Features, "skill_packages.sdk3.v1")) {
 			return false
 		}
 		if entry.ArchiveDigest != "" && (!contentDigest.MatchString(entry.ArchiveDigest) || entry.ArchiveBytes < 1 || entry.ArchiveBytes > 10<<20) || entry.ArchiveDigest == "" && entry.ArchiveBytes != 0 {
@@ -121,4 +133,8 @@ func validPackageResponse(scope agentstate.Scope, response packageResponse) bool
 		}
 	}
 	return true
+}
+
+func (entry packageAssignment) resources() bool {
+	return entry.Format == 2 || entry.Format == 3 && entry.ResourceMode
 }

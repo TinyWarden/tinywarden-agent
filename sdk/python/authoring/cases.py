@@ -70,7 +70,7 @@ def run_case(runtime, directory, metadata, case):
                "settings": settings, "observation": case["observation"], "previous_state": previous,
                "state": None, "captured_at": captured, "received_at": received,
                "now": now, "evidence_expires_at": expires}
-    if metadata["manifest"]["sdk"] == 2:
+    if metadata["manifest"].get("resource_collections"):
         context["resource_epochs"] = case.get("resource_epochs", {
             key: {target: "fixture-" + str(i) for i, target in enumerate(settings[spec["selection_field"]])}
             for key, spec in metadata["manifest"]["resource_collections"].items()})
@@ -80,7 +80,7 @@ def run_case(runtime, directory, metadata, case):
     timeline = invoke(runtime, directory, metadata, "evaluate", context)
     if "state" in expected and state != expected["state"]:
         raise ValueError("fixture_state_mismatch")
-    statuses = [subject["status"] for entry in timeline for subject in entry["subjects"]] if metadata["manifest"]["sdk"] == 2 else [entry["status"] for entry in timeline]
+    statuses = [subject["status"] for entry in timeline for subject in entry["subjects"]] if metadata["manifest"].get("resource_collections") else [entry["status"] for entry in timeline]
     if "statuses" in expected and statuses != expected["statuses"]:
         raise ValueError("fixture_status_mismatch")
     if "timeline" in expected and timeline != expected["timeline"]:

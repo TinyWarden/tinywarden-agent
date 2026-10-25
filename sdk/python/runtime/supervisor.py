@@ -102,7 +102,7 @@ def invoke(request):
             broker = Broker(metadata["manifest"]["capabilities"], request.get("grants", []),
                             request.get("ceiling", []), group, policy, request.get("filesystem_helper"), request.get("protected_paths", []), sdk=metadata["manifest"]["sdk"]).handle
             channels = (parent_read, parent_write)
-        sdk2 = metadata["manifest"]["sdk"] == 2
+        sdk2 = bool(metadata["manifest"].get("resource_collections"))
         if sdk2 and function in {"collect", "validate_settings"}:
             from contracts.resources import selection
             selection(metadata, arguments)

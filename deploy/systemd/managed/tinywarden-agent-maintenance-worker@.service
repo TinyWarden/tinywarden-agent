@@ -18,3 +18,5 @@ SendSIGKILL=no
 Restart=no
 NoNewPrivileges=true
 PrivateTmp=true
+Delegate=cpu memory pids
+DelegateSubgroup=supervisor

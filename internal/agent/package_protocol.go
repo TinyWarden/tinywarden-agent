@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"slices"
 
 	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 	agentstate "github.com/TinyWarden/tinywarden-agent/internal/state"
@@ -11,6 +12,10 @@ import (
 func (client *Client) fetchPackages(ctx context.Context, state agentstate.State, ready bool, resources ...bool) (*packageResponse, error) {
 	if len(resources) > 0 && resources[0] {
 		ctx = context.WithValue(ctx, resourceFeatureContext{}, true)
+	}
+	sdk3 := len(resources) > 1 && resources[1]
+	if sdk3 {
+		ctx = context.WithValue(ctx, controlplane.SDK3FeatureContext{}, true)
 	}
 	wire, err := client.Request(ctx, "/api/v2/agent/skill-assignments", state.Credential,
 		struct {
@@ -26,6 +31,9 @@ func (client *Client) fetchPackages(ctx context.Context, state agentstate.State,
 	}
 	var response packageResponse
 	if controlplane.Decode(body, &response) != nil || !validPackageResponse(agentstate.ScopeFor(client.Origin, state), response) {
+		return nil, errPackageState
+	}
+	if slices.Contains(response.Features, "skill_packages.sdk3.v1") && !sdk3 {
 		return nil, errPackageState
 	}
 	return &response, nil

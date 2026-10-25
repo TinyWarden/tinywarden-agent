@@ -12,6 +12,21 @@ from test_authoring import Workspace, ROOT, TOOL, call
 
 
 class AuthorIsolation(Workspace):
+    def test_sdk3_monitor_and_collection_never_enter_action_module(self):
+        source = self.directory / "actions"
+        code, created = call(TOOL, "init", source, "--id", "author/action-monitor",
+                             "--publisher", "Author", "--with-actions", cwd=self.directory)
+        self.assertEqual(code, 0, created)
+        entry = source / "actions/entry.py"
+        entry.write_text("raise RuntimeError('action was invoked by monitoring')\n" + entry.read_text())
+        code, result = call(TOOL, "test", source, cwd=self.directory)
+        self.assertEqual(code, 0, result)
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["actions"]["code_executed"])
+        code, result = call(TOOL, "collect", source, "--approve-declared-grants", cwd=self.directory)
+        self.assertEqual(code, 0, result)
+        self.assertGreater(int(result["observation"]["total_bytes"]), 0)
+
     def test_platform_clock_contract_without_skill_tolerances(self):
         path = self.skill / "skill.py"
         path.write_text(path.read_text() + '''

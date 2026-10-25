@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/TinyWarden/tinywarden-agent/internal/actioncontract"
 	"github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 	"github.com/TinyWarden/tinywarden-agent/internal/hostmutation"
 )
@@ -71,7 +72,11 @@ func (j Journal) Validate() error {
 	if j.Recovery != nil && (!j.Recovery.Valid() || !j.Acknowledged || j.Phase != "terminal" || j.Attention) {
 		return errors.New("maintenance_journal_invalid")
 	}
-	if j.Version != 1 || j.Intent.Validate() != nil || j.Sequence > MaxEvents || j.UploadedBytes < 0 || j.UploadedBytes > MaxPlan {
+	expectedVersion := 1
+	if j.Intent.Binding != nil {
+		expectedVersion = 2
+	}
+	if j.Version != expectedVersion || j.Intent.Validate() != nil || j.Sequence > MaxEvents || j.UploadedBytes < 0 || j.UploadedBytes > MaxPlan {
 		return errors.New("maintenance_journal_invalid")
 	}
 	if j.PlanSHA != nil && !digestPattern.MatchString(*j.PlanSHA) {
@@ -90,7 +95,7 @@ func (j Journal) Validate() error {
 	}
 	if len(j.Pending) > 0 {
 		var request Request
-		if controlplane.Decode(j.Pending, &request) != nil || request.JobID == nil || *request.JobID != j.Intent.ID || request.ScopeValue() != j.Intent.Scope || request.Sequence != j.Sequence+1 || j.PendingOrigin == nil {
+		if controlplane.Decode(j.Pending, &request) != nil || request.Schema != expectedVersion || !actioncontract.Equal(request.Binding, j.Intent.Binding) || request.JobID == nil || *request.JobID != j.Intent.ID || request.ScopeValue() != j.Intent.Scope || request.Sequence != j.Sequence+1 || j.PendingOrigin == nil {
 			return errors.New("maintenance_journal_invalid")
 		}
 	} else if j.PendingOrigin != nil {
@@ -118,7 +123,7 @@ func (j Journal) Validate() error {
 	return nil
 }
 func Load(base string) (*Journal, error) {
-	raw, e := readPrivate(journalPath(base), MaxControl)
+	raw, e := readPrivate(journalPath(base), MaxJournal)
 	if e != nil {
 		return nil, e
 	}
@@ -132,6 +137,9 @@ func Load(base string) (*Journal, error) {
 	if j.Validate() != nil {
 		return nil, errors.New("maintenance_journal_invalid")
 	}
+	if j.Version == 1 && len(raw) > MaxControl {
+		return nil, errors.New("maintenance_journal_invalid")
+	}
 	return &j, nil
 }
 func Save(base string, j Journal) error {
@@ -139,7 +147,7 @@ func Save(base string, j Journal) error {
 		return errors.New("maintenance_journal_invalid")
 	}
 	raw, e := json.Marshal(j)
-	if e != nil || len(raw) > MaxControl {
+	if e != nil || len(raw) > MaxJournal || j.Version == 1 && len(raw) > MaxControl {
 		return errors.New("maintenance_journal_invalid")
 	}
 	return hostmutation.PrivateWrite(journalPath(base), raw)
@@ -150,7 +158,7 @@ func Begin(base string, i Intent) (*Journal, error) {
 	if i.Validate() != nil {
 		return nil, errors.New("maintenance_scope_invalid")
 	}
-	if _, e := readPrivate(filepath.Join(base, "updater", "private", "maintenance-history", i.ID+".json"), MaxControl); e == nil || !os.IsNotExist(e) {
+	if _, e := readPrivate(filepath.Join(base, "updater", "private", "maintenance-history", i.ID+".json"), MaxJournal); e == nil || !os.IsNotExist(e) {
 		return nil, errors.New("maintenance_replayed_intent")
 	}
 	if old, e := Load(base); e == nil {
@@ -166,7 +174,11 @@ func Begin(base string, i Intent) (*Journal, error) {
 	if e := hostmutation.WriteFence(base, i.Fence()); e != nil {
 		return nil, e
 	}
-	j := Journal{Version: 1, Intent: i, Phase: "queued"}
+	version := 1
+	if i.Binding != nil {
+		version = 2
+	}
+	j := Journal{Version: version, Intent: i, Phase: "queued"}
 	if e := Save(base, j); e != nil {
 		return nil, e
 	}
@@ -259,18 +271,21 @@ func archiveAcknowledged(base string, j Journal) error {
 	if e = os.Mkdir(dir, 0700); e != nil && !os.IsExist(e) {
 		return e
 	}
-	raw, e := readPrivate(journalPath(base), MaxControl)
+	raw, e := readPrivate(journalPath(base), MaxJournal)
 	if e != nil {
 		return e
 	}
 	target := filepath.Join(dir, j.Intent.ID+".json")
-	if prior, e := readPrivate(target, MaxControl); e == nil {
+	if prior, e := readPrivate(target, MaxJournal); e == nil {
 		if !bytes.Equal(prior, raw) {
 			return errors.New("maintenance_journal_invalid")
 		}
 	} else if !os.IsNotExist(e) {
 		return e
 	} else if e = hostmutation.PrivateWrite(target, raw); e != nil {
+		return e
+	}
+	if e = cleanupArchivedAction(base, j); e != nil {
 		return e
 	}
 	if e = os.Remove(journalPath(base)); e != nil {

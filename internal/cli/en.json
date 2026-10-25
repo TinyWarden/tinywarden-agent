@@ -24,15 +24,19 @@
   },
   "maintenance": {
     "root": "Maintenance administration requires root. Monitoring continues without root.",
-    "arguments": "Choose maintenance --poll, --job, --status or --reconcile with the managed --config path. Use one authorization input option only with --reconcile.",
+    "arguments": "Choose maintenance --poll, --job, --status, --reconcile or --action-policy with the managed --config path. Use authorization input options only with --reconcile and origin/class options only with --action-policy.",
     "configHelp": "managed config.json path",
     "pollHelp": "check authenticated maintenance requests and dispatch the managed worker",
     "jobHelp": "owned maintenance job identifier; managed worker use only",
     "statusHelp": "display the saved local maintenance receipt without changing packages",
-    "reconcileHelp": "inspect package integrity read-only and reconcile a scoped retained job; never repair or retry installation",
+    "reconcileHelp": "inspect the retained action's state and reconcile its scoped job; never repair or retry execution",
     "authorizationStdinHelp": "read the one-time recovery authorization from standard input instead of a hidden prompt",
     "recoveryPrompt": "Paste recovery authorization (hidden): ",
     "recoveryInput": "Use a hidden terminal prompt or --authorization-stdin with one valid recovery authorization.",
-    "authorizationPromptHelp": "request a replacement recovery authorization through the hidden terminal prompt"
+    "authorizationPromptHelp": "request a replacement recovery authorization through the hidden terminal prompt",
+    "policyHelp": "show the local repository/action execution policy; change it only with explicit --origin and --allow or --deny",
+    "originHelp": "verified numeric GitHub repository ID and owner ID, separated by a colon",
+    "allowHelp": "explicitly trust this repository's unprivileged or host_admin action code; package and transaction approvals are still required",
+    "denyHelp": "remove this repository's unprivileged or host_admin execution permission"
   }
 }
