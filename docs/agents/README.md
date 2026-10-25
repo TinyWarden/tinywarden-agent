@@ -31,6 +31,15 @@ Worker ledgers stay with their worker; shared persistence must retain one lock.
 Preserve immutable published releases, signing key ownership and pinned asset
 identity. Check actual formats and supported releases before describing capability.
 
+Maintenance mirror handling follows the central
+[maintenance contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/maintenance-actions.md).
+Validate declared local mirror lists, pin original bytes and protect auxiliary
+cache entries during native use, preserving the existing directory group and mode
+and restoring its original ownership. Mirror-list items never count as package archives.
+`internal/maintenance/apt/helper/00_support.py` keeps anchored input traversal and
+source-tree hashing together so aliases cannot be validated one way and hashed
+another. Mirror transport and cache ownership stay in `helper/15_archives.py`.
+
 Fleet control changes must preserve durable negotiated epochs across every lane,
 quiescent pause acknowledgements and heartbeat independence. Managed reconnection
 checks target identity before consuming a replacement code. See

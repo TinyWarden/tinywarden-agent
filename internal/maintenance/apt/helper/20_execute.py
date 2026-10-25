@@ -9,7 +9,7 @@ def approved_plan(expected):
 
 def fetch(expected):
     audit()
-    with package_lock():
+    with package_lock(), protected_mirror_cache():
         cache, plan = approved_plan(expected)
         with apt_pkg.FileLock(apt_pkg.config.find_dir('Dir::Cache::archives') + 'lock'):
             _, fetcher, progress = acquisition(cache, plan)
@@ -17,7 +17,7 @@ def fetch(expected):
                 raise MaintenanceError('maintenance_download_failed')
             if apt_pkg.config.find('APT::Sandbox::User', '_apt') != '_apt':
                 raise MaintenanceError('maintenance_download_sandbox')
-            verify_inputs(fetcher, plan, installed_metadata(cache))
+            verify_inputs(fetcher, plan, installed_metadata(cache), mirror_sources(cache))
         return {'sha256': digest(plan), 'downloaded': True}
 
 
@@ -25,7 +25,7 @@ def apply(expected, start):
     global EFFECT
     # The coordinator must durably consume its current start grant before invocation.
     audit()
-    with package_lock():
+    with package_lock(), protected_mirror_cache():
         cache, plan = approved_plan(expected)
         if not plan['packages']:
             return {'outcome': 'no_changes', 'effect': 'none'}
@@ -37,7 +37,7 @@ def apply(expected, start):
             pm, fetcher, _ = acquisition(cache, plan)
             if fetcher.fetch_needed:
                 raise MaintenanceError('maintenance_download_required')
-            verify_inputs(fetcher, plan, installed_metadata(cache))
+            verify_inputs(fetcher, plan, installed_metadata(cache), mirror_sources(cache))
             start_allowed(start)
             # SAME PackageManager. No acquire.run, repair, refetch or second native attempt.
             EFFECT = 'unknown'

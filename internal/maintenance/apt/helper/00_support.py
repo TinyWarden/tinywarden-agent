@@ -94,7 +94,7 @@ def file_digest(path):
     finally:
         os.close(fd)
 
-def tree_digest(paths, empty_scratch=()):
+def tree_digest(paths, empty_scratch=(), scratch_aliases=None):
     files = []
     for base in list(paths):
         if not base:
@@ -105,13 +105,23 @@ def tree_digest(paths, empty_scratch=()):
         elif path.is_dir():
             os.close(open_input(path, directory=True))
             for child in path.rglob('*'):
+                if any(scratch in child.parents for scratch in empty_scratch):
+                    continue  # The declared scratch directory was validated as a unit.
                 if child.name == 'lock' or 'partial' in child.parts:
                     continue
                 if child in empty_scratch:
-                    # libapt creates this _apt-owned scratch directory. HTTP(S)
-                    # plans use no auxiliary method inputs; nonempty is unsupported.
-                    if child.is_symlink() or not child.is_dir() or next(child.iterdir(), None) is not None:
+                    # libapt's local mirror cache contains root-owned aliases to
+                    # declared protected lists. Hash the original inputs, not this
+                    # _apt-writable directory; no other auxiliary data is accepted.
+                    if child.is_symlink() or not child.is_dir():
                         raise MaintenanceError('maintenance_input_invalid')
+                    for alias in child.iterdir():
+                        target = (scratch_aliases or {}).get(alias)
+                        info = alias.lstat()
+                        if (target is None or not stat.S_ISLNK(info.st_mode) or
+                                info.st_uid != 0 or os.readlink(alias) != str(target)):
+                            raise MaintenanceError('maintenance_input_invalid')
+                        file_digest(target)
                 elif child.is_dir():
                     os.close(open_input(child, directory=True))
                 elif child.is_file():

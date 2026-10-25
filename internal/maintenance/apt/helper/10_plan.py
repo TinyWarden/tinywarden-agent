@@ -43,6 +43,7 @@ def resolve():
     cache = apt.Cache(progress=apt.progress.base.OpProgress())
     if cache.broken_count:
         raise MaintenanceError('maintenance_package_state')
+    mirrors = mirror_sources(cache)
     valid_indexes(cache)
     cache.upgrade(dist_upgrade=False)
     packages = []
@@ -58,7 +59,7 @@ def resolve():
             raise MaintenanceError('maintenance_repository_policy')
         if not re.fullmatch('[0-9a-f]{64}', new.sha256):
             raise MaintenanceError('maintenance_archive_invalid')
-        archive_methods(new.uris)
+        archive_methods(new.uris, mirrors)
         changes[(package.shortname, old.architecture)] = dict(installed[(package.shortname, old.architecture)], section=new.section)
         packages.append({'name': package.shortname, 'architecture': new.architecture,
                          'installed_version': old.version, 'candidate_version': new.version,
@@ -75,13 +76,14 @@ def resolve():
                    (p.shortname, p.installed.architecture) not in changed], key=lambda p: (p['name'], p['architecture']))
     if len(kept) > MAX_ROWS:
         raise MaintenanceError('maintenance_plan_limit')
-    sources = trusted_sources()
+    sources = [*trusted_sources(), *mirrors.values()]
     plan = {'schema_version': 1, 'action': 'packages.upgrade_conservative.v1', 'provider_version': 1,
             'policy_sha256': digest(POLICY),
             'state_sha256': file_digest(apt_pkg.config.find_file('Dir::State::status')),
             'sources_sha256': tree_digest(sources),
             'indexes_sha256': tree_digest([apt_pkg.config.find_dir('Dir::State::lists')],
-                                         [Path(apt_pkg.config.find_dir('Dir::State::lists')) / 'auxfiles']),
+                                         [Path(apt_pkg.config.find_dir('Dir::State::lists')) / 'auxfiles'],
+                                         mirror_aliases(mirrors)),
             'config_sha256': digest(apt_pkg.config.dump()), 'local_sha256': local_identity(),
             'selection_sha256': selections(cache),
             'packages': packages, 'kept_back': kept,
@@ -153,7 +155,7 @@ def capacity(plan, installed=None, changes=None):
 
 def prepare():
     audit()
-    with package_lock():
+    with package_lock(), protected_mirror_cache():
         cache, plan = resolve()
         capacity(plan, installed=installed_metadata(cache))
         return {'plan': plan, 'sha256': digest(plan)}
