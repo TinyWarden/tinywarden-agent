@@ -86,6 +86,7 @@
     "internal/installation/uninstall.go",
     "internal/installation/units.go",
     "internal/installation/update.go",
+    "internal/installation/work_wait.go",
     "internal/maintenance/action_audit.go",
     "internal/maintenance/action_cleanup.go",
     "internal/maintenance/artifacts.go",

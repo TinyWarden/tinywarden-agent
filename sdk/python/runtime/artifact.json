@@ -6,7 +6,7 @@
   "probe_sha256": "8f70f51611b553f558a41ef9194675139f3f608217b713e033488e933d2f40b2",
   "files": {
     "actions/__init__.py": "05a35c7844cf81d0c7f8c5de20357e0f326c0abd2ae29181cbf8d53e59829d04",
-    "actions/descriptor.py": "86d9dd017d92554ffd79f5442c9303caa3b3e40963de20e096980284e58f78b7",
+    "actions/descriptor.py": "55217a860649ba17ed52460e1566d4d741422b9d2630d9481f917ee12f5d4d66",
     "actions/envelope.py": "081a9aeb48bcee8fe01d94a1497dd4b46d0458958f86d393dd8f496651c6a1d0",
     "actions/guardian.py": "396956fc9241706c84a1c8236cb00e00442c9185d83d407ae12d61c8d0835322",
     "actions/guest.py": "bcad96a4cbe0d571eedae2150acfe47832e406059282bf922864af3fcfecc81c",

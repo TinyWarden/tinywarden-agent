@@ -118,7 +118,9 @@ def admit(items, files, catalog):
         raise ValueError("action_descriptor")
     admitted, seen = [], set()
     for item in items:
-        exact(item, FIELDS)
+        exact(item, FIELDS | ({"verification"} if isinstance(item, dict) and "verification" in item else set()))
+        if "verification" in item and (not isinstance(item["verification"], str) or item["verification"] not in {"local", "host_health"}):
+            raise ValueError("action_verification")
         identifier(item["id"])
         if item["id"] in seen or type(item["version"]) is not int or not 1 <= item["version"] <= 65535:
             raise ValueError("action_identifier")

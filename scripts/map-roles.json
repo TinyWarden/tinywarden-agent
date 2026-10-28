@@ -144,6 +144,8 @@
   "internal/installation/uninstall.go": "Managed platform uninstall: root-only installation, update or recovery with preserved agent state.",
   "internal/installation/units.go": "Managed platform units: root-only installation, update or recovery with preserved agent state.",
   "internal/installation/update.go": "Managed platform update: root-only installation, update or recovery with preserved agent state.",
+  "internal/installation/work_wait.go": "Generic bounded work-wait transport and private hint cursor; ordinary discovery retains authority.",
+  "internal/installation/work_wait_test.go": "Work-hint validation, bounded failure/cache fallback, ordinary authenticated polling and cancellation.",
   "internal/maintenance/acknowledgement_test.go": "Completion crash-boundary recovery without replay, foreign/corrupt fencing and ordered recovery exclusion.",
   "internal/maintenance/action_audit.go": "Package-bound journals, replay authority and typed recovery facts; no skill semantics.",
   "internal/maintenance/action_audit_test.go": "Package-bound journals, replay authority and typed recovery facts; no skill semantics.",

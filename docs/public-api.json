@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "runtime_artifact_sha256": "fa6ebd6153acce009cf9d31d32d1ba914801cfef7b56226e987304342be2e767",
+  "runtime_artifact_sha256": "7ae65a849df8443c6201a710f1230372fbf5b4cd321c5a98936ebe9051654eba",
   "agent_http_paths": [
     "/api/v1/agent/enroll",
     "/api/v1/agent/heartbeat",
@@ -18,7 +18,8 @@
     "/api/v2/agent/skill-assignments",
     "/api/v2/agent/skill-packages/{assignment_id}",
     "/api/v2/agent/skill-run-starts",
-    "/api/v2/agent/skill-runs"
+    "/api/v2/agent/skill-runs",
+    "/api/v2/agent/work-wait"
   ],
   "host_operations": [
     "command.capture",

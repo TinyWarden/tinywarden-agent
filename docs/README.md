@@ -16,3 +16,12 @@ This repository owns the Go host agent and generic Python SDK/runtime. Official
 monitoring packages live in the separate skills repository. Deployment templates
 are in deploy/, SDK source and unit tests in sdk/python/, runnable examples in
 examples/skills/, and native process acceptance in tests/integration/.
+
+
+Agent 0.0.24 adds a generic bounded work-wait endpoint and supports the optional
+`local`/`host_health` action verification policy. The policy is declared by each
+skill and documented in the [action contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#choosing-verification).
+The agent carries no APT refresh or upgrade recipe. Existing descriptors without
+the new field retain their previous behavior; packages that use it need 0.0.24+.
+Failed waits or hint-cache faults use bounded backoff before ordinary authenticated
+job polling and recovery delivery; the optional delivery hint does not grant execution.

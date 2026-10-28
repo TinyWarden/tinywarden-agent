@@ -15,6 +15,19 @@ from action_fixtures import action_package, object_schema
 
 
 class ActionAdmission(unittest.TestCase):
+    def test_explicit_verification_policy_is_bound_and_old_descriptors_remain_unchanged(self):
+        original = load(self.root)["actions"][0]
+        self.assertNotIn("verification", original["descriptor"])
+        for mode in ("local", "host_health"):
+            self.manifest(lambda v: v["actions"][0].update(verification=mode))
+            admitted = load(self.root)["actions"][0]
+            self.assertEqual(admitted["descriptor"]["verification"], mode)
+            self.assertNotEqual(admitted["descriptor_sha256"], original["descriptor_sha256"])
+        for mode in ("none", "skip", None, 0, {}, []):
+            self.manifest(lambda v: v["actions"][0].update(verification=mode))
+            with self.assertRaises(ValueError):
+                load(self.root)
+
     def test_action_schema_labels_are_data_and_numeric_enums_match_json_numbers(self):
         schema={"type":"number","minimum":0,"maximum":10,"enum":[1.0],"label_key":"amount"}
         inspect(schema)

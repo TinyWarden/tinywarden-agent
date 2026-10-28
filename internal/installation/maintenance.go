@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/TinyWarden/tinywarden-agent/internal/actioncontract"
 	"github.com/TinyWarden/tinywarden-agent/internal/controlplane"
@@ -125,8 +126,16 @@ func PollMaintenance(ctx context.Context, base string) error {
 	if e = maintenanceStatus(ctx, base, m); e != nil {
 		return e
 	}
+	if e = waitForWork(ctx, base); e != nil {
+		return e
+	}
 	guard, e := hostmutation.Lock(base)
 	if errors.Is(e, hostmutation.ErrBusy) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(25 * time.Second):
+		}
 		return nil
 	}
 	if e != nil {
