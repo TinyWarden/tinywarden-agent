@@ -55,6 +55,8 @@ func (p *Provider) InspectAction(parent context.Context, commit func(json.RawMes
 		input.Close()
 		return err
 	}
+	stopLogs := p.watchLogs()
+	defer stopLogs()
 	_ = writer.Close()
 	interrupt := func() error {
 		input.Close()

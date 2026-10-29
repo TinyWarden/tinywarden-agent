@@ -129,13 +129,17 @@ uncertain package work blocks agent replacement and uninstall through a common
 root lock, worker cgroup and durable journal. Never disable a worker to bypass it.
 
 Use managed agent 0.0.22+ and a compatible app for independently delivered SDK 3
-actions. Each action requires exact package permission in the app and a separate
+actions. Descriptors with an explicit verification policy require 0.0.24+, including
+the current Updates package (1.2.9+); see
+[compatibility](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/compatibility.md).
+Each action requires exact package permission in the app and a separate
 local publisher/execution-class policy; follow the
 [policy reference](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#host-publisher-policy).
 The agent supplies generic delivery, supervision and recovery. Domain behavior and
 native adapters belong to the skill package and can be updated independently.
 
-The Updates skill's package actions require `apt-get` and `python3-apt`. They are
+The Updates skill's package actions require `apt-get` and `python3-apt`;
+Conservative upgrade also declares `dpkg`. They are
 optional for monitoring and signed updates, and are never installed automatically.
 Other actions declare their own prerequisites; the host reports what is missing.
 Safe preparation/download phases have boot-clock budgets and unwind their children;

@@ -24,6 +24,7 @@ type Loader struct {
 	Guard        *os.File
 	Verify       func() error
 	Download     Download
+	Log          func(context.Context, maintenance.Intent, []json.RawMessage) error
 }
 
 type actionMetadata struct {

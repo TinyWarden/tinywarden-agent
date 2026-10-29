@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const Version = "0.0.24"
+const Version = "0.0.25"
 const Repository = "TinyWarden/tinywarden-agent"
 const Capability = "agent_updates.v1"
 

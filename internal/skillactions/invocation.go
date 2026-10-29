@@ -159,7 +159,9 @@ func (p *Provider) run(ctx context.Context, request invocation) (json.RawMessage
 	if err != nil {
 		return nil, err
 	}
+	stopLogs := p.watchLogs()
 	execution := cmd.Run()
+	stopLogs()
 	raw, err := p.read(request)
 	if err != nil {
 		return nil, err

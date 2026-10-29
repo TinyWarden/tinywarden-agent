@@ -120,6 +120,63 @@ func maintenanceRegistry(base string, guard *os.File, verify func() error, clien
 	loader := skillactions.Loader{Base: base, Policy: actionPolicyPath(base), Runtime: skillruntime.Client{Assets: maintenanceRuntimeAssets(base)}, Guard: guard, Verify: verify,
 		Download: func(ctx context.Context, intent maintenance.Intent, store string) (string, error) {
 			return client.FetchArtifact(ctx, credential, "/api/v1/agent/maintenance-jobs/"+intent.ID+"/package", intent.Binding.ContentSHA, store, *intent.Archive)
-		}}
+		}, Log: actionLogUploader(client, credential)}
 	return loader.Registry()
+}
+
+func actionLogUploader(client *controlplane.Client, credential string) func(context.Context, maintenance.Intent, []json.RawMessage) error {
+	return func(ctx context.Context, intent maintenance.Intent, entries []json.RawMessage) error {
+		const requestLimit, responseLimit = 160 * 1024, 16 * 1024
+		input := map[string]any{"schema_version": 1, "job_id": intent.ID, "scope": intent.Scope, "binding": intent.Binding}
+		for len(entries) > 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			count := len(entries)
+			for {
+				input["entries"] = entries[:count]
+				wire, err := json.Marshal(input)
+				if err != nil {
+					return err
+				}
+				// Bound the actual encoding, including HTML escaping and job scope.
+				if len(wire) <= requestLimit {
+					break
+				}
+				if count == 1 {
+					return errors.New("maintenance_log_body_invalid")
+				}
+				count /= 2
+			}
+			// Two limits opt into the transport's strict response validator.
+			_, err := client.Post(ctx, "/api/v2/agent/action-logs", credential, input, false,
+				actionLogReceipt(entries[:count]), requestLimit, responseLimit)
+			if err != nil {
+				return err
+			}
+			entries = entries[count:]
+		}
+		return nil
+	}
+}
+
+func actionLogReceipt(entries []json.RawMessage) func([]byte) error {
+	return func(raw []byte) error {
+		var reply struct {
+			Schema   int   `json:"schema_version"`
+			Accepted []int `json:"accepted"`
+		}
+		if controlplane.Decode(raw, &reply) != nil || reply.Schema != 1 || len(reply.Accepted) != len(entries) {
+			return errors.New("maintenance_log_receipt_invalid")
+		}
+		for index, entry := range entries {
+			var value struct {
+				Sequence int `json:"sequence"`
+			}
+			if json.Unmarshal(entry, &value) != nil || reply.Accepted[index] != value.Sequence {
+				return errors.New("maintenance_log_receipt_invalid")
+			}
+		}
+		return nil
+	}
 }

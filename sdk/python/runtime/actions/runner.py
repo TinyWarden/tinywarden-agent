@@ -14,6 +14,7 @@ from contracts.json_values import decode
 import skill_actions  # Public failure type is available after dropping cache access.
 from actions.guardian import supervise
 from actions.state import open_state
+from actions.logging import ActionLogger, failure_code
 
 
 def main():
@@ -48,7 +49,11 @@ def main():
             os.setgroups([])
             os.setgid(65534)
             os.setuid(65534)
-        dispatch(action, metadata, files, arguments, request, output,state,sys.argv[3])
+        try:
+            dispatch(action, metadata, files, arguments, request, output,state,sys.argv[3])
+        except BaseException as error:
+            ActionLogger(state, request["phase"], metadata["catalog"]).diagnostic(failure_code(error), "error")
+            raise
     code=supervise(child,request["phase"])
     os.close(output)
     os.close(state)

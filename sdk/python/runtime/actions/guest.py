@@ -10,6 +10,7 @@ from actions.descriptor import exact
 from actions.schema import validate
 from contracts.json_values import decode, encode
 from contracts.outcomes import message
+from actions.logging import ActionLogger
 
 
 class PackageModules(importlib.abc.MetaPathFinder, importlib.abc.Loader):
@@ -48,7 +49,7 @@ class ActionFailure(Exception):
 
 
 class Context:
-    def __init__(self, request, emit, action, files, state_fd, state_path):
+    def __init__(self, request, emit, action, files, state_fd, state_path, catalog):
         self.binding = request["binding"]
         self.scope = request["scope"]
         self.job_id = request["job_id"]
@@ -60,6 +61,11 @@ class Context:
         self.state_path=Path(state_path) if self.guard_fd is not None else None
         self._emit, self._action, self.committed = emit, action, False
         self._files = files
+        self._logger = ActionLogger(state_fd, self.phase, catalog)
+
+    def log(self, message, level="info"):
+        """Record a catalogue message without affecting action success or authority."""
+        return self._logger.log(message, level)
 
     def read_package(self, name):
         if not isinstance(name, str) or name not in self._files:
@@ -119,7 +125,8 @@ def dispatch(action, metadata, files, arguments, request, output,state_fd,state_
             data = data[os.write(output, data):]
         os.fsync(output)
 
-    context = Context(request, emit, action, files,state_fd,state_path)
+    context = Context(request, emit, action, files,state_fd,state_path,metadata["catalog"])
+    context._logger.diagnostic("phase_started")
     if request["phase"] == "apply":
         context.check_start()
         if action["descriptor"]["execution_class"] == "unprivileged":
@@ -136,6 +143,7 @@ def dispatch(action, metadata, files, arguments, request, output,state_fd,state_
     try:
         value = getattr(module, request["phase"])(arguments, context)
     except ActionFailure as error:
+        context.log(error.result["reason"], "error")
         emit({"failure": result(error.result, action, metadata["catalog"])})
         return
     phase = request["phase"]
@@ -164,5 +172,7 @@ def dispatch(action, metadata, files, arguments, request, output,state_fd,state_
     elif phase == "inspect":
         if not context.committed or value is not None:
             raise ValueError("action_inspection_invalid")
+        context._logger.diagnostic("phase_completed")
         return
+    context._logger.diagnostic("phase_completed")
     emit(value)

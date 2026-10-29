@@ -21,10 +21,13 @@ import (
 )
 
 const nativeSource = `from pathlib import Path
-import fcntl,json
+import fcntl,json,time
 COUNTER = Path(COUNTER_PATH)
 LOCK = Path(LOCK_PATH)
 def prepare(request,context):
+    if (COUNTER.parent/'fail_prepare').exists(): raise ValueError('action_schema_value')
+    context.log({'key':'action.name','params':{}})
+    time.sleep(1)
     return {'plan_json':'{"complete":true}','has_changes':True,'effect':'none','result':None}
 def fetch(request,context):
     return {'downloaded':True,'plan_sha256':context.plan_sha256}
@@ -121,7 +124,12 @@ func TestDeliveredActionNativeLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	logs := &nativeLogProof{base: base, records: map[int]json.RawMessage{}}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v2/agent/action-logs" {
+			logs.receive(t, w, r)
+			return
+		}
 		if r.Header.Get("Authorization") != "Bearer native-fixture-only" || r.URL.Path != "/api/v1/agent/maintenance-jobs/00000004-1111-4111-8111-111111111111/package" {
 			t.Error("artifact authority/scope changed")
 		}
@@ -142,12 +150,16 @@ func TestDeliveredActionNativeLifecycle(t *testing.T) {
 	if err = os.WriteFile(policy, []byte(`{"schema_version":1,"origins":[{"github_id":"12345","owner_id":"67890","classes":["host_admin"]}]}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	loader := Loader{Base: base, Policy: policy, Runtime: skillruntime.Client{Assets: filepath.Join(kit, "sdk", "python", "runtime")}, Guard: guard, Verify: func() error { return nil }, Download: func(ctx context.Context, i maintenance.Intent, store string) (string, error) {
+	loader := Loader{Base: base, Policy: policy, Runtime: skillruntime.Client{Assets: filepath.Join(kit, "sdk", "python", "runtime")}, Guard: guard, Verify: func() error { return nil }, Log: func(ctx context.Context, i maintenance.Intent, entries []json.RawMessage) error {
+		_, err := client.Post(ctx, "/api/v2/agent/action-logs", "native-fixture-only", map[string]any{"schema_version": 1, "job_id": i.ID, "scope": i.Scope, "binding": i.Binding, "entries": entries}, false, nil, 160*1024)
+		return err
+	}, Download: func(ctx context.Context, i maintenance.Intent, store string) (string, error) {
 		return client.FetchArtifact(ctx, "native-fixture-only", "/api/v1/agent/maintenance-jobs/"+i.ID+"/package", i.Binding.ContentSHA, store, *i.Archive)
 	}}
 	definition, err := loader.Registry().ResolveIntent(intent)
 	if err != nil {
-		t.Fatal(err)
+		_, cause := loader.resolve(intent)
+		t.Fatalf("%v; loader diagnostic: %v", err, cause)
 	}
 	journal, err := maintenance.Begin(base, intent)
 	if err != nil {
@@ -158,12 +170,42 @@ func TestDeliveredActionNativeLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	provider := definition.New()
+	flag := filepath.Join(base, "fail_prepare")
+	if err := os.WriteFile(flag, []byte("controlled fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := provider.Prepare(context.Background()); err == nil {
+		t.Fatal("a logged failure became success")
+	}
+	if _, err := os.Stat(filepath.Join(base, "counter")); !os.IsNotExist(err) {
+		t.Fatal("preparation executed application")
+	}
+	if err := os.Remove(flag); err != nil {
+		t.Fatal(err)
+	}
+	logs.lock.Lock()
+	found := false
+	for _, entry := range logs.records {
+		var row struct {
+			Code string `json:"code"`
+		}
+		json.Unmarshal(entry, &row)
+		found = found || row.Code == "action_schema_value"
+	}
+	logs.lock.Unlock()
+	if !found {
+		t.Fatal("safe native failure diagnostic was lost")
+	}
+	logs.streamed.Store(false)
 	prepared, err := provider.Prepare(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = maintenance.SavePlan(base, journal, prepared.Plan, prepared.Digest); err != nil {
 		t.Fatal(err)
+	}
+	if !logs.streamed.Load() {
+		t.Fatal("diagnostics arrived only after preparation returned")
 	}
 	if err = provider.Fetch(context.Background(), prepared.Digest); err != nil {
 		t.Fatal(err)
@@ -227,6 +269,7 @@ func TestDeliveredActionNativeLifecycle(t *testing.T) {
 	if string(count) != "1" {
 		t.Fatal("inspection repeated execution")
 	}
+	logs.save(t)
 	// Modified pinned code cannot be substituted when replaying the old receipt.
 	if err = os.WriteFile(filepath.Join(base, "updater", "private", "action-packages", binding.ContentSHA, "actions", "entry.py"), []byte("raise RuntimeError('tampered')\n"), 0400); err != nil {
 		t.Fatal(err)
