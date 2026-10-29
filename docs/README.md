@@ -6,7 +6,7 @@ is the starting point for product workflows and cross-repository contracts.
 
 - [Build a skill](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/README.md)
 - [Add actions and use the action API](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md)
-- [Add items to Fleet Skill actions](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md#add-items-to-fleet-skill-actions)
+- [Show actions on server pages and in Fleet](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md#show-actions-on-server-pages-and-in-fleet)
 - [Every public Python SDK call and author command](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/sdk.md)
 - [Monitoring host operations and exact arguments/results](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/host-access.md)
 - [Action descriptors, context methods and return values](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md)
