@@ -10,7 +10,7 @@ is the starting point for product workflows and cross-repository contracts.
 - [Every public Python SDK call and author command](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/sdk.md)
 - [Monitoring host operations and exact arguments/results](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/host-access.md)
 - [Action descriptors, context methods and return values](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md)
-- [Report progress and read operation logs](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md#report-useful-progress)
+- [Capture native output and read execution transcripts](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md#report-useful-progress)
 - [Skill and runtime compatibility](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/compatibility.md)
 - [Agent operations](https://github.com/TinyWarden/tinywarden/blob/main/docs/operating/agents.md)
 - [Every agent HTTP endpoint](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/agent-endpoints.md)
@@ -38,3 +38,10 @@ approval, verification, contact or freshness. Existing compatible actions can ru
 without detailed logging. See the human guide linked above for authoring and the
 [logging contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#operation-logging)
 for all SDK/HTTP fields, limits and delivery behavior.
+
+Agent 0.0.26 adds generic native stdout/stderr capture, runtime tracebacks without
+locals and optional `context.output(text, stream="stdout")`. Skills keep command
+execution and domain policy; the runtime supplies only bounded diagnostics and
+process supervision. See the [Full transcript author guide](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md#report-useful-progress)
+and [complete SDK/HTTP logging reference](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#operation-logging)
+for streams, limits, redaction, delivery and old-run compatibility.

@@ -11,6 +11,7 @@ from actions.schema import validate
 from contracts.json_values import decode, encode
 from contracts.outcomes import message
 from actions.logging import ActionLogger
+from actions.output import sync_output
 
 
 class PackageModules(importlib.abc.MetaPathFinder, importlib.abc.Loader):
@@ -66,6 +67,14 @@ class Context:
     def log(self, message, level="info"):
         """Record a catalogue message without affecting action success or authority."""
         return self._logger.log(message, level)
+
+    def output(self, text, stream="stdout"):
+        """Record command/output/exit text; this method never executes commands."""
+        if not isinstance(stream, str):
+            return False
+        if stream in {"command", "exit"} and not sync_output():
+            return False
+        return self._logger.output(text, stream)
 
     def read_package(self, name):
         if not isinstance(name, str) or name not in self._files:

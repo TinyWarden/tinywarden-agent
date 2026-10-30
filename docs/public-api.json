@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "runtime_artifact_sha256": "ca9b09efa97f04dde08af566d04245beb80306c4fea761365a5c4fe32faa61ff",
+  "runtime_artifact_sha256": "ab683029721a4ed7d603b1e5fce0cacb865fbfd52dfb9763a4b03cc9ee695d4c",
   "agent_http_paths": [
     "/api/v1/agent/enroll",
     "/api/v1/agent/heartbeat",
@@ -49,6 +49,7 @@
     "check_start",
     "commit",
     "log",
+    "output",
     "read_package"
   ],
   "action_exception": "ActionFailure",

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const actionLogBytes = 128 * 1024
+const actionLogBytes = 1024 * 1024
 
 // Diagnostic storage is job-scoped and bounded; it is never a receipt or authority.
 func (p *Provider) logEntries() []json.RawMessage {
@@ -38,9 +38,9 @@ func (p *Provider) logEntries() []json.RawMessage {
 	if last < 0 {
 		return nil
 	}
-	entries := make([]json.RawMessage, 0, 128)
+	entries := make([]json.RawMessage, 0, 1024)
 	scanner := bufio.NewScanner(bytes.NewReader(raw[:last+1]))
-	for scanner.Scan() && len(entries) < 128 {
+	for scanner.Scan() && len(entries) < 1024 {
 		line := scanner.Bytes()
 		var record struct {
 			Sequence int `json:"sequence"`

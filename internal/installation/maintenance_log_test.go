@@ -104,7 +104,7 @@ func TestActionLogUploaderValidatesActualHTTPAcknowledgement(t *testing.T) {
 func escapedLogBacklog(t *testing.T) []json.RawMessage {
 	t.Helper()
 	var entries []json.RawMessage
-	for sequence := 1; sequence < 128; sequence++ {
+	for sequence := 1; sequence < 1024; sequence++ {
 		// Match the SDK's unescaped HTML characters and exact 1023-byte line cap.
 		prefix := fmt.Sprintf(`{"sequence":%d,"phase":"prepare","level":"info","message":{"key":"step","params":{"first":"%s","second":"`, sequence, strings.Repeat("&", 512))
 		suffix := `"}}}`
@@ -118,7 +118,7 @@ func escapedLogBacklog(t *testing.T) []json.RawMessage {
 		}
 		entries = append(entries, line)
 	}
-	return append(entries, json.RawMessage(`{"sequence":128,"phase":"prepare","level":"warning","code":"log_truncated"}`))
+	return append(entries, json.RawMessage(`{"sequence":1024,"phase":"prepare","level":"warning","code":"log_truncated"}`))
 }
 
 func TestActionLogUploaderDrainsBoundedBacklogAndRetriesPartialDelivery(t *testing.T) {
@@ -138,7 +138,7 @@ func TestActionLogUploaderDrainsBoundedBacklogAndRetriesPartialDelivery(t *testi
 				var accepted []int
 				for _, raw := range batch {
 					var record struct{ Sequence int }
-					if json.Unmarshal(raw, &record) != nil || record.Sequence < 1 || record.Sequence > 128 {
+					if json.Unmarshal(raw, &record) != nil || record.Sequence < 1 || record.Sequence > 1024 {
 						t.Error("invalid record sequence")
 					}
 					if previous, exists := seen[record.Sequence]; exists && !bytes.Equal(previous, raw) {
@@ -169,7 +169,7 @@ func TestActionLogUploaderDrainsBoundedBacklogAndRetriesPartialDelivery(t *testi
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			if len(seen) != 128 || len(requests) < 2 || largest > 160*1024 {
+			if len(seen) != 1024 || len(requests) < 2 || largest > 160*1024 {
 				t.Fatal("incomplete or oversized final flush")
 			}
 			if fail && (len(requests) < 4 || !reflect.DeepEqual(requests[0], requests[2]) || !reflect.DeepEqual(requests[1], requests[3])) {

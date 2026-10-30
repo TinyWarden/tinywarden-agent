@@ -14,7 +14,7 @@ def descendants(root):
         parent = pending.pop()
         try:
             children = Path(f"/proc/{parent}/task/{parent}/children").read_text().split()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
             continue
         for value in children:
             pid = int(value)
@@ -22,7 +22,7 @@ def descendants(root):
                 continue
             try:
                 born = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[19]
-            except FileNotFoundError:
+            except (FileNotFoundError, ProcessLookupError):
                 continue
             found[pid] = born
             pending.append(pid)
@@ -65,7 +65,7 @@ def child_exit(callback):
     raise SystemExit(code)
 
 
-def supervise(callback, phase):
+def supervise(callback, phase, capture=None):
     if ctypes.CDLL(None, use_errno=True).prctl(36, 1, 0, 0, 0) != 0:
         raise ValueError("action_supervision_unavailable")
     # Require stable process handles before any authored code is entered.
@@ -77,6 +77,8 @@ def supervise(callback, phase):
     signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
     worker = os.fork()
     if worker == 0:
+        if capture is not None:
+            capture.child()
         if inspection:
             os.dup2(ready_write, 4)
             os.dup2(ack_read, 0)
@@ -89,6 +91,39 @@ def supervise(callback, phase):
         os.close(ack_read)
     cancelling, forwarded, acknowledged, notified = None, False, False, False
     worker_code, failed, sent = None, False, False
+    capture_failed = False
+
+    def capture_error(error):
+        if capture is not None:
+            try:
+                capture.error(error)
+            except Exception:
+                pass
+
+    def drain_output():
+        nonlocal capture_failed
+        if capture is None:
+            return
+        if not capture_failed:
+            try:
+                capture.drain()
+                return
+            except Exception as error:
+                capture_failed = True
+                capture_error(error)
+        try:
+            capture.discard()
+        except Exception:
+            pass
+
+    def close_output():
+        if capture is not None:
+            try:
+                capture.close()
+            except Exception as error:
+                capture_error(error)
+            finally:
+                capture.release()
 
     def cancel(signum, frame):
         nonlocal cancelling
@@ -98,7 +133,14 @@ def supervise(callback, phase):
     signal.signal(signal.SIGTERM, cancel)
     signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM})
     try:
+        if capture is not None:
+            try:
+                capture.parent()
+            except Exception as error:
+                capture_failed = True
+                capture_error(error)
         while True:
+            drain_output()
             try:
                 while True:
                     pid, status = os.waitpid(-1, os.WNOHANG)
@@ -138,7 +180,21 @@ def supervise(callback, phase):
                 if time.monotonic() - cancelling >= 3:
                     send(children, signal.SIGKILL)  # Safe phases only; never Apply.
             if worker_code is not None and not children:
+                close_output()
                 return 70 if failed else worker_code
+            time.sleep(.01)
+    except Exception as error:
+        # If process inspection itself fails, retain the guard and drain output
+        # until the kernel confirms that every child/adopted descendant is gone.
+        # Never kill an in-flight Apply just because diagnostics/supervision failed.
+        capture_error(error)
+        while True:
+            drain_output()
+            try:
+                os.waitpid(-1, os.WNOHANG)
+            except ChildProcessError:
+                close_output()
+                return 70
             time.sleep(.01)
     finally:
         if inspection:

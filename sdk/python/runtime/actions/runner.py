@@ -5,6 +5,7 @@ import stat
 import sys
 import signal
 import ctypes
+import traceback
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from actions.envelope import invocation
@@ -15,6 +16,7 @@ import skill_actions  # Public failure type is available after dropping cache ac
 from actions.guardian import supervise
 from actions.state import open_state
 from actions.logging import ActionLogger, failure_code
+from actions.output import OutputCapture
 
 
 def main():
@@ -39,6 +41,11 @@ def main():
     invocation(request)
     action, metadata, files, arguments = admit(sys.argv[1], sys.argv[2], request)
     state=open_state(sys.argv[3],request["job_id"],action["descriptor"]["execution_class"])
+    logger = ActionLogger(state, request["phase"], metadata["catalog"])
+    try:
+        capture = OutputCapture(logger)
+    except OSError:
+        capture = None  # Diagnostic resource exhaustion must not prevent execution.
     if request["phase"]=="inspect" and not stat.S_ISFIFO(os.fstat(4).st_mode):
         raise ValueError("action_inspection_channel_required")
     def child():
@@ -52,9 +59,15 @@ def main():
         try:
             dispatch(action, metadata, files, arguments, request, output,state,sys.argv[3])
         except BaseException as error:
-            ActionLogger(state, request["phase"], metadata["catalog"]).diagnostic(failure_code(error), "error")
+            failure = ActionLogger(state, request["phase"], metadata["catalog"])
+            failure.output("".join(traceback.TracebackException.from_exception(error, capture_locals=False).format()), "runtime")
+            failure.diagnostic(failure_code(error), "error")
             raise
-    code=supervise(child,request["phase"])
+    try:
+        code=supervise(child,request["phase"],capture)
+    except Exception as error:
+        logger.output("".join(traceback.TracebackException.from_exception(error, capture_locals=False).format()), "runtime")
+        raise
     os.close(output)
     os.close(state)
     raise SystemExit(code)
