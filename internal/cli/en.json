@@ -10,6 +10,7 @@
   "recovered": "Connection restored.",
   "commandFailed": "Agent stopped. Check its configuration, private state and server availability.",
   "heartbeatDiagnostic": "Heartbeat diagnostic:",
+  "monitoringDiagnostic": "Monitoring diagnostic:",
   "setup": {
     "stdinHelp": "read the setup code from standard input instead of prompting",
     "arguments": "Use --setup-code-stdin only with install, without --setup-code-file or --adopt.",

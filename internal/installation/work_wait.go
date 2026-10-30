@@ -84,20 +84,7 @@ func loadWorkCursor(path string) (*string, error) {
 }
 
 func receiveWorkHint(ctx context.Context, client *controlplane.Client, credential string, cursor *string) (string, error) {
-	var reply struct {
-		Schema    int    `json:"schema_version"`
-		Available *bool  `json:"available"`
-		Cursor    string `json:"cursor"`
-	}
-	_, err := client.Post(ctx, "/api/v2/agent/work-wait", credential, map[string]any{"schema_version": 1, "wait_seconds": 25, "cursor": cursor}, false, func(raw []byte) error {
-		if e := controlplane.Decode(raw, &reply); e != nil {
-			return e
-		}
-		if reply.Schema != 1 || reply.Available == nil || !workCursorPattern.MatchString(reply.Cursor) {
-			return errors.New("invalid_work_reply")
-		}
-		return nil
-	}, 1024, 1024)
+	reply, err := client.WaitForWork(ctx, credential, cursor, "maintenance")
 	if err == nil {
 		return reply.Cursor, nil
 	}

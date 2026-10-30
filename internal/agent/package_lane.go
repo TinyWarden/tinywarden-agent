@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	loop "github.com/TinyWarden/tinywarden-agent/internal/agent/loop"
 	agentconfig "github.com/TinyWarden/tinywarden-agent/internal/config"
 	controlplane "github.com/TinyWarden/tinywarden-agent/internal/controlplane"
 	host "github.com/TinyWarden/tinywarden-agent/internal/host"
@@ -16,38 +17,47 @@ type packageFetched struct {
 	controlEpoch uint64
 	response     *packageResponse
 	err          error
+	elapsed      time.Duration
 }
 type packageCompleted struct {
 	run   packageRun
 	pause bool
 }
 type packageUploaded struct {
-	id  string
-	err error
+	id      string
+	err     error
+	elapsed time.Duration
 }
 type packageLane struct {
-	monitoring                            *monitoringLane
-	controlEpoch                          uint64
-	store                                 *agentstate.Store
-	client                                *Client
-	state                                 agentstate.State
-	config                                agentconfig.Config
-	ledger                                packageLedger
-	runtime                               skillruntime.Client
-	ctx                                   context.Context
-	cancel                                context.CancelFunc
-	cancelRun                             context.CancelFunc
-	fetch                                 chan packageFetched
-	run                                   chan packageCompleted
-	upload                                chan packageUploaded
-	fetching, running, uploading          bool
-	nextFetch, nextUpload, lastWall       time.Time
-	due                                   map[string]time.Time
-	rotate, fetchFailures, uploadFailures int
-	emit                                  func(string)
-	now                                   func() time.Time
-	ready                                 func(context.Context) bool
-	execute                               func(context.Context, packageActive) packageCompleted
+	monitoring                                *monitoringLane
+	controlEpoch                              uint64
+	store                                     *agentstate.Store
+	client                                    *Client
+	state                                     agentstate.State
+	config                                    agentconfig.Config
+	ledger                                    packageLedger
+	runtime                                   skillruntime.Client
+	ctx                                       context.Context
+	cancel                                    context.CancelFunc
+	cancelRun                                 context.CancelFunc
+	fetch                                     chan packageFetched
+	run                                       chan packageCompleted
+	upload                                    chan packageUploaded
+	fetching, running, uploading              bool
+	nextFetch, nextUpload, lastWall           time.Time
+	due                                       map[string]time.Time
+	rotate, fetchFailures, uploadFailures     int
+	emit                                      func(string)
+	now                                       func() time.Time
+	ready                                     func(context.Context) bool
+	execute                                   func(context.Context, packageActive) packageCompleted
+	waitEnabled, waiting, fetchAgain          bool
+	waitClient                                *controlplane.Client
+	work                                      chan packageHint
+	cursor                                    *string
+	nextWait, fetchNotBefore, uploadNotBefore time.Time
+	waitFailures                              int
+	diagnostic                                func(loop.MonitoringDiagnostic)
 }
 
 func newPackageLane(ctx context.Context, store *agentstate.Store, client *Client, state agentstate.State, config agentconfig.Config, emit func(string)) (*packageLane, error) {
@@ -66,6 +76,8 @@ func newPackageLane(ctx context.Context, store *agentstate.Store, client *Client
 		runtime: skillruntime.Client{Assets: config.RuntimeAssets}, ctx: ctx, cancel: cancel, emit: emit, now: time.Now,
 		due: map[string]time.Time{}, fetch: make(chan packageFetched, 1), run: make(chan packageCompleted, 1), upload: make(chan packageUploaded, 1)}
 	lane.ready = func(ctx context.Context) bool { return host.CanObserve() && lane.runtime.Ready(ctx) }
+	lane.work = make(chan packageHint, 1)
+	lane.waitClient = client.WorkWaitClient()
 	lane.execute = lane.collect
 	if ledger.Cache != nil {
 		lane.lastWall, _ = time.Parse(time.RFC3339Nano, ledger.ValidatedAt)
@@ -84,6 +96,7 @@ func (lane *packageLane) tick(context.Context) error {
 	if err := lane.receive(now); err != nil {
 		return err
 	}
+	lane.pollHints(now)
 	leased := packageLease(lane.ledger, wall) && lane.monitoring.Allowed() && lane.controlEpoch == lane.monitoring.Epoch()
 	if !leased && lane.cancelRun != nil {
 		lane.cancelRun()
@@ -93,18 +106,14 @@ func (lane *packageLane) tick(context.Context) error {
 		paused := lane.ledger.Paused
 		controlEpoch := lane.monitoring.Epoch()
 		go func() {
+			started := time.Now()
 			r, e := lane.client.fetchPackages(lane.ctx, lane.state, !paused && lane.ready(lane.ctx), !paused && lane.runtime.ResourcesReady(lane.ctx), lane.runtime.SupportsSDK3())
-			lane.fetch <- packageFetched{controlEpoch: controlEpoch, response: r, err: e}
+			lane.fetch <- packageFetched{controlEpoch: controlEpoch, response: r, err: e, elapsed: time.Since(started)}
 		}()
 	}
 	if !lane.running && leased && len(lane.ledger.Pending) < 8 {
-		entries := lane.ledger.Cache.Assignments
-		for offset := 0; offset < len(entries); offset++ {
-			index := (lane.rotate + offset) % len(entries)
-			entry := entries[index]
-			if entry.Applicability != "ready" || now.Before(lane.due[entry.InstallationID]) && !lane.manualReady(entry, wall) {
-				continue
-			}
+		if chosen := lane.nextEntry(now); chosen != nil {
+			entry := *chosen
 			active, err := lane.allocate(entry, wall)
 			if err != nil {
 				return err
@@ -115,18 +124,18 @@ func (lane *packageLane) tick(context.Context) error {
 			if !now.Before(lane.due[entry.InstallationID]) {
 				lane.due[entry.InstallationID] = now.Add(time.Duration(entry.Interval) * time.Second)
 			}
-			lane.rotate = (index + 1) % len(entries)
 			go func() { lane.run <- lane.executeActive(ctx, active) }()
-			break
 		}
 	}
 	if !lane.uploading && len(lane.ledger.Pending) > 0 && !now.Before(lane.nextUpload) {
 		item := lane.ledger.Pending[0]
 		lane.uploading = true
 		go func() {
+			started := time.Now()
 			var run packageRun
 			_ = controlplane.Decode(item.Body, &run)
-			lane.upload <- packageUploaded{run.ID, lane.client.uploadPackage(lane.ctx, lane.state, item)}
+			err := lane.client.uploadPackage(lane.ctx, lane.state, item)
+			lane.upload <- packageUploaded{id: run.ID, err: err, elapsed: time.Since(started)}
 		}()
 	}
 	return nil
@@ -142,12 +151,13 @@ func (lane *packageLane) pause(reason string) error {
 }
 func (lane *packageLane) stop() {
 	lane.cancel()
+	defer lane.waitClient.HTTP.CloseIdleConnections()
 	if lane.cancelRun != nil {
 		lane.cancelRun()
 	}
 	timer := time.NewTimer(4 * time.Second)
 	defer timer.Stop()
-	for lane.fetching || lane.running || lane.uploading {
+	for lane.fetching || lane.running || lane.uploading || lane.waiting {
 		select {
 		case <-lane.fetch:
 			lane.fetching = false
@@ -155,6 +165,8 @@ func (lane *packageLane) stop() {
 			lane.running = false
 		case <-lane.upload:
 			lane.uploading = false
+		case <-lane.work:
+			lane.waiting = false
 		case <-timer.C:
 			return
 		}
@@ -171,10 +183,14 @@ func (lane *packageLane) receive(now time.Time) error {
 		}
 		if result.err != nil {
 			if controlplane.Terminal(result.err) {
+				lane.report("assignments", result.err, lane.fetchFailures+1, result.elapsed, 0)
 				return errors.Join(result.err, lane.pause("package_authority_invalid"))
 			}
 			lane.fetchFailures++
-			lane.nextFetch = now.Add(controlplane.WorkerRetry(result.err, lane.fetchFailures))
+			delay := controlplane.WorkerRetry(result.err, lane.fetchFailures)
+			lane.nextFetch = now.Add(delay)
+			lane.fetchNotBefore = retryNotBefore(now, result.err)
+			lane.report("assignments", result.err, lane.fetchFailures, result.elapsed, delay)
 			lane.emit("package_fetch_deferred")
 		} else {
 			if lane.ledger.Active != nil && !packageEntryCurrent(result.response, lane.ledger.Active.Entry) && lane.cancelRun != nil {
@@ -191,8 +207,16 @@ func (lane *packageLane) receive(now time.Time) error {
 			if err := savePackageLedger(lane.store, lane.ledger); err != nil {
 				return err
 			}
+			if lane.fetchFailures > 0 {
+				lane.report("assignments", nil, lane.fetchFailures+1, result.elapsed, 0)
+			}
 			lane.fetchFailures = 0
+			lane.fetchNotBefore = time.Time{}
 			lane.nextFetch = now.Add(time.Minute)
+			if lane.fetchAgain {
+				lane.nextFetch = now
+				lane.fetchAgain = false
+			}
 			if !result.response.RuntimeReady {
 				lane.emit("package_runtime_unavailable")
 			}
@@ -235,17 +259,25 @@ func (lane *packageLane) receive(now time.Time) error {
 			if err := savePackageLedger(lane.store, lane.ledger); err != nil {
 				return err
 			}
+			if lane.uploadFailures > 0 {
+				lane.report("upload", nil, lane.uploadFailures+1, result.elapsed, 0)
+			}
 			lane.uploadFailures = 0
+			lane.uploadNotBefore = time.Time{}
 			lane.nextUpload = now
 			if result.err != nil {
 				lane.emit("package_pending_obsolete")
 			}
 		} else {
 			if controlplane.Terminal(result.err) {
+				lane.report("upload", result.err, lane.uploadFailures+1, result.elapsed, 0)
 				return errors.Join(result.err, lane.pause("package_authority_invalid"))
 			}
 			lane.uploadFailures++
-			lane.nextUpload = now.Add(controlplane.WorkerRetry(result.err, lane.uploadFailures))
+			delay := controlplane.WorkerRetry(result.err, lane.uploadFailures)
+			lane.nextUpload = now.Add(delay)
+			lane.uploadNotBefore = retryNotBefore(now, result.err)
+			lane.report("upload", result.err, lane.uploadFailures, result.elapsed, delay)
 			lane.emit("package_upload_deferred")
 		}
 	default:

@@ -22,20 +22,21 @@ import (
 var english []byte
 
 type catalog struct {
-	Setup               installation.SetupMessages       `json:"setup"`
-	Maintenance         installation.MaintenanceMessages `json:"maintenance"`
-	Reconnect           installation.ReconnectMessages   `json:"reconnect"`
-	Name                string                           `json:"name"`
-	Usage               string                           `json:"usage"`
-	NotReady            string                           `json:"notReady"`
-	InvalidArguments    string                           `json:"invalidArguments"`
-	Enrolled            string                           `json:"enrolled"`
-	Replaced            string                           `json:"replaced"`
-	Running             string                           `json:"running"`
-	Degraded            string                           `json:"degraded"`
-	Recovered           string                           `json:"recovered"`
-	CommandFailed       string                           `json:"commandFailed"`
-	HeartbeatDiagnostic string                           `json:"heartbeatDiagnostic"`
+	Setup                installation.SetupMessages       `json:"setup"`
+	Maintenance          installation.MaintenanceMessages `json:"maintenance"`
+	Reconnect            installation.ReconnectMessages   `json:"reconnect"`
+	Name                 string                           `json:"name"`
+	Usage                string                           `json:"usage"`
+	NotReady             string                           `json:"notReady"`
+	InvalidArguments     string                           `json:"invalidArguments"`
+	Enrolled             string                           `json:"enrolled"`
+	Replaced             string                           `json:"replaced"`
+	Running              string                           `json:"running"`
+	Degraded             string                           `json:"degraded"`
+	Recovered            string                           `json:"recovered"`
+	CommandFailed        string                           `json:"commandFailed"`
+	HeartbeatDiagnostic  string                           `json:"heartbeatDiagnostic"`
+	MonitoringDiagnostic string                           `json:"monitoringDiagnostic"`
 }
 
 const Version = agent.Version
@@ -156,9 +157,11 @@ func Run(args []string, stdout, stderr io.Writer) int {
 			if event == "recovered" {
 				fmt.Fprintln(stdout, text.Recovered)
 			}
-		}, func(diagnostic loop.HeartbeatDiagnostic) {
+		}, loop.Diagnostics{Heartbeat: func(diagnostic loop.HeartbeatDiagnostic) {
 			fmt.Fprintf(stderr, "%s %s\n", text.HeartbeatDiagnostic, diagnostic.JSON())
-		})
+		}, Monitoring: func(diagnostic loop.MonitoringDiagnostic) {
+			fmt.Fprintf(stderr, "%s %s\n", text.MonitoringDiagnostic, diagnostic.JSON())
+		}})
 		if errors.Is(err, context.Canceled) {
 			return 0
 		}

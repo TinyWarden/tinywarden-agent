@@ -30,6 +30,14 @@ Worker ledgers stay with their worker; shared persistence must retain one lock.
 Preserve immutable published releases, signing key ownership and pinned asset
 identity. Check actual formats and supported releases before describing capability.
 
+Monitoring work hints use `internal/controlplane/work_wait.go` and
+`internal/agent/package_wake.go`. They only expedite ordinary discovery; retain
+fallback polling, explicit Retry-After, FIFO exact retries, pause/epoch checks and
+start acknowledgements. The maintenance dispatcher shares the bounded client but
+keeps its own root-owned cursor. `loop/monitoring_diagnostics.go` permits sanitized
+transport categories only. New production-file inventory entries describe these
+generic owners; no domain package, SDK/runtime asset or helper capability is added.
+
 Package maintenance behavior belongs to independently delivered skill code. The
 production agent and generic SDK must not import or embed a domain executor.
 Dependency/runtime boundary tests enforce this. Retired pre-SDK3 work must settle

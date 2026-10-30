@@ -45,3 +45,10 @@ execution and domain policy; the runtime supplies only bounded diagnostics and
 process supervision. See the [Full transcript author guide](https://github.com/TinyWarden/tinywarden/blob/main/docs/build-skills/actions.md#report-useful-progress)
 and [complete SDK/HTTP logging reference](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#operation-logging)
 for streams, limits, redaction, delivery and old-run compatibility.
+
+
+Agent 0.0.27 adds prompt monitoring work hints, priority for requested checks and
+responsive result-upload retries. Every existing compatible skill uses these
+transport changes without package edits or new SDK calls. See the
+[work-wait HTTP contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/agent-endpoints.md#prompt-work-delivery)
+and [operator diagnostics](https://github.com/TinyWarden/tinywarden/blob/main/docs/operating/agents.md#monitoring-checks).
