@@ -24,10 +24,12 @@ examples/skills/, and native process acceptance in tests/integration/.
 
 
 Agent 0.0.24 adds a generic bounded work-wait endpoint and supports the optional
-`local`/`host_health` action verification policy. The policy is declared by each
+action-local verification policy (explicit `local` or the application default).
+Explicit `host_health` is retired for new app operations, although historical SDK
+descriptors may still parse it. The operation and its evidence are declared by each
 skill and documented in the [action contract](https://github.com/TinyWarden/tinywarden/blob/main/docs/reference/skills/actions.md#choosing-verification).
-The agent carries no APT refresh or upgrade recipe. Existing descriptors without
-the new field retain their previous behavior; packages that use it need 0.0.24+.
+The agent carries no APT refresh or upgrade recipe. Omitted fields retain descriptor syntax compatibility and now use the app's
+action-local default. Packages that explicitly declare the field need 0.0.24+.
 Failed waits or hint-cache faults use bounded backoff before ordinary authenticated
 job polling and recovery delivery; the optional delivery hint does not grant execution.
 

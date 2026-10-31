@@ -112,9 +112,11 @@ acknowledgements without reinstalling. See the canonical
 
 Safe preparation/download wrappers in `internal/maintenance/budget.go` use the
 boot clock for whole-phase limits; do not wrap `Apply` in cancellation or a timeout.
-Trusted input hashing checks root ownership through every original/symlink path
-component, including empty/absent inputs. Native proof of input ownership and
-signed HTTP repository provider behavior belongs on the designated disposable host.
+The generic runtime validates admitted skill files, publisher policy and private
+job state before import. Native package commands, repository configuration and
+receipts belong to the delivered skill. Prove mutations on the designated
+disposable host; do not add package-input hashing or repository policy to the agent.
+The app uses action-local results and presents monitoring health independently.
 
 ## Enforce platform neutrality
 
